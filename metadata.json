@@ -1,0 +1,6 @@
+{
+  "name": "The Last 10%",
+  "description": "Understand what you don't know through what you've already lived. Discover more. Understand better. Live beyond the screen.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

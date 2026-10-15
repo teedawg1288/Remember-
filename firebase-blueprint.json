@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "createdAt", "updatedAt"]
+    },
+    "SavedExploration": {
+      "title": "SavedExploration",
+      "description": "User's saved analogical translation record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "unfamiliarTopic": { "type": "string", "maxLength": 1000 },
+        "familiarDomain": { "type": "string", "maxLength": 500 },
+        "headlineSummary": { "type": "string", "maxLength": 2000 },
+        "simplicityLevel": { "type": "string", "enum": ["standard", "simple", "deep"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "unfamiliarTopic", "familiarDomain", "headlineSummary", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profile"
+    },
+    "/users/{userId}/explorations/{explorationId}": {
+      "schema": "SavedExploration",
+      "description": "User's personal saved translations and insights"
+    }
+  }
+}
