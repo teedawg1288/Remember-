@@ -5,6 +5,7 @@ import {
   ChatMessage,
 } from '../../types/translation';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { PredictionChart } from '../visuals/PredictionChart';
 import {
   Sparkles,
   ArrowRight,
@@ -151,12 +152,12 @@ export const LetsTalkScreen: React.FC<LetsTalkScreenProps> = ({
         <div className="space-y-6 pt-2 pb-6 flex-1 animate-fadeIn">
           {/* Main Inquiry Card — Natural Human Flow */}
           {activeTranslation && (
-            <div className="bg-slate-850/95 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl space-y-4">
+            <div className="bg-slate-850/95 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl space-y-5">
               {/* Question Header */}
               <div className="border-b border-slate-800/80 pb-3 flex items-start justify-between gap-3">
                 <div>
                   <span className="text-[11px] font-mono text-teal-400 uppercase tracking-wider font-semibold block">
-                    You asked:
+                    {activeTranslation.predictionTestResult ? 'Verified Prediction & Computational Test' : 'Investigation & Translation'}
                   </span>
                   <h2 className="font-serif text-xl sm:text-2xl font-bold text-white mt-0.5 leading-snug">
                     {activeTranslation.unfamiliarTopic}
@@ -177,6 +178,13 @@ export const LetsTalkScreen: React.FC<LetsTalkScreenProps> = ({
                 </button>
               </div>
 
+              {/* Verified Prediction Visual Chart (if predictive test was executed) */}
+              {activeTranslation.predictionTestResult && (
+                <div className="pt-1">
+                  <PredictionChart prediction={activeTranslation.predictionTestResult} />
+                </div>
+              )}
+
               {/* Conversational Narrative */}
               <div className="space-y-4 text-sm sm:text-base text-slate-200 leading-relaxed">
                 {/* 1. Core headline in plain language */}
@@ -184,32 +192,46 @@ export const LetsTalkScreen: React.FC<LetsTalkScreenProps> = ({
                   {activeTranslation.headlineSummary}
                 </p>
 
-                {/* 2. Everyday relatable comparison */}
-                <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-900/30 text-amber-100/90 text-sm sm:text-base leading-relaxed">
-                  <span className="text-amber-400 font-semibold block text-xs font-mono uppercase mb-1">
-                    Think about it this way ({activeTranslation.familiarDomain}):
-                  </span>
-                  {activeTranslation.section1Connects.narrative ||
-                    activeTranslation.frameworkFlow.translation}
-                </div>
+                {/* 2. Empirical Analysis / Relatable Explanation */}
+                {activeTranslation.predictionTestResult ? (
+                  <div className="p-4 rounded-2xl bg-slate-900 border border-teal-900/40 text-slate-200 text-sm sm:text-base leading-relaxed">
+                    <span className="text-teal-400 font-semibold block text-xs font-mono uppercase mb-1.5">
+                      Empirical Findings & Predictive Behavior:
+                    </span>
+                    <p className="text-slate-300">
+                      {activeTranslation.section1Connects.narrative ||
+                        activeTranslation.frameworkFlow.translation}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-slate-200 text-sm sm:text-base leading-relaxed">
+                    <span className="text-teal-400 font-semibold block text-xs font-mono uppercase mb-1">
+                      {activeTranslation.familiarDomain ? `Understanding (${activeTranslation.familiarDomain}):` : 'Key Perspective:'}
+                    </span>
+                    <p className="text-slate-300">
+                      {activeTranslation.section1Connects.narrative ||
+                        activeTranslation.frameworkFlow.translation}
+                    </p>
+                  </div>
+                )}
 
-                {/* 3. Crucial difference (where comparison stops) */}
+                {/* 3. Crucial difference / Model boundaries */}
                 {activeTranslation.section2Differences.breakdowns &&
                   activeTranslation.section2Differences.breakdowns.length > 0 && (
                     <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs sm:text-sm text-slate-300 space-y-1">
                       <span className="text-rose-400 font-semibold block text-xs">
-                        Where the comparison stops:
+                        {activeTranslation.predictionTestResult ? 'Model Boundary Conditions & Physical Limits:' : 'Where the comparison stops:'}
                       </span>
                       <p>{activeTranslation.section2Differences.breakdowns[0].whereItFails}</p>
                     </div>
                   )}
 
-                {/* 4. Missing Question */}
+                {/* 4. Missing Question / What Remains Uncertain */}
                 {activeTranslation.section3Missing.missingInformation &&
                   activeTranslation.section3Missing.missingInformation.length > 0 && (
                     <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs sm:text-sm text-slate-300 space-y-1">
                       <span className="text-teal-400 font-semibold block text-xs">
-                        Hang on, what are we missing here?
+                        {activeTranslation.predictionTestResult ? 'What Remains Uncertain & Missing for Real-World Lab Validation:' : 'Hang on, what are we missing here?'}
                       </span>
                       <p>{activeTranslation.section3Missing.missingInformation[0]}</p>
                     </div>

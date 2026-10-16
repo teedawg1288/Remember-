@@ -22,6 +22,7 @@ import {
   MystiqueDomain,
   ChatMessage,
   TestablePredictionRecord,
+  AutonomousDiscoveryJob,
 } from './types/translation';
 import { EXAMPLE_TOPICS } from './data/examples';
 import {
@@ -37,7 +38,7 @@ import {
 import { useAuth } from './context/AuthContext';
 import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './services/firebase';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, X, ArrowRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const screenTransition = {
@@ -78,6 +79,70 @@ export default function App() {
 
   // Active Problem Context
   const [activeProblemContext, setActiveProblemContext] = useState<ActiveProblemContext | null>(null);
+
+  // Independent Discovery Engine: Notifications & Tab routing
+  const [autonomousInitialTab, setAutonomousInitialTab] = useState<'all' | 'autonomous' | 'predictions'>('all');
+  const [discoveryNotification, setDiscoveryNotification] = useState<AutonomousDiscoveryJob | null>(null);
+
+  useEffect(() => {
+    const checkAutonomousJobs = async () => {
+      try {
+        const res = await fetch('/api/discovery-jobs');
+        if (res.ok) {
+          const data = await res.json();
+          const unnotified = (data.jobs || []).find(
+            (j: AutonomousDiscoveryJob) => j.status === 'completed' && !j.wasNotified
+          );
+          if (unnotified) {
+            setDiscoveryNotification(unnotified);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    checkAutonomousJobs();
+    const interval = setInterval(checkAutonomousJobs, 18000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleOpenNotification = async () => {
+    if (discoveryNotification) {
+      try {
+        await fetch(`/api/discovery-jobs/${discoveryNotification.id}/mark-notified`, { method: 'POST' });
+      } catch {
+        // ignore
+      }
+      setDiscoveryNotification(null);
+      setAutonomousInitialTab('autonomous');
+      setCurrentScreen('discoveries');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleDismissNotification = async () => {
+    if (discoveryNotification) {
+      try {
+        await fetch(`/api/discovery-jobs/${discoveryNotification.id}/mark-notified`, { method: 'POST' });
+      } catch {
+        // ignore
+      }
+      setDiscoveryNotification(null);
+    }
+  };
+
+  const handleSaveExternalJourneyItem = async (newItem: SavedJourneyItem) => {
+    const updated = saveJourneyItem(newItem);
+    setJourneyItems(updated);
+    if (user) {
+      try {
+        const itemRef = doc(db, 'users', user.uid, 'explorations', newItem.id);
+        await setDoc(itemRef, newItem);
+      } catch (err) {
+        console.warn('Could not sync to Firestore:', err);
+      }
+    }
+  };
 
   // Load initial journey items from storage & sync with Firestore when user logs in
   useEffect(() => {
@@ -184,13 +249,18 @@ export default function App() {
         understandingState: 'untested',
       });
 
+      let assistantContent = `${data.headlineSummary}\n\n${data.section1Connects.narrative || data.frameworkFlow.translation}`;
+      if (data.predictionTestResult) {
+        assistantContent += `\n\n📊 Verified NASA Battery B0005 Results:\n• Observed: Cycles 1–${data.predictionTestResult.splitCycle} (First 60%)\n• Withheld: Cycles ${data.predictionTestResult.splitCycle + 1}–${data.predictionTestResult.totalCyclesOrSamples} (Remaining 40%)\n• Actual EOL: Cycle ${data.predictionTestResult.actualEolCycle} (1.40 Ah threshold)\n• Physics Model Predicted EOL: Cycle ${data.predictionTestResult.modelPredictedEolCycle} (Error: ${data.predictionTestResult.eolCycleError} cycles)\n• Linear Baseline Predicted EOL: Cycle ${data.predictionTestResult.baselinePredictedEolCycle?.toFixed(1)} (Error: ${data.predictionTestResult.baselineEolCycleError.toFixed(1)} cycles)\n• Model RMSE: ${data.predictionTestResult.modelRmse} Ah | Baseline RMSE: ${data.predictionTestResult.baselineRmse} Ah`;
+      }
+
       // Append assistant's conversational response
       setChatHistory((prev) => [
         ...prev,
         {
           id: `msg-${Date.now() + 1}`,
           role: 'assistant',
-          content: `${data.headlineSummary}\n\n${data.section1Connects.narrative || data.frameworkFlow.translation}`,
+          content: assistantContent,
           timestamp: Date.now(),
         },
       ]);
@@ -506,6 +576,7 @@ export default function App() {
               {(currentScreen === 'discoveries' || currentScreen === 'journey') && (
                 <MyDiscoveriesScreen
                   savedItems={journeyItems}
+                  initialTab={autonomousInitialTab}
                   onOpenInTalk={(item) => {
                     if (item.translation) {
                       setActiveTranslation(item.translation);
@@ -522,6 +593,7 @@ export default function App() {
                   }}
                   onUpdateNotes={handleUpdateNotes}
                   onUpdatePredictionRecord={handleUpdatePredictionRecord}
+                  onSaveItem={handleSaveExternalJourneyItem}
                   onRemoveItem={handleRemoveJourneyItem}
                   onClearAll={handleClearAllJourney}
                   onNavigateToTalk={() => {
@@ -534,6 +606,49 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Real-Time Background Discovery Notification Toast */}
+      {discoveryNotification && (
+        <div className="fixed bottom-20 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-slate-900 border border-emerald-500/50 rounded-2xl shadow-2xl p-4 text-xs animate-fadeIn space-y-2 backdrop-blur-md">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-emerald-400 font-bold font-mono uppercase text-[10px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Independent Discovery Completed</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDismissNotification}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              title="Dismiss notification"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="font-bold text-white text-xs sm:text-sm">
+            &ldquo;{discoveryNotification.conversationalHeadline}&rdquo;
+          </p>
+          <p className="text-slate-300 text-[11px] leading-relaxed line-clamp-2">
+            <strong>{discoveryNotification.title}:</strong> {discoveryNotification.plainEnglishSummary}
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-800/80">
+            <button
+              type="button"
+              onClick={handleDismissNotification}
+              className="px-3 py-1.5 rounded-xl text-slate-400 hover:text-white text-xs"
+            >
+              Later
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenNotification}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-emerald-500/20"
+            >
+              <span>View in My Discoveries</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile-First Bottom Tab Bar: 3 Main Destinations */}
       <BottomTabBar

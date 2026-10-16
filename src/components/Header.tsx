@@ -11,6 +11,7 @@ interface HeaderProps {
   onOpenAuth: () => void;
   hasActiveTranslation: boolean;
   savedCount: number;
+  onOpenAIStatus?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onStartOver,
   onOpenHowItWorks,
   onOpenAuth,
+  onOpenAIStatus,
 }) => {
   const { user, signOutUser } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -55,6 +57,18 @@ export const Header: React.FC<HeaderProps> = ({
             <RotateCcw className="w-3.5 h-3.5 text-teal-400" />
             <span className="hidden sm:inline">New</span>
           </button>
+
+          {/* AI Connection & Model Status */}
+          {onOpenAIStatus && (
+            <button
+              onClick={onOpenAIStatus}
+              className="px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl transition-colors flex items-center gap-1.5"
+              title="OpenAI & Gemini Connection Status"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="hidden sm:inline font-mono text-[11px]">AI Engine</span>
+            </button>
+          )}
 
           {/* How It Works Modal trigger */}
           <button

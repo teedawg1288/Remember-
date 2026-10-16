@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { SavedJourneyItem, TestablePredictionRecord } from '../../types/translation';
+import React, { useState, useEffect } from 'react';
+import { SavedJourneyItem, TestablePredictionRecord, AutonomousDiscoveryJob } from '../../types/translation';
 import { useAuth } from '../../context/AuthContext';
+import { AutonomousDiscoveryCard } from '../AutonomousDiscoveryCard';
 import {
   Bookmark,
   Trash2,
@@ -16,6 +17,12 @@ import {
   AlertCircle,
   HelpCircle,
   TrendingUp,
+  Cpu,
+  RefreshCw,
+  Zap,
+  Activity,
+  Layers,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface MyDiscoveriesScreenProps {
@@ -27,6 +34,8 @@ interface MyDiscoveriesScreenProps {
   onClearAll: () => void;
   onNavigateToTalk: () => void;
   onUpdatePredictionRecord?: (id: string, record: TestablePredictionRecord) => void;
+  onSaveItem?: (item: SavedJourneyItem) => void;
+  initialTab?: 'all' | 'autonomous' | 'predictions';
 }
 
 export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
@@ -38,13 +47,105 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
   onClearAll,
   onNavigateToTalk,
   onUpdatePredictionRecord,
+  onSaveItem,
+  initialTab = 'all',
 }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'all' | 'predictions'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'autonomous' | 'predictions'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notesBuffer, setNotesBuffer] = useState('');
   const [exported, setExported] = useState(false);
+
+  // Autonomous Discovery Engine State
+  const [autonomousJobs, setAutonomousJobs] = useState<AutonomousDiscoveryJob[]>([]);
+  const [discoveryStats, setDiscoveryStats] = useState<any>(null);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
+  const [isTriggering, setIsTriggering] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+
+  const fetchAutonomousJobs = async () => {
+    try {
+      setIsLoadingJobs(true);
+      const res = await fetch('/api/discovery-jobs');
+      if (res.ok) {
+        const data = await res.json();
+        setAutonomousJobs(data.jobs || []);
+        setDiscoveryStats(data.stats || null);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch autonomous discovery jobs:', err);
+    } finally {
+      setIsLoadingJobs(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAutonomousJobs();
+    const interval = setInterval(fetchAutonomousJobs, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleTriggerAutonomous = async () => {
+    try {
+      setIsTriggering(true);
+      const res = await fetch('/api/discovery-jobs/trigger', { method: 'POST' });
+      if (res.ok) {
+        await fetchAutonomousJobs();
+        setActiveTab('autonomous');
+      }
+    } catch (err) {
+      console.error('Failed to trigger autonomous discovery:', err);
+    } finally {
+      setIsTriggering(false);
+    }
+  };
+
+  const handleApproveAutonomous = async (id: string) => {
+    try {
+      setApprovingId(id);
+      const res = await fetch(`/api/discovery-jobs/${id}/approve`, { method: 'POST' });
+      if (res.ok) {
+        await fetchAutonomousJobs();
+      }
+    } catch (err) {
+      console.error('Failed to approve discovery:', err);
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleDismissAutonomous = async (id: string) => {
+    try {
+      await fetch(`/api/discovery-jobs/${id}/dismiss`, { method: 'POST' });
+      setAutonomousJobs((prev) => prev.filter((j) => j.id !== id));
+    } catch (err) {
+      console.error('Failed to dismiss discovery:', err);
+    }
+  };
+
+  const handleSaveAutonomousToDiscoveries = async (job: AutonomousDiscoveryJob) => {
+    try {
+      await fetch(`/api/discovery-jobs/${job.id}/toggle-save`, { method: 'POST' });
+      const syntheticItem: SavedJourneyItem = {
+        id: `auto-${job.id}`,
+        topic: job.title,
+        domain: `${job.primaryFieldA} & ${job.primaryFieldB}`,
+        headline: job.plainEnglishSummary,
+        savedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        userNotes: `Autonomous Discovery: "${job.conversationalHeadline}"\n\nUnasked Question: ${job.unaskedQuestionDiscovered}\n\nComputational Verdict: ${job.calculationVerdict}`,
+        autonomousJob: job,
+      };
+      if (onSaveItem) {
+        onSaveItem(syntheticItem);
+      }
+      setAutonomousJobs((prev) =>
+        prev.map((j) => (j.id === job.id ? { ...j, isSavedToDiscoveries: !j.isSavedToDiscoveries } : j))
+      );
+    } catch (err) {
+      console.error('Failed to save autonomous discovery:', err);
+    }
+  };
 
   // Modal / Form state for logging actual prediction outcome
   const [evaluatingItemId, setEvaluatingItemId] = useState<string | null>(null);
@@ -61,6 +162,20 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
       item.headline.toLowerCase().includes(q) ||
       (item.userNotes && item.userNotes.toLowerCase().includes(q)) ||
       (item.testableRecord && item.testableRecord.predictionSummary.toLowerCase().includes(q))
+    );
+  });
+
+  const filteredAutonomousJobs = autonomousJobs.filter((job) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      job.title.toLowerCase().includes(q) ||
+      job.plainEnglishSummary.toLowerCase().includes(q) ||
+      job.unansweredQuestion.toLowerCase().includes(q) ||
+      job.unaskedQuestionDiscovered.toLowerCase().includes(q) ||
+      job.primaryFieldA.toLowerCase().includes(q) ||
+      job.primaryFieldB.toLowerCase().includes(q) ||
+      job.conversationalHeadline.toLowerCase().includes(q)
     );
   });
 
@@ -206,14 +321,14 @@ ${
           </div>
         </div>
 
-        {/* View Filter Tabs: All Discoveries vs Predictions & Outcomes Tracker */}
-        <div className="flex items-center gap-2 pt-1">
+        {/* View Filter Tabs: All Discoveries vs Autonomous Discoveries vs Predictions */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
               activeTab === 'all'
-                ? 'bg-teal-500 text-slate-950 shadow-md'
+                ? 'bg-teal-500 text-slate-950 shadow-md font-bold'
                 : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
@@ -223,55 +338,168 @@ ${
 
           <button
             type="button"
+            onClick={() => setActiveTab('autonomous')}
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all relative ${
+              activeTab === 'autonomous'
+                ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Autonomous Engine ({autonomousJobs.length})</span>
+            {discoveryStats?.pendingApprovalCount > 0 ? (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-400 text-slate-950 font-mono font-bold animate-pulse">
+                {discoveryStats.pendingApprovalCount} approval
+              </span>
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('predictions')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+            className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
               activeTab === 'predictions'
-                ? 'bg-sky-500 text-slate-950 shadow-md'
+                ? 'bg-sky-500 text-slate-950 shadow-md font-bold'
                 : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
             <GitBranch className="w-3.5 h-3.5" />
-            <span>Testable Predictions ({predictionItems.length})</span>
+            <span>Predictions ({predictionItems.length})</span>
             {evaluatedCount > 0 && (
               <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-900 text-sky-200 font-mono">
-                {evaluatedCount} evaluated
+                {evaluatedCount} eval
               </span>
             )}
           </button>
         </div>
 
         {/* Search Bar */}
-        {savedItems.length > 0 && (
+        {(savedItems.length > 0 || autonomousJobs.length > 0) && (
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by topic, everyday example, notes, or predictions..."
+              placeholder={
+                activeTab === 'autonomous'
+                  ? 'Search autonomous investigations, formulas, unasked questions...'
+                  : 'Search by topic, everyday example, notes, or predictions...'
+              }
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-teal-500/60"
             />
           </div>
         )}
       </div>
 
-      {/* Empty State */}
-      {savedItems.length === 0 ? (
-        <div className="bg-slate-850 rounded-3xl border border-slate-800 p-10 sm:p-14 text-center space-y-4 max-w-lg mx-auto my-6">
-          <div className="w-14 h-14 rounded-2xl bg-teal-500/10 text-teal-400 flex items-center justify-center mx-auto border border-teal-500/20">
-            <Bookmark className="w-6 h-6" />
+      {/* Main Tab Views */}
+      {activeTab === 'autonomous' ? (
+        /* TAB: INDEPENDENT AUTONOMOUS DISCOVERY ENGINE */
+        <div className="space-y-5 animate-fadeIn">
+          {/* Engine Status & Control Bar */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <Cpu className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-base sm:text-lg text-white">
+                    Independent Discovery Engine
+                  </h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Autonomous Background Job
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                  Investigates unanswered questions across different fields on its own — looking for questions nobody thought to ask, testing connections through genuine calculations, and distinguishing documented facts from hypotheses.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleTriggerAutonomous}
+                  disabled={isTriggering}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                  title="Run an immediate independent discovery cycle right now"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isTriggering ? 'animate-spin' : ''}`} />
+                  <span>{isTriggering ? 'Investigating...' : 'Investigate Knowledge Gap'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Live Telemetry Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 border-t border-slate-800/80 text-xs font-mono">
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block uppercase">Total Investigated</span>
+                <span className="text-base font-bold text-white">{discoveryStats?.totalInvestigated || autonomousJobs.length}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] text-emerald-400 block uppercase">Survived Calculations</span>
+                <span className="text-base font-bold text-emerald-300">{discoveryStats?.survivedCalculations || 0}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] text-amber-400 block uppercase">Refuted Metaphors</span>
+                <span className="text-base font-bold text-amber-300">{discoveryStats?.refutedMetaphors || 0}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] text-purple-400 block uppercase">Human Approvals</span>
+                <span className="text-base font-bold text-purple-300">{discoveryStats?.approvedByHuman || 0}</span>
+              </div>
+            </div>
           </div>
-          <h3 className="font-serif text-2xl font-bold text-white">No Discoveries Saved Yet</h3>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-sm mx-auto leading-relaxed">
-            When you explore an idea in Let&apos;s Talk or Show Me, tap &ldquo;Save&rdquo; to keep the conversation, prediction, and testable criteria in your tracker.
-          </p>
-          <button
-            type="button"
-            onClick={onNavigateToTalk}
-            className="px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-md shadow-teal-500/20"
-          >
-            Start a Conversation
-          </button>
+
+          {/* Pending Approval Gate Alert */}
+          {discoveryStats?.pendingApprovalCount > 0 && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/30 border border-amber-800/60 text-xs space-y-2">
+              <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
+                <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Spending & Safety Control: Deep Investigation Awaiting Your Approval</span>
+              </div>
+              <p className="text-amber-200/90 leading-relaxed text-[11px] sm:text-xs">
+                To prevent uncontrolled background API calls and keep usage affordable, multi-field recursive investigations pause until you explicitly approve them. Review the flagged cards below to approve or dismiss.
+              </p>
+            </div>
+          )}
+
+          {/* List of Autonomous Discoveries */}
+          {filteredAutonomousJobs.length > 0 ? (
+            <div className="space-y-5">
+              {filteredAutonomousJobs.map((job) => (
+                <AutonomousDiscoveryCard
+                  key={job.id}
+                  job={job}
+                  onOpenInTalk={onOpenInTalk}
+                  onOpenInShowMe={onOpenInShowMe}
+                  onSaveToDiscoveries={handleSaveAutonomousToDiscoveries}
+                  onDismiss={handleDismissAutonomous}
+                  onApprove={handleApproveAutonomous}
+                  isSaved={job.isSavedToDiscoveries}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-3xl space-y-3">
+              <Cpu className="w-8 h-8 text-slate-500 mx-auto" />
+              <p className="text-xs text-slate-400 font-mono">
+                {searchQuery
+                  ? 'No autonomous discoveries matched your search query.'
+                  : 'No autonomous discoveries recorded yet.'}
+              </p>
+              <button
+                type="button"
+                onClick={handleTriggerAutonomous}
+                className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs"
+              >
+                Trigger First Investigation
+              </button>
+            </div>
+          )}
         </div>
       ) : activeTab === 'predictions' ? (
         /* TAB 2: PREDICTIONS & OUTCOMES TRACKER */
@@ -328,219 +556,220 @@ ${
                           rec.outcomeMatch === 'confirmed'
                             ? 'bg-teal-950 text-teal-300 border-teal-800'
                             : rec.outcomeMatch === 'partially_confirmed'
-                            ? 'bg-amber-950 text-amber-300 border-amber-800'
+                            ? 'bg-sky-950 text-sky-300 border-sky-800'
                             : rec.outcomeMatch === 'diverged'
                             ? 'bg-rose-950 text-rose-300 border-rose-800'
-                            : 'bg-slate-950 text-slate-400 border-slate-800'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
                         }`}
                       >
                         {rec.outcomeMatch === 'confirmed'
-                          ? 'Outcome Confirmed'
+                          ? 'Confirmed'
                           : rec.outcomeMatch === 'partially_confirmed'
                           ? 'Partially Confirmed'
                           : rec.outcomeMatch === 'diverged'
-                          ? 'Diverged / Proved Wrong'
-                          : 'Pending Result'}
+                          ? 'Diverged'
+                          : 'Pending Outcome'}
                       </span>
                     </div>
                   </div>
 
-                  {/* Prediction Summary */}
-                  <div className="space-y-1.5">
-                    <span className="text-sky-300 font-bold block text-xs font-mono uppercase">
-                      Here&apos;s what was predicted:
-                    </span>
-                    <p className="text-sm font-semibold text-white leading-snug">
-                      {rec.predictionSummary}
-                    </p>
-                  </div>
-
-                  {/* Verification Criteria */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                      <span className="text-slate-400 font-bold block font-mono text-[11px] uppercase">
-                        How to find out:
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <span className="text-slate-400 font-mono text-[11px] uppercase block">
+                        Predicted Scenario
                       </span>
-                      <p className="text-slate-300 text-[11px] leading-relaxed">
-                        {rec.howToTest}
+                      <p className="text-slate-100 font-medium mt-0.5 leading-relaxed">
+                        {rec.predictionSummary}
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-900/40 space-y-1">
-                      <span className="text-rose-400 font-bold block font-mono text-[11px] uppercase">
-                        What proves this wrong:
-                      </span>
-                      <p className="text-rose-200/90 text-[11px] leading-relaxed">
-                        {rec.falsificationCriteria}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actual Result Section */}
-                  {isEvaluated && !isEvaluating ? (
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-teal-400 font-bold font-mono text-[11px] uppercase">
-                          Actual Result Logged ({rec.actualResultDate}):
+                    {rec.assumptions && rec.assumptions.length > 0 && (
+                      <div>
+                        <span className="text-slate-400 font-mono text-[11px] uppercase block">
+                          Key Working Assumptions
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleStartEvaluating(item)}
-                          className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Edit Result</span>
-                        </button>
+                        <ul className="list-disc list-inside text-slate-300 space-y-0.5 mt-0.5">
+                          {rec.assumptions.map((assump, idx) => (
+                            <li key={idx}>{assump}</li>
+                          ))}
+                        </ul>
                       </div>
-                      <p className="text-white text-sm font-medium leading-relaxed">
-                        {rec.actualResult}
-                      </p>
-                      {rec.learningNote && (
-                        <p className="text-slate-300 text-xs italic pt-1 border-t border-slate-900">
-                          <strong>Learning Note:</strong> {rec.learningNote}
-                        </p>
-                      )}
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                        <span className="text-teal-400 font-mono text-[10px] uppercase font-bold block flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          How We Would Find Out
+                        </span>
+                        <p className="text-slate-300 text-[11px]">{rec.howToTest}</p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                        <span className="text-amber-400 font-mono text-[10px] uppercase font-bold block flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          What Proves It Wrong
+                        </span>
+                        <p className="text-slate-300 text-[11px]">{rec.falsificationCriteria}</p>
+                      </div>
                     </div>
-                  ) : isEvaluating ? (
-                    /* Inline Result Logging Form */
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-sky-800/80 space-y-3 text-xs animate-fadeIn">
-                      <span className="font-bold text-white text-xs sm:text-sm block">
-                        Record What Really Happened:
-                      </span>
+                  </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold block">
-                          What actually occurred in reality?
-                        </label>
-                        <textarea
-                          value={actualResultInput}
-                          onChange={(e) => setActualResultInput(e.target.value)}
-                          placeholder="Describe the concrete outcome that took place..."
-                          rows={2}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                        />
-                      </div>
+                  {/* Outcome Evaluation Form */}
+                  <div className="pt-3 border-t border-slate-800">
+                    {isEvaluating ? (
+                      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-700 space-y-3 animate-fadeIn">
+                        <h4 className="font-bold text-xs text-white">Log Actual Real-World Outcome</h4>
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-slate-400 font-mono uppercase block">
+                            What actually happened in the real world?
+                          </label>
+                          <textarea
+                            value={actualResultInput}
+                            onChange={(e) => setActualResultInput(e.target.value)}
+                            placeholder="Describe what occurred when tested..."
+                            rows={2}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                          />
+                        </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold block">
-                          Did the prediction hold?
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-slate-400 font-mono uppercase block">
+                            Did the outcome match the prediction?
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setOutcomeMatchInput('confirmed')}
+                              className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-colors ${
+                                outcomeMatchInput === 'confirmed'
+                                  ? 'bg-teal-500/20 border-teal-500 text-teal-300'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              Confirmed
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setOutcomeMatchInput('partially_confirmed')}
+                              className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-colors ${
+                                outcomeMatchInput === 'partially_confirmed'
+                                  ? 'bg-sky-500/20 border-sky-500 text-sky-300'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              Partially
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setOutcomeMatchInput('diverged')}
+                              className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-colors ${
+                                outcomeMatchInput === 'diverged'
+                                  ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              Diverged
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-slate-400 font-mono uppercase block">
+                            Calibration Note (What did we learn?)
+                          </label>
+                          <input
+                            type="text"
+                            value={learningNoteInput}
+                            onChange={(e) => setLearningNoteInput(e.target.value)}
+                            placeholder="What variable did we overlook?"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-1">
                           <button
                             type="button"
-                            onClick={() => setOutcomeMatchInput('confirmed')}
-                            className={`p-2 rounded-xl text-center text-xs font-semibold border transition-all ${
-                              outcomeMatchInput === 'confirmed'
-                                ? 'bg-teal-500 text-slate-950 border-teal-400 font-bold'
-                                : 'bg-slate-900 text-slate-300 border-slate-800'
-                            }`}
+                            onClick={() => setEvaluatingItemId(null)}
+                            className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white"
                           >
-                            Confirmed
+                            Cancel
                           </button>
                           <button
                             type="button"
-                            onClick={() => setOutcomeMatchInput('partially_confirmed')}
-                            className={`p-2 rounded-xl text-center text-xs font-semibold border transition-all ${
-                              outcomeMatchInput === 'partially_confirmed'
-                                ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
-                                : 'bg-slate-900 text-slate-300 border-slate-800'
-                            }`}
+                            onClick={() => handleSaveEvaluation(item)}
+                            className="px-4 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs"
                           >
-                            Partially Right
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setOutcomeMatchInput('diverged')}
-                            className={`p-2 rounded-xl text-center text-xs font-semibold border transition-all ${
-                              outcomeMatchInput === 'diverged'
-                                ? 'bg-rose-500 text-slate-950 border-rose-400 font-bold'
-                                : 'bg-slate-900 text-slate-300 border-slate-800'
-                            }`}
-                          >
-                            Diverged / Wrong
+                            Save Outcome
                           </button>
                         </div>
                       </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold block">
-                          What does this teach us for future predictions?
-                        </label>
-                        <input
-                          type="text"
-                          value={learningNoteInput}
-                          onChange={(e) => setLearningNoteInput(e.target.value)}
-                          placeholder="e.g. Overestimated speed of delay wave; emotional safety mattered more than logic..."
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                        />
+                    ) : isEvaluated ? (
+                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[11px] text-slate-400 uppercase">
+                            Evaluated on {rec.actualResultDate}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEvaluating(item)}
+                            className="text-teal-400 hover:text-teal-300 font-mono text-[11px] flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                        <p className="text-slate-200">
+                          <strong>Outcome:</strong> {rec.actualResult}
+                        </p>
+                        {rec.learningNote && (
+                          <p className="text-slate-400 text-[11px] italic">
+                            &ldquo;{rec.learningNote}&rdquo;
+                          </p>
+                        )}
                       </div>
-
-                      <div className="flex items-center justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setEvaluatingItemId(null)}
-                          className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEvaluation(item)}
-                          disabled={!actualResultInput.trim()}
-                          className="px-4 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-bold text-xs"
-                        >
-                          Save Actual Outcome
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] text-slate-500 font-mono">
-                        Awaiting real-world verification
-                      </span>
+                    ) : (
                       <button
                         type="button"
                         onClick={() => handleStartEvaluating(item)}
-                        className="px-3.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/40 text-xs font-semibold transition-all"
+                        className="w-full py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-sky-300 hover:text-white transition-colors flex items-center justify-center gap-1.5"
                       >
-                        Log What Really Happened
+                        <Check className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Log What Actually Happened In Real Life</span>
                       </button>
-                    </div>
-                  )}
-
-                  {/* Bottom reopen actions */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => onRemoveItem(item.id)}
-                      className="text-slate-500 hover:text-rose-400 text-xs flex items-center gap-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Remove</span>
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onOpenInTalk(item)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 font-medium flex items-center gap-1.5 transition-colors"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 text-teal-400" />
-                        <span>Talk</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onOpenInShowMe(item)}
-                        className="px-3 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Show Me</span>
-                      </button>
-                    </div>
+                    )}
                   </div>
                 </div>
               );
             })}
+          </div>
+        </div>
+      ) : savedItems.length === 0 ? (
+        /* TAB 1 EMPTY STATE */
+        <div className="bg-slate-850 rounded-3xl border border-slate-800 p-10 sm:p-14 text-center space-y-4 max-w-lg mx-auto my-6">
+          <div className="w-14 h-14 rounded-2xl bg-teal-500/10 text-teal-400 flex items-center justify-center mx-auto border border-teal-500/20">
+            <Bookmark className="w-6 h-6" />
+          </div>
+          <h3 className="font-serif text-2xl font-bold text-white">No Personal Discoveries Saved Yet</h3>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-sm mx-auto leading-relaxed">
+            When you explore an idea in Let&apos;s Talk or Show Me, tap &ldquo;Save&rdquo; to keep the conversation in your journal. You can also explore what the engine investigated on its own!
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('autonomous')}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5"
+            >
+              <Cpu className="w-4 h-4" />
+              <span>Explore Autonomous Discoveries ({autonomousJobs.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={onNavigateToTalk}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 font-medium text-xs sm:text-sm transition-all border border-slate-700"
+            >
+              Start a Conversation
+            </button>
           </div>
         </div>
       ) : (

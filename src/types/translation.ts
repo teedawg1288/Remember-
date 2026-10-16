@@ -152,6 +152,96 @@ export interface TranslationResult {
   realWorldActivities?: RealWorldActivity[];
   predictions?: PredictionOutcome[];
   crossFieldDiscoveries?: CrossFieldDiscovery[];
+  providerUsed?: 'openai' | 'gemini' | 'builtin';
+  modelUsed?: string;
+  investigation?: CrossFieldInvestigation;
+  predictionTestResult?: PredictionTestVerification;
+  userIntentDetected?: 'prediction' | 'testing' | 'investigation' | 'comparison' | 'understanding';
+}
+
+export interface PredictionDataPoint {
+  cycle: number;
+  actual?: number;
+  predicted?: number;
+  baseline?: number;
+  isWithheld?: boolean;
+}
+
+export interface PredictionTestVerification {
+  datasetName: string;
+  source: string;
+  totalCyclesOrSamples: number;
+  trainingPercent: number;
+  splitCycle: number;
+  metricUnit: string;
+  eolThreshold?: number;
+  actualEolCycle?: number;
+  modelPredictedEolCycle?: number;
+  baselinePredictedEolCycle?: number;
+  eolCycleError: number;
+  baselineEolCycleError: number;
+  modelRmse: number;
+  baselineRmse: number;
+  modelMae: number;
+  baselineMae: number;
+  dataPoints: PredictionDataPoint[];
+  methodology: string;
+  withheldValidationSummary: string;
+  whatIsMissingForRealWorldTesting: string;
+  providerUsed?: string;
+  modelUsed?: string;
+}
+
+export interface ComputationalTestDetail {
+  formulaOrLaw: string;
+  variableA: string;
+  variableB: string;
+  calculatedCorrelation: string;
+  interpretation: string;
+  simulatedObservation: string;
+}
+
+export interface CrossFieldInvestigation {
+  id: string;
+  topic: string;
+  primaryDomain: string;
+  investigatedDomain: string;
+  requiresApprovalForDeep?: boolean;
+  estimatedTokenCost?: string;
+  synthesizedMechanism: string;
+  computationalTest: ComputationalTestDetail;
+  challengeSelfCritique: string;
+  evidenceSeparation: {
+    empiricallyDocumented: string[];
+    untestedHypothesis: string[];
+  };
+  additionalFieldsBroughtIn?: string[];
+  missingQuestion: string;
+  approvalStatus: 'automatic_summary' | 'deep_investigation_complete';
+  providerUsed?: string;
+  modelUsed?: string;
+}
+
+export interface AIProviderStatus {
+  openAiConfigured: boolean;
+  geminiConfigured: boolean;
+  defaultProvider: 'openai' | 'gemini';
+  models: {
+    openai: string;
+    gemini: string;
+  };
+  usage: {
+    totalRequests: number;
+    openAiRequests: number;
+    openAiTokens: number;
+    geminiRequests: number;
+    fallbackActivations: number;
+    lastOpenAiError: { timestamp: string; message: string; status?: number } | null;
+  };
+  rateLimits: {
+    maxRequestsPerMinute: number;
+    currentWindowRequests: number;
+  };
 }
 
 export interface RealityCheckResult {
@@ -228,6 +318,7 @@ export interface SavedJourneyItem {
   predictions?: PredictionOutcome[];
   crossFieldDiscoveries?: CrossFieldDiscovery[];
   testableRecord?: TestablePredictionRecord;
+  autonomousJob?: AutonomousDiscoveryJob;
 }
 
 export interface PracticalOutsideAction {
@@ -346,4 +437,78 @@ export interface MissingQuestionAnalysis {
     note: string;
   }>;
 }
+
+export type DiscoveryJobStatus =
+  | 'queued'
+  | 'investigating'
+  | 'testing_calculations'
+  | 'contradiction_check'
+  | 'requires_approval'
+  | 'completed'
+  | 'dismissed';
+
+export interface ExpandingRoundTableField {
+  fieldName: string;
+  knownContribution: string;
+  limitOrMissingPiece: string;
+  isExpandingField?: boolean;
+}
+
+export interface AutonomousDiscoveryJob {
+  id: string;
+  status: DiscoveryJobStatus;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+
+  // Conceptual Scope
+  title: string;
+  unansweredQuestion: string;
+  primaryFieldA: string;
+  primaryFieldB: string;
+  expandingFields: ExpandingRoundTableField[];
+
+  // Conversational Findings
+  conversationalHeadline:
+    | "Here's something interesting I found."
+    | "These two fields might have the answer to each other's problem."
+    | "I tested that connection, but it didn't hold up."
+    | "This idea survived the calculations, but it still needs a real-world experiment."
+    | string;
+  plainEnglishSummary: string;
+
+  // The Expanding Round Table & Missing Question
+  sharedMechanism: string;
+  unaskedQuestionDiscovered: string;
+  contradictionOrClash: string;
+  conditionsWhereItWorks: string[];
+  conditionsWhereItFails: string[];
+
+  // Genuine Computational & Mathematical Testing
+  computationalTest: ComputationalTestDetail;
+  calculationVerdict: 'mathematically_supported' | 'divergent_or_failed' | 'needs_calibration';
+
+  // Rigorous Evidence Separation
+  evidenceSeparation: {
+    empiricallyDocumented: string[];
+    newlyGeneratedHypothesis: string[];
+    computationalResult: string[];
+    realWorldValidationStatus: string;
+  };
+
+  // Cost, Safety & Approval Safeguards
+  isDeepInvestigation: boolean;
+  requiresApproval: boolean;
+  estimatedTokens: number;
+  tokensConsumed?: number;
+  providerUsed?: string;
+  modelUsed?: string;
+  userApproved?: boolean;
+
+  // Presentation & Journaling
+  wasNotified?: boolean;
+  isSavedToDiscoveries?: boolean;
+  userNotes?: string;
+}
+
 
