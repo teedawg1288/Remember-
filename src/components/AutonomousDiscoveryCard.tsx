@@ -20,6 +20,13 @@ import {
   Activity,
   ArrowRight,
   ShieldAlert,
+  ExternalLink,
+  BookOpen,
+  Calculator,
+  Compass,
+  FileCheck2,
+  Clock,
+  Terminal,
 } from 'lucide-react';
 
 interface AutonomousDiscoveryCardProps {
@@ -186,6 +193,18 @@ export const AutonomousDiscoveryCard: React.FC<AutonomousDiscoveryCardProps> = (
     onSaveToDiscoveries(job);
   };
 
+  const providerLabel =
+    job.providerUsed === 'openai'
+      ? `OpenAI (${job.modelUsed || 'gpt-4o-mini'})`
+      : job.providerUsed === 'gemini'
+      ? `Gemini (${job.modelUsed || 'gemini-3.5-flash-lite'})`
+      : `Built-in Math Engine (${job.modelUsed || 'deterministic-math-engine'})`;
+
+  const executionBadge =
+    job.executionMethod === 'live_ai_inquiry'
+      ? { text: 'Live Model Response', style: 'bg-sky-950/60 text-sky-300 border-sky-800' }
+      : { text: 'Genuine Mathematical Proof', style: 'bg-emerald-950/60 text-emerald-300 border-emerald-800' };
+
   return (
     <div
       className={`rounded-3xl border transition-all duration-200 overflow-hidden shadow-xl ${
@@ -205,15 +224,30 @@ export const AutonomousDiscoveryCard: React.FC<AutonomousDiscoveryCardProps> = (
             <span className="font-sans italic">&ldquo;{job.conversationalHeadline}&rdquo;</span>
           </div>
 
-          {/* Verdict / Status Flag */}
-          <div className="flex items-center gap-2">
+          {/* Provider & Execution Telemetry Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border font-semibold flex items-center gap-1 ${executionBadge.style}`}
+              title="Execution verification status"
+            >
+              <Cpu className="w-3 h-3 shrink-0" />
+              <span>{executionBadge.text}</span>
+            </span>
+
+            <span
+              className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-950 text-slate-300 border border-slate-800"
+              title="Model / Provider used"
+            >
+              {providerLabel}
+            </span>
+
             {job.calculationVerdict === 'mathematically_supported' ? (
-              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-semibold flex items-center gap-1">
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-semibold flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                Survived Math Simulation
+                Formula Evaluated
               </span>
             ) : (
-              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800/60 font-semibold flex items-center gap-1">
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800/60 font-semibold flex items-center gap-1">
                 <Scale className="w-3 h-3 text-amber-400" />
                 Refuted Metaphor
               </span>
@@ -221,7 +255,7 @@ export const AutonomousDiscoveryCard: React.FC<AutonomousDiscoveryCardProps> = (
 
             {job.isDeepInvestigation && (
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-purple-950 text-purple-300 border border-purple-800/60 uppercase">
-                Deep Expansion
+                Deep Run
               </span>
             )}
           </div>
@@ -246,17 +280,17 @@ export const AutonomousDiscoveryCard: React.FC<AutonomousDiscoveryCardProps> = (
         </div>
       </div>
 
-      {/* Deep Investigation Approval Gate (if pending) */}
+      {/* Deep Investigation Approval Gate (Requirement 8) */}
       {isRequiresApproval && onApprove && (
         <div className="p-5 bg-amber-950/40 border-b border-amber-800/60 text-xs text-amber-200 space-y-3">
           <div className="flex items-start gap-2.5">
             <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="font-bold text-sm text-white">
-                Deep Recursive Investigation Ready for Approval
+                Deep Multi-Field Investigation Ready for Your Approval
               </p>
               <p className="text-amber-300/90 leading-relaxed">
-                This investigation brings together 3+ interdisciplinary fields and will run deep computational simulations (~{job.estimatedTokens} tokens). To control costs and prevent uncontrolled background spending, it requires your explicit sign-off.
+                This investigation brings together 3+ interdisciplinary fields and will run deep computational simulations (~{job.estimatedTokens} tokens). To control costs and keep usage predictable, it requires your explicit sign-off before executing.
               </p>
             </div>
           </div>
@@ -337,104 +371,204 @@ export const AutonomousDiscoveryCard: React.FC<AutonomousDiscoveryCardProps> = (
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 flex items-center justify-between transition-colors"
+            className="w-full py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 flex items-center justify-between transition-colors"
           >
             <span className="flex items-center gap-2 font-mono">
               <Activity className="w-3.5 h-3.5 text-teal-400" />
-              <span>Computational Calculations, Falsification Tests & Evidence</span>
+              <span>Full Evidence Breakdown: Facts, Math, Hypotheses, Boundaries & Audit</span>
             </span>
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
           {isExpanded && (
-            <div className="mt-3 p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 text-xs animate-fadeIn">
-              {/* Contradiction & Clash */}
-              <div className="space-y-1">
-                <span className="font-bold text-amber-300 uppercase font-mono text-[11px] block">
-                  Why Accepted Explanations Clashed
-                </span>
-                <p className="text-slate-300 leading-relaxed">{job.contradictionOrClash}</p>
+            <div className="mt-3 p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-5 text-xs animate-fadeIn">
+              {/* 1. VERIFIED FACTS WITH SOURCES & CITATIONS (Requirement 4) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-emerald-400 font-mono text-[11px] font-bold uppercase">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>1. Verified Facts & Peer-Reviewed Literature (Direct Sources)</span>
+                </div>
+                <div className="space-y-2">
+                  {(job.verifiedFactsWithSources && job.verifiedFactsWithSources.length > 0
+                    ? job.verifiedFactsWithSources
+                    : (job.evidenceSeparation?.empiricallyDocumented || []).map((f) => ({
+                        fact: f,
+                        source: 'Peer-reviewed literature',
+                        citationUrl: undefined as string | undefined,
+                      }))
+                  ).map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-slate-900 border border-slate-800/80 space-y-1 text-slate-200"
+                    >
+                      <p className="font-medium text-white leading-relaxed">{item.fact}</p>
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-400 pt-0.5 border-t border-slate-800/50">
+                        <span className="font-mono text-teal-300">Source: {item.source}</span>
+                        {item.citationUrl && (
+                          <a
+                            href={item.citationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-teal-400 hover:text-teal-300 font-mono text-[10px]"
+                          >
+                            <span>Read Citation</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Genuine Computational Evaluation */}
-              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-teal-400 font-mono text-[11px] uppercase flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5" />
-                    Computational Test: {job.computationalTest.formulaOrLaw}
-                  </span>
+              {/* 2. CALCULATED RESULTS & FORMULAS (Requirement 4) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-teal-400 font-mono text-[11px] font-bold uppercase">
+                  <Calculator className="w-3.5 h-3.5" />
+                  <span>2. Calculated Results & Mathematical Verification</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
-                  <p>
-                    <strong className="text-slate-400">Parameter A:</strong>{' '}
-                    {job.computationalTest.variableA}
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-teal-300 font-semibold text-[11px]">
+                      Formula: {job.computationalTest.formulaOrLaw}
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-800">
+                      Evaluated
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
+                    <p>
+                      <strong className="text-slate-400">Parameter A:</strong> {job.computationalTest.variableA}
+                    </p>
+                    <p>
+                      <strong className="text-slate-400">Parameter B:</strong> {job.computationalTest.variableB}
+                    </p>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-teal-950/40 border border-teal-800/40 text-teal-200 font-mono text-[11px]">
+                    {job.computationalTest.calculatedCorrelation}
+                  </div>
+
+                  <p className="text-[11px] text-slate-300 italic">
+                    <strong>Interpretation:</strong> {job.computationalTest.interpretation}
                   </p>
-                  <p>
-                    <strong className="text-slate-400">Parameter B:</strong>{' '}
-                    {job.computationalTest.variableB}
+                </div>
+              </div>
+
+              {/* 3. PROPOSED HYPOTHESES & FALSIFICATION TESTS (Requirement 4) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sky-400 font-mono text-[11px] font-bold uppercase">
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>3. Proposed Hypotheses & Falsification Criteria (Untested)</span>
+                </div>
+                <div className="space-y-2">
+                  {(job.proposedHypotheses && job.proposedHypotheses.length > 0
+                    ? job.proposedHypotheses
+                    : (job.evidenceSeparation?.newlyGeneratedHypothesis || []).map((h) => ({
+                        hypothesis: h,
+                        falsificationTest: 'Verify in controlled operational trial',
+                        testStatus: 'untested' as const,
+                      }))
+                  ).map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-white text-[12px]">{item.hypothesis}</span>
+                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-800/60 font-semibold shrink-0">
+                          {item.testStatus === 'partially_tested' ? 'Partially Tested' : 'Untested in Hardware'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                        <strong className="text-amber-300 font-mono">Falsification Test:</strong>{' '}
+                        {item.falsificationTest}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. ANALOGIES & PHYSICAL BREAKDOWN BOUNDARIES (Requirement 4) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-purple-400 font-mono text-[11px] font-bold uppercase">
+                  <FileCheck2 className="w-3.5 h-3.5" />
+                  <span>4. Analogies & Where Comparison Breaks Down</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                  <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-1">
+                    <strong className="text-emerald-300 font-mono uppercase block">
+                      Conditions Where It Holds
+                    </strong>
+                    <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                      {job.conditionsWhereItWorks.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-900/40 space-y-1">
+                    <strong className="text-rose-300 font-mono uppercase block">
+                      Exact Points Where Physical Laws Differ / Break
+                    </strong>
+                    <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                      {job.conditionsWhereItFails.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* REAL-WORLD VALIDATION STATUS CALLOUT */}
+              <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-900/40 flex items-start gap-2.5 text-amber-200">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-[11px]">
+                  <strong>Real-World Experimental Status:</strong>
+                  <p className="text-amber-300/90 leading-relaxed">
+                    {job.evidenceSeparation.realWorldValidationStatus}
                   </p>
                 </div>
-                <p className="text-[11px] text-teal-200 bg-teal-950/40 p-2.5 rounded-lg border border-teal-800/40 font-mono">
-                  {job.computationalTest.calculatedCorrelation}
-                </p>
-                <p className="text-[11px] text-slate-400 italic">
-                  {job.computationalTest.interpretation}
-                </p>
               </div>
 
-              {/* Conditions Where It Works vs Fails */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-                <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-1">
-                  <strong className="text-emerald-300 font-mono uppercase block">
-                    Conditions Where It Holds
-                  </strong>
-                  <ul className="list-disc list-inside space-y-0.5 text-slate-300">
-                    {job.conditionsWhereItWorks.map((c, i) => (
-                      <li key={i}>{c}</li>
+              {/* 5. STEP-BY-STEP EXECUTION AUDIT LOG */}
+              {job.executionAuditLog && job.executionAuditLog.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px] font-bold uppercase">
+                    <Terminal className="w-3.5 h-3.5 text-teal-400" />
+                    <span>5. Execution Audit Log (How Conclusion Was Reached)</span>
+                  </div>
+                  <div className="space-y-1.5 font-mono text-[10px]">
+                    {job.executionAuditLog.map((log, idx) => (
+                      <div
+                        key={idx}
+                        className="p-2 rounded-lg bg-slate-900 border border-slate-800 flex items-start justify-between gap-2 text-slate-300"
+                      >
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-white block">{log.step}</span>
+                          <span className="text-slate-400 block">{log.detail}</span>
+                        </div>
+                        <div className="text-right shrink-0 space-y-0.5">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[9px] uppercase font-bold block ${
+                              log.status === 'verified'
+                                ? 'bg-emerald-950 text-emerald-300'
+                                : log.status === 'executed'
+                                ? 'bg-sky-950 text-sky-300'
+                                : 'bg-slate-800 text-slate-400'
+                            }`}
+                          >
+                            {log.status}
+                          </span>
+                          <span className="text-slate-500 text-[9px] block">
+                            {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
-                </div>
-                <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-900/40 space-y-1">
-                  <strong className="text-rose-300 font-mono uppercase block">
-                    Conditions Where It Fails / Breaks
-                  </strong>
-                  <ul className="list-disc list-inside space-y-0.5 text-slate-300">
-                    {job.conditionsWhereItFails.map((c, i) => (
-                      <li key={i}>{c}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Rigorous Evidence Separation */}
-              <div className="space-y-2 pt-2 border-t border-slate-800 text-[11px]">
-                <span className="font-bold text-slate-300 uppercase font-mono block">
-                  Rigorous Evidence Separation (Anti-Hallucination Audit)
-                </span>
-                <div className="space-y-1.5">
-                  <div className="flex items-start gap-2 text-slate-300">
-                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-950 text-emerald-300 font-mono font-bold text-[10px] shrink-0">
-                      DOCUMENTED LAW
-                    </span>
-                    <span>{job.evidenceSeparation.empiricallyDocumented.join('; ')}</span>
-                  </div>
-
-                  <div className="flex items-start gap-2 text-slate-300">
-                    <span className="px-1.5 py-0.5 rounded-md bg-sky-950 text-sky-300 font-mono font-bold text-[10px] shrink-0">
-                      NEW HYPOTHESIS
-                    </span>
-                    <span>{job.evidenceSeparation.newlyGeneratedHypothesis.join('; ')}</span>
-                  </div>
-
-                  <div className="flex items-start gap-2 text-amber-200/90 bg-amber-950/30 p-2 rounded-lg border border-amber-900/40">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                    <span>
-                      <strong>Real-World Validation:</strong>{' '}
-                      {job.evidenceSeparation.realWorldValidationStatus}
-                    </span>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>

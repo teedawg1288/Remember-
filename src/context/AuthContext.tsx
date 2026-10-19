@@ -18,7 +18,9 @@ interface AuthContextType {
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInGuest: () => Promise<void>;
   signOutUser: () => Promise<void>;
+  getIdToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,8 +73,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signInWithPopup(auth, provider);
   };
 
+  const signInGuest = async () => {
+    const { signInAnonymously } = await import('firebase/auth');
+    await signInAnonymously(auth);
+  };
+
   const signOutUser = async () => {
     await signOut(auth);
+  };
+
+  const getIdToken = async (): Promise<string | null> => {
+    if (!auth.currentUser) return null;
+    return auth.currentUser.getIdToken();
   };
 
   return (
@@ -83,7 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithEmail,
         signUpWithEmail,
         signInWithGoogle,
+        signInGuest,
         signOutUser,
+        getIdToken,
       }}
     >
       {children}

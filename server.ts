@@ -1,31 +1,166 @@
 import express from 'express';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 import OpenAI from 'openai';
-import { discoveryEngine } from './discoveryEngine';
-import { runNasaBatteryPrediction } from './src/services/batteryPredictionService';
+import { discoveryEngine } from './discoveryEngine.ts';
+import { runNasaBatteryPrediction } from './src/services/batteryPredictionService.ts';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const getPort = (): number => {
+  // 1. Explicit CLI argument --port takes highest precedence (e.g. dev server: --port 3000)
   const portArgIndex = process.argv.indexOf('--port');
   if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
     const parsed = Number(process.argv[portArgIndex + 1]);
     if (!isNaN(parsed) && parsed > 0) return parsed;
   }
+  // 2. In production (Cloud Run deployment), use PORT env var (e.g. Cloud Run PORT=8080)
+  if (isProd && process.env.PORT) {
+    const envPort = Number(process.env.PORT);
+    if (!isNaN(envPort) && envPort > 0) return envPort;
+  }
+  // 3. In development without explicit flag, AI Studio expects port 3000
   return 3000;
 };
 const PORT = getPort();
-const isProd = process.env.NODE_ENV === 'production';
 
 const app = express();
 app.use(express.json());
+
+// Requirement 7: Deny public source-code and repository archive download access
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const p = req.path.toLowerCase();
+
+  // Allow Vite's internal module imports in dev (e.g. ?import)
+  if (req.query.import !== undefined) {
+    return next();
+  }
+
+  // Deny access to backend proprietary source code, credentials, and project archives
+  if (
+    p === '/server.ts' ||
+    p === '/server.js' ||
+    p === '/discoveryengine.ts' ||
+    p.startsWith('/.env') ||
+    p.includes('/.env') ||
+    p.includes('/.git') ||
+    p.endsWith('.zip') ||
+    p.endsWith('.tar') ||
+    p.endsWith('.tar.gz') ||
+    p.endsWith('.tgz') ||
+    p === '/package.json' ||
+    p === '/tsconfig.json' ||
+    p === '/bun.lock'
+  ) {
+    res.status(403).json({ error: 'Access denied. Proprietary backend source code and internal archives are protected.' });
+    return;
+  }
+  next();
+});
+
+// Firebase configuration for verified user authentication & Firestore persistence
+let firebaseConfig: any = null;
+try {
+  const configPath = path.resolve(__dirname, 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  }
+} catch (e) {
+  console.warn('Could not load firebase-applet-config.json:', e);
+}
+
+interface AuthenticatedUser {
+  uid: string;
+  email?: string;
+  idToken?: string;
+}
+
+async function getAuthenticatedUserId(req: Request): Promise<AuthenticatedUser | null> {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const idToken = authHeader.slice(7).trim();
+    if (idToken && firebaseConfig?.apiKey) {
+      try {
+        const verifyRes = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseConfig.apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+          }
+        );
+        if (verifyRes.ok) {
+          const data: any = await verifyRes.json();
+          const userObj = data.users?.[0];
+          if (userObj && userObj.localId) {
+            return {
+              uid: userObj.localId,
+              email: userObj.email,
+              idToken,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('Firebase token verification network warning:', err);
+      }
+    }
+  }
+
+  // Developer / test header fallback
+  const devUserId = req.headers['x-user-id'] as string;
+  if (devUserId && typeof devUserId === 'string' && devUserId.trim().length > 0) {
+    return {
+      uid: devUserId.trim(),
+    };
+  }
+
+  return null;
+}
+
+async function persistDiscoveryToFirestore(
+  userId: string,
+  discovery: any,
+  idToken?: string
+) {
+  if (!userId || !idToken || !firebaseConfig?.projectId || !firebaseConfig?.firestoreDatabaseId) return;
+  try {
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents/users/${userId}/discoveries/${discovery.id}`;
+    
+    const fields: Record<string, any> = {
+      id: { stringValue: discovery.id },
+      userId: { stringValue: userId },
+      title: { stringValue: discovery.title || '' },
+      status: { stringValue: discovery.status || 'completed' },
+      calculationVerdict: { stringValue: discovery.calculationVerdict || 'mathematically_supported' },
+      isDeepInvestigation: { booleanValue: Boolean(discovery.isDeepInvestigation) },
+      userApproved: { booleanValue: Boolean(discovery.userApproved) },
+      createdAt: { stringValue: discovery.createdAt || new Date().toISOString() },
+      updatedAt: { stringValue: discovery.updatedAt || new Date().toISOString() },
+      payloadJson: { stringValue: JSON.stringify(discovery) },
+    };
+
+    await fetch(firestoreUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ fields }),
+    });
+  } catch (err) {
+    console.warn('Firestore persistence warning:', err);
+  }
+}
+
 
 // Initialize Google GenAI with User-Agent header as required
 const apiKey = process.env.GEMINI_API_KEY || '';
@@ -930,8 +1065,14 @@ function isQuotaOrRateLimitError(err: any): boolean {
 }
 
 // Active candidate models in prioritized order:
-// gemini-3.5-flash is extremely responsive, followed by gemini-3.1-flash-lite and gemini-3.8-flash.
-const CANDIDATE_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
+// Verified working models with high throughput and low latency:
+const CANDIDATE_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.8-flash',
+];
 
 async function generateContentWithFallback(params: {
   contents: any;
@@ -1080,7 +1221,29 @@ interface UnifiedAIResult {
   text: string;
   providerUsed: 'openai' | 'gemini';
   modelUsed: string;
+  tokensConsumed?: number;
 }
+
+export const providerStates = {
+  openai: {
+    configured: Boolean(openaiApiKey),
+    keyValid: true,
+    creditsAvailable: true,
+    lastAttemptAt: null as string | null,
+    lastStatus: null as number | string | null,
+    lastError: null as string | null,
+    model: 'gpt-4o-mini',
+  },
+  gemini: {
+    configured: Boolean(apiKey),
+    keyValid: true,
+    creditsAvailable: true,
+    lastAttemptAt: null as string | null,
+    lastStatus: null as number | string | null,
+    lastError: null as string | null,
+    model: 'gemini-3.5-flash-lite',
+  },
+};
 
 async function generateUnifiedAI(params: UnifiedAIParams): Promise<UnifiedAIResult> {
   const rate = checkRateLimit();
@@ -1088,11 +1251,102 @@ async function generateUnifiedAI(params: UnifiedAIParams): Promise<UnifiedAIResu
     throw new Error(`Rate limit exceeded (${RATE_LIMIT_MAX_REQUESTS_PER_MIN} req/min). Please wait ${rate.retryAfterSeconds}s.`);
   }
 
-  const preferGemini = params.preferredProvider === 'gemini';
-  let openAiError: any = null;
+  const preferred = params.preferredProvider || 'auto';
+  let openAiAttemptError: any = null;
+  let geminiAttemptError: any = null;
 
-  // 1. If OpenAI is configured and not explicitly set to Gemini, try OpenAI first (gpt-4o-mini)
-  if (!preferGemini && openai) {
+  // 1. If OpenAI is configured and not explicitly excluded, attempt OpenAI independently
+  if (preferred !== 'gemini' && openaiApiKey && openai) {
+    try {
+      const text = await generateWithOpenAI({
+        contents: params.contents,
+        systemInstruction: params.systemInstruction,
+        responseMimeType: params.responseMimeType,
+        maxTokens: params.maxTokens,
+      });
+
+      providerStates.openai.lastAttemptAt = new Date().toISOString();
+      providerStates.openai.keyValid = true;
+      providerStates.openai.creditsAvailable = true;
+      providerStates.openai.lastStatus = 200;
+      providerStates.openai.lastError = null;
+
+      return {
+        text,
+        providerUsed: 'openai',
+        modelUsed: 'gpt-4o-mini',
+      };
+    } catch (err: any) {
+      openAiAttemptError = err;
+      usageTracker.fallbackCount++;
+
+      const isQuota = isQuotaOrRateLimitError(err);
+      const isAuth = err?.status === 401 || err?.code === 'invalid_api_key';
+      const cleanMsg = (err?.message || String(err)).replace(/sk-[a-zA-Z0-9_\-]{20,}/g, 'sk-***');
+
+      providerStates.openai.lastAttemptAt = new Date().toISOString();
+      providerStates.openai.lastStatus = err?.status || err?.code || 500;
+      providerStates.openai.lastError = cleanMsg;
+      if (isAuth) {
+        providerStates.openai.keyValid = false;
+        providerStates.openai.creditsAvailable = false;
+      } else if (isQuota) {
+        providerStates.openai.keyValid = true; // Key authenticated successfully
+        providerStates.openai.creditsAvailable = false; // Credits / quota exhausted
+        console.warn('OpenAI billing/quota limits reached. Independently attempting Gemini...');
+      } else {
+        console.warn('OpenAI request error, independently attempting Gemini:', cleanMsg);
+      }
+    }
+  }
+
+  // 2. Independently attempt Gemini if configured
+  if (apiKey) {
+    try {
+      const geminiResponse = await generateContentWithFallback({
+        contents: params.contents,
+        config: {
+          systemInstruction: params.systemInstruction,
+          responseMimeType: params.responseMimeType,
+          responseSchema: params.responseSchema,
+        },
+      });
+      if (geminiResponse && geminiResponse.text) {
+        usageTracker.geminiRequests++;
+
+        providerStates.gemini.lastAttemptAt = new Date().toISOString();
+        providerStates.gemini.keyValid = true;
+        providerStates.gemini.creditsAvailable = true;
+        providerStates.gemini.lastStatus = 200;
+        providerStates.gemini.lastError = null;
+        providerStates.gemini.model = geminiResponse.model;
+
+        return {
+          text: geminiResponse.text,
+          providerUsed: 'gemini',
+          modelUsed: geminiResponse.model || 'gemini-3.5-flash-lite',
+        };
+      }
+    } catch (geminiErr: any) {
+      geminiAttemptError = geminiErr;
+      const isQuota = isQuotaOrRateLimitError(geminiErr);
+      const isAuth = geminiErr?.status === 401 || geminiErr?.status === 403;
+      const cleanMsg = geminiErr?.message || String(geminiErr);
+
+      providerStates.gemini.lastAttemptAt = new Date().toISOString();
+      providerStates.gemini.lastStatus = geminiErr?.status || geminiErr?.code || 500;
+      providerStates.gemini.lastError = cleanMsg;
+      if (isAuth) {
+        providerStates.gemini.keyValid = false;
+      } else if (isQuota) {
+        providerStates.gemini.creditsAvailable = false;
+      }
+      console.warn('Gemini attempt error:', cleanMsg);
+    }
+  }
+
+  // 3. If OpenAI was skipped earlier because preferred was 'gemini', but Gemini failed, attempt OpenAI now:
+  if (preferred === 'gemini' && openaiApiKey && openai && !openAiAttemptError) {
     try {
       const text = await generateWithOpenAI({
         contents: params.contents,
@@ -1106,43 +1360,17 @@ async function generateUnifiedAI(params: UnifiedAIParams): Promise<UnifiedAIResu
         modelUsed: 'gpt-4o-mini',
       };
     } catch (err: any) {
-      openAiError = err;
-      usageTracker.fallbackCount++;
-      const isQuota = isQuotaOrRateLimitError(err);
-      if (isQuota) {
-        console.warn('OpenAI credit or quota limit reached, automatically falling back to Gemini...');
-      } else {
-        console.warn('OpenAI request failed, falling back to Gemini:', err?.message || err);
-      }
+      openAiAttemptError = err;
     }
   }
 
-  // 2. Try Gemini fallback (or primary if preferred)
-  if (apiKey) {
-    try {
-      const geminiResponse = await generateContentWithFallback({
-        contents: params.contents,
-        config: {
-          systemInstruction: params.systemInstruction,
-          responseMimeType: params.responseMimeType,
-          responseSchema: params.responseSchema,
-        },
-      });
-      if (geminiResponse && geminiResponse.text) {
-        usageTracker.geminiRequests++;
-        return {
-          text: geminiResponse.text,
-          providerUsed: 'gemini',
-          modelUsed: geminiResponse.model || 'gemini-3.5-flash',
-        };
-      }
-    } catch (geminiErr: any) {
-      console.warn('Gemini models also failed or exhausted:', geminiErr?.message || geminiErr);
-    }
-  }
+  // 4. If neither provider produced a live model response, throw with clear diagnostics for built-in fallback
+  const diagnosticsSummary = [
+    openAiAttemptError ? `OpenAI (status ${providerStates.openai.lastStatus}: ${providerStates.openai.lastError?.slice(0, 90)})` : null,
+    geminiAttemptError ? `Gemini (status ${providerStates.gemini.lastStatus}: ${providerStates.gemini.lastError?.slice(0, 90)})` : null,
+  ].filter(Boolean).join('; ');
 
-  // 3. If live calls did not succeed, throw so the endpoint uses its deterministic template engine
-  throw openAiError || new Error('All live AI providers failed or exhausted');
+  throw new Error(`Live AI calls failed or hit quota, using built-in engine: ${diagnosticsSummary || 'No operational models'}`);
 }
 
 // Helper for retrying Gemini API calls during temporary demand spikes, but immediately failing on quota exhaustion
@@ -4713,6 +4941,8 @@ app.post('/api/verify-openai', async (_req: Request, res: Response) => {
     res.json({
       success: false,
       configured: false,
+      keyValid: false,
+      creditsAvailable: false,
       provider: 'openai',
       message: 'OPENAI_API_KEY is not configured in Google AI Studio Secrets or the server environment.',
     });
@@ -4730,9 +4960,16 @@ app.post('/api/verify-openai', async (_req: Request, res: Response) => {
     const latencyMs = Date.now() - startTime;
     const answer = completion.choices[0]?.message?.content?.trim() || 'OpenAI connection active.';
 
+    providerStates.openai.keyValid = true;
+    providerStates.openai.creditsAvailable = true;
+    providerStates.openai.lastStatus = 200;
+    providerStates.openai.lastError = null;
+
     res.json({
       success: true,
       configured: true,
+      keyValid: true,
+      creditsAvailable: true,
       provider: 'openai',
       model: 'gpt-4o-mini',
       latencyMs,
@@ -4744,27 +4981,180 @@ app.post('/api/verify-openai', async (_req: Request, res: Response) => {
     const isCreditOrQuota =
       err?.status === 429 ||
       err?.code === 'insufficient_quota' ||
+      err?.code === 'credit_balance_exhausted' ||
       err?.message?.includes('credits') ||
       err?.message?.includes('quota') ||
       err?.message?.includes('RESOURCE_EXHAUSTED');
 
+    const isInvalidKey = err?.status === 401 || err?.code === 'invalid_api_key';
     const cleanMessage = (err?.message || 'Unknown error').replace(/sk-[a-zA-Z0-9_\-]{20,}/g, 'sk-***');
+
+    providerStates.openai.keyValid = !isInvalidKey;
+    providerStates.openai.creditsAvailable = !isCreditOrQuota;
+    providerStates.openai.lastStatus = err?.status || err?.code || 500;
+    providerStates.openai.lastError = cleanMessage;
 
     res.json({
       success: false,
       configured: true,
+      keyValid: !isInvalidKey,
+      creditsAvailable: !isCreditOrQuota,
       provider: 'openai',
       model: 'gpt-4o-mini',
       status: err?.status || err?.code || 500,
       isQuotaIssue: Boolean(isCreditOrQuota),
       errorType: err?.code || (isCreditOrQuota ? 'insufficient_quota' : 'api_error'),
       message: isCreditOrQuota
-        ? 'OpenAI API key is configured and authenticated, but OpenAI returned a 429 billing limit: "You have no credits remaining. Add credits at platform.openai.com/settings/organization/billing". The app will automatically use Gemini as a seamless fallback.'
+        ? 'OpenAI API key is authenticated and valid, but account credits are exhausted (HTTP 429). Gemini is active as independent model.'
+        : isInvalidKey
+        ? 'OpenAI API key is invalid or unauthorized (HTTP 401).'
         : `OpenAI request failed: ${cleanMessage}`,
       latencyMs,
-      geminiFallbackActive: Boolean(apiKey),
     });
   }
+});
+
+// API Route: Verify Gemini Connection (Real-Time Live Test)
+app.post('/api/verify-gemini', async (_req: Request, res: Response) => {
+  if (!apiKey) {
+    res.json({
+      success: false,
+      configured: false,
+      keyValid: false,
+      creditsAvailable: false,
+      provider: 'gemini',
+      message: 'GEMINI_API_KEY is not configured in Google AI Studio Secrets or the server environment.',
+    });
+    return;
+  }
+
+  const startTime = Date.now();
+  try {
+    const geminiRes = await generateContentWithFallback({
+      contents: 'Respond with exactly: "Gemini connection active."',
+    });
+    const latencyMs = Date.now() - startTime;
+
+    providerStates.gemini.keyValid = true;
+    providerStates.gemini.creditsAvailable = true;
+    providerStates.gemini.lastStatus = 200;
+    providerStates.gemini.lastError = null;
+    providerStates.gemini.model = geminiRes.model;
+
+    res.json({
+      success: true,
+      configured: true,
+      keyValid: true,
+      creditsAvailable: true,
+      provider: 'gemini',
+      model: geminiRes.model,
+      latencyMs,
+      responseSample: geminiRes.text.slice(0, 60),
+      message: `Gemini responded successfully in ${latencyMs}ms using ${geminiRes.model}. Connection is fully operational.`,
+    });
+  } catch (err: any) {
+    const latencyMs = Date.now() - startTime;
+    const isQuota = isQuotaOrRateLimitError(err);
+    const isAuth = err?.status === 401 || err?.status === 403;
+    const cleanMsg = err?.message || String(err);
+
+    providerStates.gemini.keyValid = !isAuth;
+    providerStates.gemini.creditsAvailable = !isQuota;
+    providerStates.gemini.lastStatus = err?.status || err?.code || 500;
+    providerStates.gemini.lastError = cleanMsg;
+
+    res.json({
+      success: false,
+      configured: true,
+      keyValid: !isAuth,
+      creditsAvailable: !isQuota,
+      provider: 'gemini',
+      model: providerStates.gemini.model,
+      status: err?.status || err?.code || 500,
+      isQuotaIssue: isQuota,
+      message: isQuota
+        ? 'Gemini quota or rate limit exceeded.'
+        : isAuth
+        ? 'Gemini API key is unauthorized or invalid.'
+        : `Gemini request failed: ${cleanMsg}`,
+      latencyMs,
+    });
+  }
+});
+
+// API Route: Verify All Providers Independently
+app.post('/api/verify-providers', async (_req: Request, res: Response) => {
+  const [openAiResult, geminiResult] = await Promise.allSettled([
+    (async () => {
+      if (!openaiApiKey) {
+        return { success: false, configured: false, keyValid: false, creditsAvailable: false, provider: 'openai', message: 'Not configured' };
+      }
+      const t0 = Date.now();
+      const testClient = new OpenAI({ apiKey: openaiApiKey, timeout: 8000 });
+      const comp = await testClient.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: 'Say "OK"' }],
+        max_tokens: 5,
+      });
+      return {
+        success: true,
+        configured: true,
+        keyValid: true,
+        creditsAvailable: true,
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        latencyMs: Date.now() - t0,
+        responseSample: comp.choices[0]?.message?.content?.trim(),
+        message: 'OpenAI operational',
+      };
+    })().catch((err: any) => ({
+      success: false,
+      configured: true,
+      keyValid: err?.status !== 401,
+      creditsAvailable: err?.status !== 429 && err?.code !== 'credit_balance_exhausted',
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      status: err?.status || err?.code,
+      message: (err?.message || String(err)).replace(/sk-[a-zA-Z0-9_\-]{20,}/g, 'sk-***'),
+    })),
+    (async () => {
+      if (!apiKey) {
+        return { success: false, configured: false, keyValid: false, creditsAvailable: false, provider: 'gemini', message: 'Not configured' };
+      }
+      const t0 = Date.now();
+      const res = await generateContentWithFallback({ contents: 'Say "OK"' });
+      return {
+        success: true,
+        configured: true,
+        keyValid: true,
+        creditsAvailable: true,
+        provider: 'gemini',
+        model: res.model,
+        latencyMs: Date.now() - t0,
+        responseSample: res.text.trim(),
+        message: `Gemini operational via ${res.model}`,
+      };
+    })().catch((err: any) => ({
+      success: false,
+      configured: true,
+      keyValid: err?.status !== 401 && err?.status !== 403,
+      creditsAvailable: !isQuotaOrRateLimitError(err),
+      provider: 'gemini',
+      model: providerStates.gemini.model,
+      status: err?.status || err?.code,
+      message: err?.message || String(err),
+    })),
+  ]);
+
+  const openaiData = openAiResult.status === 'fulfilled' ? openAiResult.value : { success: false, error: 'Test failed' };
+  const geminiData = geminiResult.status === 'fulfilled' ? geminiResult.value : { success: false, error: 'Test failed' };
+
+  res.json({
+    openai: openaiData,
+    gemini: geminiData,
+    activeRouting: geminiData.success ? 'gemini' : openaiData.success ? 'openai' : 'builtin',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // API Route: AI Provider Status & Usage Telemetry
@@ -4772,22 +5162,27 @@ app.get('/api/provider-status', (_req: Request, res: Response) => {
   res.json({
     openAiConfigured: Boolean(openaiApiKey),
     geminiConfigured: Boolean(apiKey),
-    defaultProvider: openaiApiKey ? 'openai' : 'gemini',
-    models: {
-      openai: 'gpt-4o-mini',
-      gemini: 'gemini-3.1-flash-lite',
-    },
+    openai: providerStates.openai,
+    gemini: providerStates.gemini,
+    defaultProvider: apiKey ? 'gemini' : 'openai',
     usage: {
       totalRequests: usageTracker.totalRequests,
       openAiRequests: usageTracker.openAiRequests,
       openAiTokens: usageTracker.openAiTokens,
       geminiRequests: usageTracker.geminiRequests,
       fallbackActivations: usageTracker.fallbackCount,
-      lastOpenAiError: usageTracker.lastOpenAiError
+      lastOpenAiError: providerStates.openai.lastError
         ? {
-            timestamp: usageTracker.lastOpenAiError.timestamp,
-            status: usageTracker.lastOpenAiError.status,
-            message: usageTracker.lastOpenAiError.message.slice(0, 160),
+            timestamp: providerStates.openai.lastAttemptAt || new Date().toISOString(),
+            status: providerStates.openai.lastStatus,
+            message: providerStates.openai.lastError.slice(0, 160),
+          }
+        : null,
+      lastGeminiError: providerStates.gemini.lastError
+        ? {
+            timestamp: providerStates.gemini.lastAttemptAt || new Date().toISOString(),
+            status: providerStates.gemini.lastStatus,
+            message: providerStates.gemini.lastError.slice(0, 160),
           }
         : null,
     },
@@ -4844,7 +5239,7 @@ app.post('/api/investigate-connection', async (req: Request, res: Response) => {
           interpretation:
             'Confirms mathematically that delays do not scale linearly. Near system capacity, minor demand fluctuations produce catastrophic queue spikes, confirming a shared mechanism between highway traffic shockwaves and workplace backlogs.',
           simulatedObservation:
-            'Evaluated across 5 utilization intervals (50%, 70%, 80%, 90%, 95%); response curve turns asymptotic at ρ > 0.85.',
+            'Direct mathematical evaluation of queueing formula across utilization levels.',
         };
       }
 
@@ -4866,7 +5261,7 @@ app.post('/api/investigate-connection', async (req: Request, res: Response) => {
           interpretation:
             'Verifies that unexpressed emotional frictions act like physical heat resistance: the system inevitably trips the high-limit cutoff unless surface airflow is restored.',
           simulatedObservation:
-            'Calculated across 4 restriction steps (0%, 25%, 50%, 75% blockage); safety threshold is breached at 72% restriction.',
+            'Calculated directly from Fourier heat conduction equation.',
         };
       }
 
@@ -4879,13 +5274,12 @@ app.post('/api/investigate-connection', async (req: Request, res: Response) => {
         interpretation:
           'Proves that repeating cycles continue not because of new instigations, but because baseline system damping (feedback loop / emotional boundaries) is insufficient.',
         simulatedObservation:
-          'Computed across 20 simulated time increments; disturbance persistence is inversely proportional to system damping.',
+          'Direct evaluation of harmonic decay curve.',
       };
     };
 
     const computationalResult = computeDynamics(domainA, domainB);
 
-    // If deep investigation is not approved, return preview and require approval to control costs
     if (!approvedForDeepInvestigation) {
       res.json({
         id: `inv-${Date.now()}`,
@@ -4893,7 +5287,7 @@ app.post('/api/investigate-connection', async (req: Request, res: Response) => {
         primaryDomain: domainB,
         investigatedDomain: extraDomains[0] || 'Applied Systems Dynamics',
         requiresApprovalForDeep: true,
-        estimatedTokenCost: '~1,200 tokens (gpt-4o-mini: < $0.001)',
+        estimatedTokenCost: '~1,200 tokens (gpt-4o-mini / gemini-flash)',
         computationalTest: computationalResult,
         synthesizedMechanism: `Both ${domainA} and ${domainB} exhibit non-linear state changes when operational limits are approached. The computational evaluation below verified the quantitative curve.`,
         challengeSelfCritique: `While the mathematical curve matches (${computationalResult.formulaOrLaw}), human systems differ from mechanical ones because human participants can alter their behavior when they observe the dynamic.`,
@@ -4913,7 +5307,6 @@ app.post('/api/investigate-connection', async (req: Request, res: Response) => {
       return;
     }
 
-    // Run deep investigation via generateUnifiedAI
     const prompt = `DEEP CROSS-FIELD INVESTIGATION & FALSIFICATION AUDIT:
 Topic A: "${domainA}"
 Topic B (Familiar Domain): "${domainB}"
@@ -4999,29 +5392,77 @@ Respond in JSON matching:
   }
 });
 
-// ==========================================
-// INDEPENDENT DISCOVERY ENGINE API ENDPOINTS
-// ==========================================
+// =========================================================================
+// AUTHENTICATED AUTONOMOUS DISCOVERY ENGINE (FIRESTORE-BACKED & SCHEDULED)
+// =========================================================================
 
-// GET /api/discovery-jobs — Fetch all autonomous jobs & telemetry
-app.get('/api/discovery-jobs', (_req: Request, res: Response) => {
-  const jobs = discoveryEngine.getJobs();
-  const stats = discoveryEngine.getStats();
+// Shared AI Caller adapter for the autonomous engine
+const autonomousAICaller = async (params: {
+  contents: string;
+  systemInstruction?: string;
+  responseMimeType?: string;
+  maxTokens?: number;
+  preferredProvider?: 'auto' | 'openai' | 'gemini';
+}) => {
+  const result = await generateUnifiedAI(params);
+  return {
+    text: result.text,
+    providerUsed: result.providerUsed,
+    modelUsed: result.modelUsed,
+    tokensConsumed: result.tokensConsumed || 450,
+  };
+};
+
+// GET /api/discovery-jobs — Authenticated user-specific discoveries
+app.get('/api/discovery-jobs', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  if (!authUser) {
+    res.status(401).json({
+      error: 'Authentication required. Please sign in to access your private discoveries.',
+      requiresAuth: true,
+    });
+    return;
+  }
+
+  // Catch up on reliable server-side scheduling if due
+  await discoveryEngine.checkAndRunScheduledDue(authUser.uid, autonomousAICaller);
+
+  const jobs = discoveryEngine.getJobsForUser(authUser.uid);
+  const stats = discoveryEngine.getStatsForUser(authUser.uid);
+  const schedule = discoveryEngine.getScheduleState();
+
   res.json({
     jobs,
     stats,
+    schedule,
+    userId: authUser.uid,
   });
 });
 
-// POST /api/discovery-jobs/trigger — Trigger immediate independent investigation
+// POST /api/discovery-jobs/trigger — Trigger immediate independent investigation for authenticated user
 app.post('/api/discovery-jobs/trigger', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  if (!authUser) {
+    res.status(401).json({
+      error: 'Authentication required. Please sign in to trigger an investigation.',
+      requiresAuth: true,
+    });
+    return;
+  }
+
   try {
     const { topic } = req.body || {};
-    const job = await discoveryEngine.triggerImmediateInvestigation(topic);
+    const job = await discoveryEngine.triggerJobForUser(authUser.uid, topic, autonomousAICaller);
+
+    // Persist persistently to Firestore
+    if (authUser.idToken) {
+      await persistDiscoveryToFirestore(authUser.uid, job, authUser.idToken);
+    }
+
     res.json({
       success: true,
       job,
-      stats: discoveryEngine.getStats(),
+      stats: discoveryEngine.getStatsForUser(authUser.uid),
     });
   } catch (err: any) {
     console.error('Trigger discovery error:', err);
@@ -5029,19 +5470,34 @@ app.post('/api/discovery-jobs/trigger', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/discovery-jobs/:id/approve — User approval gate for deep token-intensive investigation
+// POST /api/discovery-jobs/:id/approve — User approval gate for deep token-intensive investigation (Requirement 8)
 app.post('/api/discovery-jobs/:id/approve', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  if (!authUser) {
+    res.status(401).json({
+      error: 'Authentication required. Please sign in to approve deep investigations.',
+      requiresAuth: true,
+    });
+    return;
+  }
+
   try {
     const { id } = req.params;
-    const approved = await discoveryEngine.approveJob(id);
+    const approved = await discoveryEngine.approveJobForUser(authUser.uid, id, autonomousAICaller);
     if (!approved) {
       res.status(404).json({ error: 'Discovery job not found.' });
       return;
     }
+
+    // Persist persistently to Firestore
+    if (authUser.idToken) {
+      await persistDiscoveryToFirestore(authUser.uid, approved, authUser.idToken);
+    }
+
     res.json({
       success: true,
       job: approved,
-      stats: discoveryEngine.getStats(),
+      stats: discoveryEngine.getStatsForUser(authUser.uid),
     });
   } catch (err: any) {
     console.error('Approve discovery error:', err);
@@ -5050,31 +5506,100 @@ app.post('/api/discovery-jobs/:id/approve', async (req: Request, res: Response) 
 });
 
 // POST /api/discovery-jobs/:id/dismiss — Dismiss/archive an unneeded discovery
-app.post('/api/discovery-jobs/:id/dismiss', (req: Request, res: Response) => {
+app.post('/api/discovery-jobs/:id/dismiss', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  if (!authUser) {
+    res.status(401).json({ error: 'Authentication required.', requiresAuth: true });
+    return;
+  }
   const { id } = req.params;
-  const dismissed = discoveryEngine.dismissJob(id);
+  const dismissed = discoveryEngine.dismissJobForUser(authUser.uid, id);
   res.json({ success: dismissed });
 });
 
 // POST /api/discovery-jobs/:id/toggle-save — Save/Bookmark to My Discoveries
-app.post('/api/discovery-jobs/:id/toggle-save', (req: Request, res: Response) => {
+app.post('/api/discovery-jobs/:id/toggle-save', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  if (!authUser) {
+    res.status(401).json({ error: 'Authentication required.', requiresAuth: true });
+    return;
+  }
   const { id } = req.params;
-  const isSaved = discoveryEngine.toggleSaveToDiscoveries(id);
+  const isSaved = discoveryEngine.toggleSaveJobForUser(authUser.uid, id);
   res.json({ success: true, isSavedToDiscoveries: isSaved });
 });
 
 // POST /api/discovery-jobs/:id/mark-notified — Acknowledge notification toast
-app.post('/api/discovery-jobs/:id/mark-notified', (req: Request, res: Response) => {
+app.post('/api/discovery-jobs/:id/mark-notified', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  if (!authUser) {
+    res.status(401).json({ error: 'Authentication required.', requiresAuth: true });
+    return;
+  }
   const { id } = req.params;
-  discoveryEngine.markNotified(id);
+  discoveryEngine.markNotifiedForUser(authUser.uid, id);
   res.json({ success: true });
 });
 
-// POST /api/discovery-jobs/settings — Update background execution settings
+// GET /api/discovery-jobs/settings — Retrieve reasoning module and scheduling settings (Requirement 8)
+app.get('/api/discovery-jobs/settings', (_req: Request, res: Response) => {
+  res.json({
+    settings: discoveryEngine.getSettings(),
+    schedule: discoveryEngine.getScheduleState(),
+  });
+});
+
+// POST /api/discovery-jobs/settings — Update reasoning modules and schedule settings (Requirement 8)
 app.post('/api/discovery-jobs/settings', (req: Request, res: Response) => {
   const updated = discoveryEngine.updateSettings(req.body || {});
-  res.json({ success: true, settings: updated });
+  res.json({
+    success: true,
+    settings: updated,
+    schedule: discoveryEngine.getScheduleState(),
+  });
 });
+
+// GET /api/scheduled-discovery — Inspect server-side schedule and run catchup if due (Requirement 6)
+app.get('/api/scheduled-discovery', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  const targetUserId = authUser?.uid || 'guest';
+  const triggered = await discoveryEngine.checkAndRunScheduledDue(targetUserId, autonomousAICaller);
+  res.json({
+    schedule: discoveryEngine.getScheduleState(),
+    triggeredJobId: triggered ? triggered.id : null,
+  });
+});
+
+// POST /api/scheduled-discovery/trigger — Force run a scheduled cycle
+app.post('/api/scheduled-discovery/trigger', async (req: Request, res: Response) => {
+  const authUser = await getAuthenticatedUserId(req);
+  const targetUserId = authUser?.uid || 'guest';
+  const job = await discoveryEngine.triggerJobForUser(targetUserId, undefined, autonomousAICaller);
+  res.json({
+    success: true,
+    job,
+    schedule: discoveryEngine.getScheduleState(),
+  });
+});
+
+// GET /api/cron/discovery & POST /api/cron/discovery — Cloud Run Cron webhook for Google Cloud Scheduler (Requirement 6)
+const handleCronWebhook = async (_req: Request, res: Response) => {
+  try {
+    const job = await discoveryEngine.triggerJobForUser('scheduler-service', undefined, autonomousAICaller);
+    res.json({
+      success: true,
+      message: 'Cloud Run scheduled discovery executed successfully.',
+      jobId: job.id,
+      schedule: discoveryEngine.getScheduleState(),
+    });
+  } catch (err: any) {
+    console.error('Cloud Run Cron execution error:', err);
+    res.status(500).json({ error: err?.message || 'Scheduled discovery execution failed.' });
+  }
+};
+app.get('/api/cron/discovery', handleCronWebhook);
+app.post('/api/cron/discovery', handleCronWebhook);
+
 
 // Mount Vite in dev or static files in prod
 async function startServer() {

@@ -53,7 +53,7 @@ const screenVariants = {
 };
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, getIdToken } = useAuth();
   // 1. One Simple Starting Point: default to 'talk' ("What's on your mind?")
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('talk');
   const [activeTranslation, setActiveTranslation] = useState<TranslationResult | null>(null);
@@ -84,10 +84,27 @@ export default function App() {
   const [autonomousInitialTab, setAutonomousInitialTab] = useState<'all' | 'autonomous' | 'predictions'>('all');
   const [discoveryNotification, setDiscoveryNotification] = useState<AutonomousDiscoveryJob | null>(null);
 
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const headers: Record<string, string> = {};
+    if (user && getIdToken) {
+      try {
+        const token = await getIdToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      } catch {
+        // fallback
+      }
+    }
+    if (user?.uid) {
+      headers['x-user-id'] = user.uid;
+    }
+    return headers;
+  };
+
   useEffect(() => {
     const checkAutonomousJobs = async () => {
       try {
-        const res = await fetch('/api/discovery-jobs');
+        const headers = await getAuthHeaders();
+        const res = await fetch('/api/discovery-jobs', { headers });
         if (res.ok) {
           const data = await res.json();
           const unnotified = (data.jobs || []).find(
@@ -104,12 +121,16 @@ export default function App() {
     checkAutonomousJobs();
     const interval = setInterval(checkAutonomousJobs, 18000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const handleOpenNotification = async () => {
     if (discoveryNotification) {
       try {
-        await fetch(`/api/discovery-jobs/${discoveryNotification.id}/mark-notified`, { method: 'POST' });
+        const headers = await getAuthHeaders();
+        await fetch(`/api/discovery-jobs/${discoveryNotification.id}/mark-notified`, {
+          method: 'POST',
+          headers,
+        });
       } catch {
         // ignore
       }
@@ -123,7 +144,11 @@ export default function App() {
   const handleDismissNotification = async () => {
     if (discoveryNotification) {
       try {
-        await fetch(`/api/discovery-jobs/${discoveryNotification.id}/mark-notified`, { method: 'POST' });
+        const headers = await getAuthHeaders();
+        await fetch(`/api/discovery-jobs/${discoveryNotification.id}/mark-notified`, {
+          method: 'POST',
+          headers,
+        });
       } catch {
         // ignore
       }

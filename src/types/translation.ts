@@ -488,7 +488,39 @@ export interface AutonomousDiscoveryJob {
   computationalTest: ComputationalTestDetail;
   calculationVerdict: 'mathematically_supported' | 'divergent_or_failed' | 'needs_calibration';
 
-  // Rigorous Evidence Separation
+  // Rigorous Evidence Separation & Sources
+  userId?: string;
+  executionMethod?: 'live_ai_inquiry' | 'genuine_computational_proof' | 'deterministic_framework';
+  executionAuditLog?: Array<{
+    step: string;
+    timestamp: string;
+    detail: string;
+    status: 'executed' | 'skipped' | 'verified';
+    provider?: string;
+    model?: string;
+  }>;
+  verifiedFactsWithSources?: Array<{
+    fact: string;
+    source: string;
+    citationUrl?: string;
+  }>;
+  calculatedResultsWithFormulas?: Array<{
+    formula: string;
+    inputs: Record<string, any>;
+    calculatedOutput: string;
+    interpretation: string;
+  }>;
+  proposedHypotheses?: Array<{
+    hypothesis: string;
+    falsificationTest: string;
+    testStatus: 'untested' | 'partially_tested';
+  }>;
+  analogiesWithBoundaries?: Array<{
+    analogy: string;
+    whereItWorks: string;
+    whereItBreaksDown: string;
+  }>;
+
   evidenceSeparation: {
     empiricallyDocumented: string[];
     newlyGeneratedHypothesis: string[];

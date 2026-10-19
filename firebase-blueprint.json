@@ -28,6 +28,23 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "userId", "unfamiliarTopic", "familiarDomain", "headlineSummary", "createdAt", "updatedAt"]
+    },
+    "UserDiscovery": {
+      "title": "UserDiscovery",
+      "description": "User's verified autonomous cross-field discovery and calculation job",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string" },
+        "calculationVerdict": { "type": "string" },
+        "isDeepInvestigation": { "type": "boolean" },
+        "userApproved": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "status", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -38,6 +55,10 @@
     "/users/{userId}/explorations/{explorationId}": {
       "schema": "SavedExploration",
       "description": "User's personal saved translations and insights"
+    },
+    "/users/{userId}/discoveries/{discoveryId}": {
+      "schema": "UserDiscovery",
+      "description": "User's private discoveries and verified investigation records"
     }
   }
 }

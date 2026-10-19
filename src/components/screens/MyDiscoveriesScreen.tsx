@@ -23,6 +23,12 @@ import {
   Activity,
   Layers,
   ShieldAlert,
+  Sliders,
+  Settings,
+  Lock,
+  Clock,
+  Shield,
+  X,
 } from 'lucide-react';
 
 interface MyDiscoveriesScreenProps {
@@ -50,7 +56,7 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
   onSaveItem,
   initialTab = 'all',
 }) => {
-  const { user } = useAuth();
+  const { user, getIdToken, signInGuest } = useAuth();
   const [activeTab, setActiveTab] = useState<'all' | 'autonomous' | 'predictions'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -60,18 +66,48 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
   // Autonomous Discovery Engine State
   const [autonomousJobs, setAutonomousJobs] = useState<AutonomousDiscoveryJob[]>([]);
   const [discoveryStats, setDiscoveryStats] = useState<any>(null);
+  const [scheduleState, setScheduleState] = useState<any>(null);
+  const [engineSettings, setEngineSettings] = useState<any>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [authRequiredNotice, setAuthRequiredNotice] = useState(false);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [isTriggering, setIsTriggering] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
+  // Authenticated fetch wrapper for discovery endpoints (Requirement 5)
+  const authFetch = async (url: string, options: RequestInit = {}) => {
+    let token: string | null = null;
+    if (user && getIdToken) {
+      try {
+        token = await getIdToken();
+      } catch (e) {
+        console.warn('Failed to retrieve ID token:', e);
+      }
+    }
+    const headers = new Headers(options.headers || {});
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    } else if (user?.uid) {
+      headers.set('x-user-id', user.uid);
+    }
+    return fetch(url, { ...options, headers });
+  };
+
   const fetchAutonomousJobs = async () => {
     try {
       setIsLoadingJobs(true);
-      const res = await fetch('/api/discovery-jobs');
+      const res = await authFetch('/api/discovery-jobs');
+      if (res.status === 401) {
+        setAuthRequiredNotice(true);
+        return;
+      }
+      setAuthRequiredNotice(false);
       if (res.ok) {
         const data = await res.json();
         setAutonomousJobs(data.jobs || []);
         setDiscoveryStats(data.stats || null);
+        if (data.schedule) setScheduleState(data.schedule);
       }
     } catch (err) {
       console.warn('Failed to fetch autonomous discovery jobs:', err);
@@ -80,19 +116,35 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/discovery-jobs/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setEngineSettings(data.settings);
+        setScheduleState(data.schedule);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     fetchAutonomousJobs();
+    fetchSettings();
     const interval = setInterval(fetchAutonomousJobs, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const handleTriggerAutonomous = async () => {
     try {
       setIsTriggering(true);
-      const res = await fetch('/api/discovery-jobs/trigger', { method: 'POST' });
+      const res = await authFetch('/api/discovery-jobs/trigger', { method: 'POST' });
       if (res.ok) {
         await fetchAutonomousJobs();
         setActiveTab('autonomous');
+      } else if (res.status === 401) {
+        setAuthRequiredNotice(true);
       }
     } catch (err) {
       console.error('Failed to trigger autonomous discovery:', err);
@@ -104,7 +156,7 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
   const handleApproveAutonomous = async (id: string) => {
     try {
       setApprovingId(id);
-      const res = await fetch(`/api/discovery-jobs/${id}/approve`, { method: 'POST' });
+      const res = await authFetch(`/api/discovery-jobs/${id}/approve`, { method: 'POST' });
       if (res.ok) {
         await fetchAutonomousJobs();
       }
@@ -117,7 +169,7 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
 
   const handleDismissAutonomous = async (id: string) => {
     try {
-      await fetch(`/api/discovery-jobs/${id}/dismiss`, { method: 'POST' });
+      await authFetch(`/api/discovery-jobs/${id}/dismiss`, { method: 'POST' });
       setAutonomousJobs((prev) => prev.filter((j) => j.id !== id));
     } catch (err) {
       console.error('Failed to dismiss discovery:', err);
@@ -126,7 +178,7 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
 
   const handleSaveAutonomousToDiscoveries = async (job: AutonomousDiscoveryJob) => {
     try {
-      await fetch(`/api/discovery-jobs/${job.id}/toggle-save`, { method: 'POST' });
+      await authFetch(`/api/discovery-jobs/${job.id}/toggle-save`, { method: 'POST' });
       const syntheticItem: SavedJourneyItem = {
         id: `auto-${job.id}`,
         topic: job.title,
@@ -144,6 +196,36 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
       );
     } catch (err) {
       console.error('Failed to save autonomous discovery:', err);
+    }
+  };
+
+  const handleUpdateSettings = async (updates: any) => {
+    try {
+      setIsUpdatingSettings(true);
+      const res = await fetch('/api/discovery-jobs/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEngineSettings(data.settings);
+        setScheduleState(data.schedule);
+      }
+    } catch (err) {
+      console.error('Failed to update engine settings:', err);
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  const handleRunScheduledNow = async () => {
+    try {
+      await authFetch('/api/scheduled-discovery/trigger', { method: 'POST' });
+      await fetchAutonomousJobs();
+      await fetchSettings();
+    } catch (err) {
+      console.error('Failed to trigger scheduled run:', err);
     }
   };
 
@@ -419,7 +501,16 @@ ${
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 font-medium text-xs flex items-center gap-1.5 transition-colors"
+                  title="Configure active reasoning modules, scheduling interval, and safeguards"
+                >
+                  <Sliders className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Modules & Schedule</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleTriggerAutonomous}
@@ -432,6 +523,25 @@ ${
                 </button>
               </div>
             </div>
+
+            {/* Authentication Notice if not signed in (Requirement 5) */}
+            {!user && (
+              <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/60 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>
+                    <strong>Authenticated Firestore Storage:</strong> Discoveries require authenticated access to persist to your personal Firestore collection. Continue as guest or sign in to save.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => signInGuest()}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs border border-slate-700 font-medium transition-colors shrink-0"
+                >
+                  Continue as Guest
+                </button>
+              </div>
+            )}
 
             {/* Live Telemetry Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 border-t border-slate-800/80 text-xs font-mono">
@@ -917,6 +1027,199 @@ ${
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reasoning Engine Modules & Scheduling Modal (Requirement 8) */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-6 text-slate-100 max-h-[90vh] overflow-y-auto space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                  <Sliders className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">Reasoning Engine Modules & Schedule</h3>
+                  <p className="text-xs text-slate-400">Configure mathematical modules & server-side catchup</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Active Reasoning Modules Checklist */}
+            <div className="space-y-2">
+              <label className="text-xs font-mono uppercase text-slate-400 block font-bold">
+                Active Mathematical Reasoning Modules
+              </label>
+              <div className="space-y-2 text-xs">
+                {[
+                  {
+                    id: 'phase_transitions_percolation',
+                    title: 'Lattice Site Percolation & Non-linear Synchronization',
+                    desc: 'Evaluates 2D site percolation threshold (p_c ≈ 0.5927) for sudden consensus shifts.',
+                  },
+                  {
+                    id: 'kinetic_proofreading',
+                    title: 'Hopfield Kinetic Proofreading (Stochastic Time Delays)',
+                    desc: 'Evaluates irreversible multistep ATP dissipation delay filters against false alarms.',
+                  },
+                  {
+                    id: 'dissipative_thermodynamics',
+                    title: 'Prigogine Rayleigh Instability & Workload Heat Friction',
+                    desc: 'Calculates the Rayleigh number (Ra) to detect coordination breakdown under work spikes.',
+                  },
+                  {
+                    id: 'allosteric_kinetics',
+                    title: 'Non-linear Hill Cooperativity & Supply Chain Damping',
+                    desc: 'Calculates end-product saturation fractions (θ) to damp intermediate oscillations.',
+                  },
+                  {
+                    id: 'battery_degradation_kinetics',
+                    title: 'NASA Ames Li-ion Electrochemical SEI Passivation',
+                    desc: 'Fits diffusion-limited passivation kinetics against actual NASA PCoE battery cycles.',
+                  },
+                ].map((mod) => {
+                  const currentModules: string[] = engineSettings?.activeModules || [
+                    'phase_transitions_percolation',
+                    'kinetic_proofreading',
+                    'dissipative_thermodynamics',
+                    'allosteric_kinetics',
+                    'battery_degradation_kinetics',
+                  ];
+                  const isActive = currentModules.includes(mod.id);
+
+                  return (
+                    <div
+                      key={mod.id}
+                      onClick={() => {
+                        const updated = isActive
+                          ? currentModules.filter((m) => m !== mod.id)
+                          : [...currentModules, mod.id];
+                        handleUpdateSettings({ activeModules: updated });
+                      }}
+                      className={`p-3 rounded-xl border cursor-pointer transition-colors space-y-1 ${
+                        isActive
+                          ? 'bg-slate-950 border-teal-500/50 text-slate-200'
+                          : 'bg-slate-950/40 border-slate-800/60 text-slate-500'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`font-semibold ${isActive ? 'text-white' : 'text-slate-500'}`}>
+                          {mod.title}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          readOnly
+                          className="rounded text-teal-500 focus:ring-0"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-400">{mod.desc}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Scheduling & Interval Settings */}
+            <div className="space-y-3 pt-2 border-t border-slate-800">
+              <label className="text-xs font-mono uppercase text-slate-400 block font-bold">
+                Server-Side Discovery Frequency
+              </label>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                {[15, 30, 60].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => handleUpdateSettings({ intervalMinutes: mins })}
+                    className={`py-2 px-3 rounded-xl border font-mono text-center transition-colors ${
+                      (engineSettings?.intervalMinutes || 15) === mins
+                        ? 'bg-teal-500/20 border-teal-500 text-teal-300 font-bold'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Every {mins}m
+                  </button>
+                ))}
+              </div>
+
+              {/* Schedule State Telemetry (Requirement 6) */}
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 text-xs font-mono">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>Server-Side Schedule:</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Cloud Run Ready</span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                  <span>Next Scheduled Run:</span>
+                  <span className="text-slate-200">
+                    {scheduleState?.nextScheduledRun
+                      ? new Date(scheduleState.nextScheduledRun).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : 'Every 15m'}
+                  </span>
+                </div>
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleRunScheduledNow}
+                    className="text-[11px] text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Trigger Catch-up Cycle Now</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Provider Preference Setting */}
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              <label className="text-xs font-mono uppercase text-slate-400 block font-bold">
+                Preferred Reasoning Provider
+              </label>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  { id: 'auto', label: 'Auto (OpenAI + Gemini)' },
+                  { id: 'gemini', label: 'Gemini Primary' },
+                  { id: 'openai', label: 'OpenAI Primary' },
+                  { id: 'builtin', label: 'Deterministic Math Only' },
+                ].map((prov) => (
+                  <button
+                    key={prov.id}
+                    type="button"
+                    onClick={() => handleUpdateSettings({ preferredProvider: prov.id })}
+                    className={`p-2.5 rounded-xl border text-left transition-colors ${
+                      (engineSettings?.preferredProvider || 'auto') === prov.id
+                        ? 'bg-teal-500/20 border-teal-500 text-teal-200 font-semibold'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {prov.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(false)}
+                className="px-5 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition-colors"
+              >
+                Close & Save
+              </button>
+            </div>
           </div>
         </div>
       )}
