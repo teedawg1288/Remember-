@@ -45,6 +45,7 @@ import { DifferenceThatChangesEverythingView } from './DifferenceThatChangesEver
 import { MirrorEffectCard } from './MirrorEffectCard';
 import { RoundTableView } from './RoundTableView';
 import { MechanismBridgeView } from './MechanismBridgeView';
+import { MeaningSynchronizationView } from './MeaningSynchronizationView';
 import { WhatIfPlayground } from './WhatIfPlayground';
 import { CrossDomainVisualBridge } from './CrossDomainVisualBridge';
 import { InteractiveDiscoveryMap } from './InteractiveDiscoveryMap';
@@ -562,6 +563,9 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 
           {/* Perspective Translation (Said vs Meant vs Heard vs Felt) */}
           <RosettaStoneTranslator rosettaStone={rosettaStoneData} />
+
+          {/* Two-way interpretation, role and information-update bridge */}
+          <MeaningSynchronizationView comparison={analysis.meaningSynchronization} />
 
           {/* Question-selected Round Table perspectives */}
           {analysis.roundTable && (
