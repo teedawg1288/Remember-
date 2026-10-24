@@ -116,7 +116,7 @@ test('custom analyses do not fall back to unrelated fictional era scenes', () =>
   const server = readFileSync('server.ts', 'utf-8');
   const ui = readFileSync('src/components/StoryComparisonView.tsx', 'utf-8');
   expect(server).toContain('parsed.eras = []');
-  expect(ui).toContain('No question-specific era comparison was generated.');
+  expect(ui).toContain('No period-specific example was supplied.');
 });
 
 test('cross-examination is an optional, evidence-oriented route, not a forced invented historical story', () => {
