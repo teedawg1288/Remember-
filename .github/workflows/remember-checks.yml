@@ -16,9 +16,10 @@ jobs:
       - run: bun run build
       - run: bun test tests/roundTableControl.test.ts
       - run: node --test tests/server-contract.test.mjs
-      - name: Browser smoke screenshots
+      - name: Browser interaction and responsive screenshots
         run: |
-          npx --yes playwright install chromium
+          npm install --no-save @playwright/test
+          npx playwright install chromium
           NODE_ENV=production PORT=43177 node server.js &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
@@ -27,8 +28,7 @@ jobs:
             sleep 1
           done
           mkdir -p screenshots
-          npx --yes playwright screenshot --browser chromium --viewport-size "390,844" http://127.0.0.1:43177 screenshots/mobile.png
-          npx --yes playwright screenshot --browser chromium --viewport-size "1440,900" http://127.0.0.1:43177 screenshots/desktop.png
+          npx playwright test tests/roundTableUI.spec.ts --reporter=line --workers=1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
