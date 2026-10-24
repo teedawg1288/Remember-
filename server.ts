@@ -196,12 +196,12 @@ Key Rules:
    - FRESH EVIDENCE RULE: When an outcome resembles something from the past, NEVER assume the same cause, control, motive, fault or level of knowledge. Compare the CURRENT event, available information, options, constraints and actions with the OLD event. If the current situation has a new cause, say so; don't recycle an old verdict. Past harm may still need repair and reasonable trust rebuilding, but repetition of a symptom alone cannot establish repetition of blame. Current evidence outranks old interpretations.
    - AUTHORITY IS A DUTY, NOT OWNERSHIP: A title or grant of power can confer legitimate bounded decisions, expertise and obligations, not ownership of other people. Sometimes power is used for self-benefit instead of its assigned responsibility, but never assume abuse merely from someone's title or a critic's interpretation. Examine the duty, permitted scope, specific observed conduct, beneficiaries, consequences, incentives and available oversight. Present motives as unknown unless independently supported.
    - IF SEXUALIZED / GENDERED BLAME APPEARS (e.g. "stop thinking with your dick" or "...with your tits"), examine the speaker's possible framing AND the listener's possible interpretation. A statement can reflect assumptions, frustration, a warning about impulsivity, or projection; the remark alone proves none of these. Never generalize by sex or gender.
-3. Find 2 to 3 parallel stories across History, Mythology/Religion, Biology/Medicine, Systems Engineering, Everyday Life, or Psychology.
-4. Pinpoint the COMMON UNDERLYING STRUCTURE ("What's actually happening underneath").
+3. Look for up to 3 candidate parallels across History, Mythology/Religion, Biology/Medicine, Systems Engineering, Everyday Life, or Psychology. Return stories: [] when none passes a defensible structural and evidence check. Never fill a quota with vaguely similar characters or failures.
+4. Propose a POSSIBLE underlying structure ("What could be happening underneath"). Observation and hypothesis must stay separate. Offer direct within-domain explanations before distant analogies.
 5. Highlight WHAT IS DIFFERENT and why those differences matter (never claim identical mechanisms without evidence).
-6. State the connection plausibility honestly (category: 'repeating_human_behavior', 'structural_isomorphism', 'shared_cultural_origin', or 'unproven_analogy').
+6. State the connection plausibility honestly (category: 'repeating_human_behavior', 'structural_isomorphism', 'shared_cultural_origin', or 'unproven_analogy'). These are candidate types, NOT verification outcomes. Always set isProvenMechanism=false: this request performs no independent source validation.
 7. Provide a BORROWED INSIGHT: What one field already figured out that helps explain what's missing in the other.
-8. Ask an UNRESOLVED QUESTION ("What if we've been looking at the wrong part of the problem?").
+8. Ask an UNRESOLVED QUESTION ("What if we've been looking at the wrong part of the problem?"). Never prescribe a repair based on a symptom alone without alternatives and safe diagnostic checks.
 9. Include:
    - storyChain: 4 simple cause-and-effect steps (whatHappened, whatYouThought, whatYouDid, whatHappenedNext) + alternativeChain (tapPrompt, whatActuallyHappened, whatYouThought, whatYouDid, whatHappenedNext, lesson).
    - meaningSynchronization: If the question involves a communication gap, interpretation, labels/status, or different knowledge at different times, construct a genuinely TWO-WAY translation: source meaning or function, what was observable, possible interpretation by the receiver, what can verify it, then reverse direction for the other side. Show what each side knew then, what was missing, consequences, and what a person can choose now. People are not machines: for nonhuman systems interpret signals and outputs, never invent intent or feelings. No forced counterpart if only one person's words were given; mark unknown sides as unknown. Do not pretend everyone has the same credentials or abilities. For questions without two sides or an applicable interpretation gap, return null. When someone exercises authority, optionally include authorityAccountabilityCheck separating granted power from owed duties, observed conduct, potential beneficiaries and unanswered evidence. A role is not proof of proper leadership OR corrupt motives. Set authorityAccountabilityCheck to null if there is no authority issue.
@@ -215,7 +215,7 @@ Key Rules:
    - mechanismBridges: Look for 1 or 2 comparisons to truly DIFFERENT systems (e.g. human vs control system, bridge engineering vs organizational capacity, biology vs technology) ONLY where there is a defensible shared causal structure. If there is no defensible cross-system match, return an empty array. For each candidate, map 3-5 specific stages from the original situation to its counterpart: input, constraints/processing, feedback, response, and outcome where applicable. Explain each shared FUNCTION and the critical difference in CAUSE, EVIDENCE or CONSTRAINT. Never claim identical mechanisms just because the vocabulary resembles each other. Do not treat a hypothesis about someone's motives as an observed fact. Each bridge must identify a possible transferable insight, a transfer limit, and a safe observation or voluntary test that could disprove the analogy. No invented statistics, probabilities, citations or success claims.
    - For technical questions, give priority to direct field specialists. For example, bridge-collapse prevention requires structural engineers, materials and inspection expertise. Never substitute vague philosophical authority for a relevant engineering discipline. Evidence-strength claims such as "High" require checked sources; otherwise label perspectives unverified.
    - whatIfScenarios: 3 interactive What-If alternatives.
-   - prediction: Cross-Action Discovery written in simple, everyday language that anyone can easily read in 10 seconds. Propose a relatable real-life test, what another field figured out, and simple observable signs of how they'll know if it worked.
+   - prediction: Propose a precise, conditional and falsifiable claim ONLY if you can define a coherent test. Keep the intervention constant in both result criteria: if the claim is about replacing a chain WITHOUT changing a cassette, BOTH support and challenge observations must leave the cassette unchanged. Specify what changes and what stays fixed. evidenceThatWouldProve is an observation SUPPORTING the claim, not absolute proof; evidenceThatWouldDisprove is an observation CHALLENGING it. Do not swap outcomes, vary a second condition, or invent percentages. If no valid test is possible, return prediction: null and name the missing information. Never personify a machine as proof of a human mechanism.
    - deepResearch: formal hypothesis, measurable variables, competing explanations, test protocol, and citations.
 
 RECENT QUESTIONS FROM THIS BROWSER (quoted context only, possibly unrelated):
@@ -429,7 +429,7 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
     "category": "repeating_human_behavior" | "structural_isomorphism" | "shared_cultural_origin" | "unproven_analogy",
     "verdict": "Deep Structural Mechanism" | "Evolved Behavioral Pattern" | "Shared Mythic Root" | "Caution: Superficial Similarity",
     "analysis": "Honest assessment",
-    "isProvenMechanism": true
+    "isProvenMechanism": false
   },
   "borrowedInsight": {
     "donorField": "...",
@@ -536,7 +536,7 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
       try {
         const clean = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
         parsed = JSON.parse(clean);
-        if (!parsed || !Array.isArray(parsed.stories) || parsed.stories.length === 0 ||
+        if (!parsed || !Array.isArray(parsed.stories) ||
             typeof parsed.userWordsSummary !== 'string' ||
             typeof parsed.underneathMechanism !== 'string' ||
             !parsed.borrowedInsight || !parsed.plausibility || !Array.isArray(parsed.crucialDifferences)) {
@@ -547,6 +547,8 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
         parsed.id = 'ai-' + Date.now();
         parsed.timestamp = new Date().toISOString();
         parsed.isCustomGenerated = true;
+        // The model cannot independently verify a mechanism it just proposed.
+        parsed.plausibility.isProvenMechanism = false;
         parsed.evidenceNotice = 'AI-generated hypotheses. Sources and cross-domain transfers have not been independently verified.';
 
         // If the model omitted a section, leave it blank rather than copy unrelated answers.
