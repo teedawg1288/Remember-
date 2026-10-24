@@ -13,7 +13,7 @@ export interface PredictionIntegrityResult {
 export function assessPredictionIntegrity(
   prediction: CrossFieldPrediction | null | undefined,
 ): PredictionIntegrityResult {
-  if (!prediction || prediction.id.startsWith('unavailable-')) {
+  if (!prediction || typeof prediction.id !== 'string' || prediction.id.startsWith('unavailable-')) {
     return { status: 'blocked', issues: ['No question-specific prediction was generated.'] };
   }
   const required = [
