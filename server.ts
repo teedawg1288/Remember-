@@ -182,6 +182,8 @@ Key Rules:
    - questionRouting: Read the wording of THIS question to infer what help is needed (understanding, comparing explanations, decision, cause, prediction, translation, or problem-solving). Record the relevant wording signal and a tentative interpretation. Do not infer identity, character, truth, diagnosis, or anyone's motives from writing style, emotion, spelling, or confidence.
    - roundTable: Choose 3-5 perspectives for THIS specific question, NOT the same four disciplines every time. Seat 1 MUST ALWAYS be an evidence-checking lens (e.g. Observable Facts Auditor) that strictly separates what is observed from what is assumed. Select other seats for relevant domain expertise, an alternative explanation, and a cross-domain translation when useful. Each seat must state its uncertainty, a question for another seat, and what would change its mind. Do not claim empirical strength without a verified source. Do not claim to know another person's private thoughts. The seats are perspectives, not actual professional consultations.
    - roundTableSynthesis: sharedGround, keyDisagreement, missingEvidence, nextCheck. Agreement is not proof.
+   - mechanismBridges: Look for 1 or 2 comparisons to truly DIFFERENT systems (e.g. human vs control system, bridge engineering vs organizational capacity, biology vs technology) ONLY where there is a defensible shared causal structure. If there is no defensible cross-system match, return an empty array. For each candidate, map 3-5 specific stages from the original situation to its counterpart: input, constraints/processing, feedback, response, and outcome where applicable. Explain each shared FUNCTION and the critical difference in CAUSE, EVIDENCE or CONSTRAINT. Never claim identical mechanisms just because the vocabulary resembles each other. Do not treat a hypothesis about someone's motives as an observed fact. Each bridge must identify a possible transferable insight, a transfer limit, and a safe observation or voluntary test that could disprove the analogy. No invented statistics, probabilities, citations or success claims.
+   - For technical questions, give priority to direct field specialists. For example, bridge-collapse prevention requires structural engineers, materials and inspection expertise. Never substitute vague philosophical authority for a relevant engineering discipline. Evidence-strength claims such as "High" require checked sources; otherwise label perspectives unverified.
    - whatIfScenarios: 3 interactive What-If alternatives.
    - prediction: Cross-Action Discovery written in simple, everyday language that anyone can easily read in 10 seconds. Propose a relatable real-life test, what another field figured out, and simple observable signs of how they'll know if it worked.
    - deepResearch: formal hypothesis, measurable variables, competing explanations, test protocol, and citations.
@@ -387,6 +389,25 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
     { "id": "lens-2", "name": "Relevant domain perspective", "role": "A field that fits this exact question", "avatar": "🧭", "color": "from-amber-600 to-amber-800", "take": "...", "evidenceStrength": "Intuitive / Everyday", "keyPoint": "...", "whatCouldChangeMyMind": "...", "questionForOtherSeats": "..." },
     { "id": "lens-3", "name": "Relevant contrasting perspective", "role": "An alternative worth checking", "avatar": "⚖️", "color": "from-purple-600 to-purple-800", "take": "...", "evidenceStrength": "Intuitive / Everyday", "keyPoint": "...", "whatCouldChangeMyMind": "...", "questionForOtherSeats": "..." }
   ],
+  "mechanismBridges": [
+    {
+      "id": "bridge-1",
+      "originalDomain": "The domain of the user's original question",
+      "originalSystem": "A specific system from the question, without invented details",
+      "comparisonDomain": "A genuinely different domain",
+      "comparisonSystem": "A specific corresponding system",
+      "sharedMechanism": "A short causal mechanism, not a slogan",
+      "reasonForComparison": "Why this structural comparison might be useful",
+      "stages": [
+        { "stage": "Input", "inOriginalSystem": "...", "inComparisonSystem": "...", "sameFunction": "...", "importantDifference": "..." },
+        { "stage": "Processing or constraint", "inOriginalSystem": "...", "inComparisonSystem": "...", "sameFunction": "...", "importantDifference": "..." },
+        { "stage": "Feedback and outcome", "inOriginalSystem": "...", "inComparisonSystem": "...", "sameFunction": "...", "importantDifference": "..." }
+      ],
+      "possibleTransfer": "A tentative insight borrowed across domains",
+      "transferLimit": "Where the comparison fails or is not established",
+      "safeNextCheck": "A safe observable check that could challenge the hypothesis"
+    }
+  ],
   "whatIfScenarios": [
     { "id": "wi-1", "question": "...", "variableChanged": "...", "simulatedOutcome": "...", "historicalOrScientificBasis": "..." }
   ],
@@ -511,6 +532,34 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
             trimmedInput,
             parsed.userWordsSummary,
             parsed.underneathMechanism
+          );
+        }
+
+        // Do not display invented or incomplete mechanism mappings. Absence is better than a forced analogy.
+        if (!Array.isArray(parsed.mechanismBridges)) {
+          parsed.mechanismBridges = [];
+        } else {
+          parsed.mechanismBridges = parsed.mechanismBridges.slice(0, 2).filter((bridge: any) =>
+            bridge &&
+            typeof bridge.originalSystem === 'string' &&
+            typeof bridge.comparisonSystem === 'string' &&
+            typeof bridge.originalDomain === 'string' &&
+            typeof bridge.comparisonDomain === 'string' &&
+            typeof bridge.sharedMechanism === 'string' &&
+            typeof bridge.reasonForComparison === 'string' &&
+            typeof bridge.possibleTransfer === 'string' &&
+            typeof bridge.transferLimit === 'string' &&
+            typeof bridge.safeNextCheck === 'string' &&
+            Array.isArray(bridge.stages) &&
+            bridge.stages.length >= 3 && bridge.stages.length <= 5 &&
+            bridge.stages.every((stage: any) =>
+              stage &&
+              typeof stage.stage === 'string' &&
+              typeof stage.inOriginalSystem === 'string' &&
+              typeof stage.inComparisonSystem === 'string' &&
+              typeof stage.sameFunction === 'string' &&
+              typeof stage.importantDifference === 'string'
+            )
           );
         }
 

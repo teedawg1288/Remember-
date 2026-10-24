@@ -138,6 +138,28 @@ export interface MirrorEffect {
   hiddenBlindSpot: string;
 }
 
+export interface MechanismBridgeStage {
+  stage: string;
+  inOriginalSystem: string;
+  inComparisonSystem: string;
+  sameFunction: string;
+  importantDifference: string;
+}
+
+export interface MechanismBridge {
+  id: string;
+  originalDomain: string;
+  originalSystem: string;
+  comparisonDomain: string;
+  comparisonSystem: string;
+  sharedMechanism: string;
+  reasonForComparison: string;
+  stages: MechanismBridgeStage[];
+  possibleTransfer: string;
+  transferLimit: string;
+  safeNextCheck: string;
+}
+
 export interface RoundTablePerspective {
   id: string;
   name: string;
@@ -307,6 +329,7 @@ export interface SameStoryResult {
   differenceThatChangesEverything?: DifferenceThatChangesEverything;
   mirrorEffect?: MirrorEffect;
   roundTable?: RoundTablePerspective[];
+  mechanismBridges?: MechanismBridge[];
   whatIfScenarios?: WhatIfScenario[];
   prediction?: CrossFieldPrediction;
   eras?: EraProjection[];

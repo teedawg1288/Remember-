@@ -59,7 +59,7 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, sy
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xl">{seat.avatar}</span>
               <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-stone-300">
-                {seat.evidenceStrength.split(' ')[0]}
+                Perspective
               </span>
             </div>
             <div>
@@ -88,10 +88,10 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, sy
 
             <div className="text-right">
               <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 block mb-0.5">
-                Perspective's evidence claim (not independently checked):
+                Evidence status:
               </span>
               <span className="text-xs font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                {activePerspective.evidenceStrength}
+                Not independently verified
               </span>
             </div>
           </div>

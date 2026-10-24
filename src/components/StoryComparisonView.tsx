@@ -44,6 +44,7 @@ import { InteractiveDimensionSlider } from './InteractiveDimensionSlider';
 import { DifferenceThatChangesEverythingView } from './DifferenceThatChangesEverythingView';
 import { MirrorEffectCard } from './MirrorEffectCard';
 import { RoundTableView } from './RoundTableView';
+import { MechanismBridgeView } from './MechanismBridgeView';
 import { WhatIfPlayground } from './WhatIfPlayground';
 import { CrossDomainVisualBridge } from './CrossDomainVisualBridge';
 import { InteractiveDiscoveryMap } from './InteractiveDiscoveryMap';
@@ -570,6 +571,9 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               routing={analysis.questionRouting}
             />
           )}
+
+          {/* Same mechanism mapped across different systems */}
+          <MechanismBridgeView key={analysis.id} bridges={analysis.mechanismBridges} />
 
           {/* Mirror Effect */}
           {analysis.mirrorEffect && (
