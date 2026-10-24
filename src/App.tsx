@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header, BrandNameOption, MainTabOption } from './components/Header';
 import { BarberInput } from './components/BarberInput';
+import { PersonalLanguagePanel, PersonalPhrase } from './components/PersonalLanguagePanel';
 import { StoryComparisonView } from './components/StoryComparisonView';
 import { DeepResearchLabDrawer } from './components/DeepResearchLabDrawer';
 import { MyDiscoveriesScreen } from './components/screens/MyDiscoveriesScreen';
@@ -18,6 +19,37 @@ export const App: React.FC = () => {
   const [showResearchLab, setShowResearchLab] = useState(false);
   const [historyList, setHistoryList] = useState<SameStoryResult[]>([]);
   const [savedStories, setSavedStories] = useState<SameStoryResult[]>([]);
+  // Explicit, user-controlled vocabulary. Local to this browser; never silently inferred.
+  const [personalPhrases, setPersonalPhrases] = useState<PersonalPhrase[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('remember_personal_language_v1') || '[]');
+      return Array.isArray(raw) ? raw.filter((p) =>
+        p && typeof p.id === 'string' && typeof p.phrase === 'string' &&
+        typeof p.meaning === 'string' && p.phrase.length <= 80 && p.meaning.length <= 300
+      ).slice(0, 50) : [];
+    } catch { return []; }
+  });
+  const [usePersonalLanguage, setUsePersonalLanguage] = useState(() => {
+    try { return localStorage.getItem('remember_personal_language_enabled_v1') !== 'false'; }
+    catch { return true; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('remember_personal_language_v1', JSON.stringify(personalPhrases)); }
+    catch { /* Browsing storage may be disabled. */ }
+  }, [personalPhrases]);
+
+  useEffect(() => {
+    try { localStorage.setItem('remember_personal_language_enabled_v1', String(usePersonalLanguage)); }
+    catch { /* Browsing storage may be disabled. */ }
+  }, [usePersonalLanguage]);
+
+  const savePersonalPhrase = (entry: PersonalPhrase) => {
+    setPersonalPhrases((prev) => [
+      entry,
+      ...prev.filter((p) => p.id !== entry.id && p.phrase.toLowerCase() !== entry.phrase.toLowerCase()),
+    ].slice(0, 50));
+  };
 
   // Sync document title dynamically with active brand name
   useEffect(() => {
@@ -40,10 +72,18 @@ export const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
+      const relevantPhrases = usePersonalLanguage
+        ? personalPhrases.filter((entry) => {
+            const normalize = (value: string) =>
+              ' ' + value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
+            const needle = normalize(entry.phrase);
+            return needle.trim().length > 0 && normalize(userInput).includes(needle);
+          }).slice(0, 10).map(({ phrase, meaning }) => ({ phrase, meaning }))
+        : [];
       const res = await fetch('/api/same-story/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userInput, persona }),
+        body: JSON.stringify({ userInput, persona, personalDictionary: relevantPhrases }),
       });
 
       const data = await res.json();
@@ -171,13 +211,22 @@ export const App: React.FC = () => {
 
         {/* PILLAR 1: LET'S TALK */}
         {activeMainTab === 'talk' && (
-          <BarberInput
-            onAnalyze={handleAnalyze}
-            onSelectCurated={handleSelectCurated}
-            isLoading={isLoading}
-            persona={persona}
-            appName={appName}
-          />
+          <>
+            <BarberInput
+              onAnalyze={handleAnalyze}
+              onSelectCurated={handleSelectCurated}
+              isLoading={isLoading}
+              persona={persona}
+              appName={appName}
+            />
+            <PersonalLanguagePanel
+              entries={personalPhrases}
+              enabled={usePersonalLanguage}
+              onToggleEnabled={setUsePersonalLanguage}
+              onSave={savePersonalPhrase}
+              onDelete={(id) => setPersonalPhrases((prev) => prev.filter((p) => p.id !== id))}
+            />
+          </>
         )}
 
         {/* PILLAR 2: SHOW ME */}
