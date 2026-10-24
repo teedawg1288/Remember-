@@ -1,163 +1,106 @@
 import React, { useState } from 'react';
-import { BookOpen, Plus, Pencil, Trash2, X, Save } from 'lucide-react';
+import { Brain, ChevronDown, Trash2 } from 'lucide-react';
 
 export interface PersonalPhrase {
   id: string;
   phrase: string;
   meaning: string;
   updatedAt: string;
+  source?: 'user' | 'inferred';
+  confidence?: number;
 }
 
 interface PersonalLanguagePanelProps {
   entries: PersonalPhrase[];
+  recentCount: number;
   enabled: boolean;
   onToggleEnabled: (enabled: boolean) => void;
-  onSave: (entry: PersonalPhrase) => void;
   onDelete: (id: string) => void;
+  onForgetAll: () => void;
 }
 
+// Deliberately lives inside VAULT, not in the conversation flow.
+// Nobody has to define their vocabulary in a form.
 export const PersonalLanguagePanel: React.FC<PersonalLanguagePanelProps> = ({
-  entries, enabled, onToggleEnabled, onSave, onDelete,
+  entries, recentCount, enabled, onToggleEnabled, onDelete, onForgetAll,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [phrase, setPhrase] = useState('');
-  const [meaning, setMeaning] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const resetForm = () => {
-    setPhrase('');
-    setMeaning('');
-    setEditingId(null);
-  };
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const cleanPhrase = phrase.trim().slice(0, 80);
-    const cleanMeaning = meaning.trim().slice(0, 300);
-    if (!cleanPhrase || !cleanMeaning) return;
-    onSave({
-      id: editingId || String(Date.now()) + '-' + String(Math.random()).slice(2, 8),
-      phrase: cleanPhrase,
-      meaning: cleanMeaning,
-      updatedAt: new Date().toISOString(),
-    });
-    resetForm();
-  };
-
-  const handleEdit = (entry: PersonalPhrase) => {
-    setEditingId(entry.id);
-    setPhrase(entry.phrase);
-    setMeaning(entry.meaning);
-    setIsOpen(true);
-  };
+  const [confirmClear, setConfirmClear] = useState(false);
 
   return (
-    <section className="w-full max-w-5xl mx-auto px-4 pb-8" aria-label="Learn My Language">
-      <div className="rounded-3xl border border-cyan-500/30 bg-[#111824] p-5 sm:p-7">
+    <section className="w-full max-w-5xl mx-auto px-4 pb-8" aria-label="Memory controls">
+      <div className="rounded-2xl border border-stone-700/70 bg-[#111824] p-4 sm:p-5">
         <button
           type="button"
           aria-expanded={isOpen}
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between gap-3 text-left"
+          onClick={() => setIsOpen((value) => !value)}
+          className="flex w-full items-center justify-between gap-3 text-left text-stone-300"
         >
-          <span className="flex items-center gap-3">
-            <BookOpen className="w-6 h-6 text-cyan-300 shrink-0" />
-            <span>
-              <strong className="block text-white font-serif text-xl">Learn My Language</strong>
-              <span className="text-xs text-stone-300">
-                Teach REMEMBER what your words and shorthand mean to you
-              </span>
-            </span>
+          <span className="flex items-center gap-2 text-sm">
+            <Brain className="h-4 w-4 text-cyan-300" />
+            Memory & privacy
           </span>
-          <span className="rounded-lg border border-cyan-500/30 px-3 py-1.5 text-xs text-cyan-200 shrink-0">
-            {isOpen ? 'Close' : 'Open'} · {entries.length}
-          </span>
+          <ChevronDown className={'h-4 w-4 transition-transform ' + (isOpen ? 'rotate-180' : '')} />
         </button>
 
         {isOpen && (
-          <div className="mt-5 pt-5 border-t border-stone-700 space-y-5">
-            <label className="flex items-center justify-between gap-3 text-sm text-stone-200">
-              <span>Use my saved meanings in future questions</span>
+          <div className="mt-4 space-y-4 border-t border-stone-700 pt-4">
+            <p className="text-sm leading-relaxed text-stone-300">
+              REMEMBER learns how you use words and shorthand from normal conversations.
+              You don't have to explain or fill out a form. Its interpretations are guesses,
+              not facts about you or anyone else.
+            </p>
+            <label className="flex items-center justify-between gap-4 text-sm text-stone-200">
+              <span>Remember language from our conversations</span>
               <input
                 type="checkbox"
                 checked={enabled}
                 onChange={(event) => onToggleEnabled(event.target.checked)}
-                className="w-5 h-5 accent-cyan-500"
+                className="h-5 w-5 accent-cyan-500"
               />
             </label>
-            <p className="text-xs text-stone-400 leading-relaxed">
-              Only meanings you deliberately save are remembered. They stay in this browser,
-              not your account or other devices. Anyone using this browser may see them,
-              so do not save passwords or other secrets. You can edit or remove them anytime.
+            <p className="text-xs leading-relaxed text-stone-400">
+              Up to 8 recent questions (30 days) and learned word meanings are stored on
+              this browser only, not synced to an account. While enabled, relevant memories
+              and recent questions go to the AI when you ask something new. Disabling memory
+              stops their use; forgetting removes the saved copies here. Avoid using this on
+              a shared device if your questions are private.
             </p>
-
-            <form onSubmit={handleSubmit} className="rounded-2xl border border-stone-700 bg-[#0d111b] p-4 space-y-3">
-              <div>
-                <label htmlFor="personal-phrase" className="block text-xs font-semibold text-cyan-200 mb-1">
-                  When I say...
-                </label>
-                <input
-                  id="personal-phrase"
-                  value={phrase}
-                  onChange={(event) => setPhrase(event.target.value)}
-                  maxLength={80}
-                  placeholder="e.g. Go"
-                  className="w-full rounded-lg bg-[#161c2a] border border-stone-700 px-3 py-2 text-sm text-white"
-                />
-              </div>
-              <div>
-                <label htmlFor="personal-meaning" className="block text-xs font-semibold text-cyan-200 mb-1">
-                  I mean...
-                </label>
-                <textarea
-                  id="personal-meaning"
-                  value={meaning}
-                  onChange={(event) => setMeaning(event.target.value)}
-                  maxLength={300}
-                  rows={2}
-                  placeholder="e.g. Continue the current task using what we already established."
-                  className="w-full rounded-lg bg-[#161c2a] border border-stone-700 px-3 py-2 text-sm text-white resize-y"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="submit"
-                  disabled={!phrase.trim() || !meaning.trim()}
-                  className="rounded-lg bg-cyan-600 text-white px-4 py-2 text-xs font-semibold disabled:opacity-40 flex items-center gap-2"
-                >
-                  {editingId ? <Save className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                  {editingId ? 'Save correction' : 'Remember this meaning'}
-                </button>
-                {editingId && (
-                  <button type="button" onClick={resetForm} className="text-xs text-stone-300 flex items-center gap-1">
-                    <X className="w-3.5 h-3.5" /> Cancel
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {entries.length > 0 ? (
+            <p className="text-xs text-stone-400">
+              {recentCount} recent questions · {entries.length} learned meanings
+            </p>
+            {entries.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-stone-300">My saved meanings</p>
+                <p className="text-xs font-semibold text-stone-300">What REMEMBER currently remembers</p>
                 {entries.map((entry) => (
-                  <div key={entry.id} className="rounded-xl border border-stone-700 bg-[#0d111a] p-3 flex items-start gap-3 justify-between">
+                  <div key={entry.id} className="flex items-start justify-between gap-3 rounded-lg border border-stone-700 p-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm text-white break-words">“{entry.phrase}”</p>
-                      <p className="text-xs text-stone-300 mt-1 break-words">{entry.meaning}</p>
+                      <p className="break-words text-sm font-medium text-white">“{entry.phrase}”</p>
+                      <p className="mt-1 break-words text-xs text-stone-300">{entry.meaning}</p>
+                      {entry.source === 'inferred' && <p className="mt-1 text-[10px] text-amber-300">AI interpretation · May be wrong</p>}
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button type="button" onClick={() => handleEdit(entry)} aria-label={'Edit ' + entry.phrase} className="p-2 text-cyan-300 rounded-lg hover:bg-cyan-950/40">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button type="button" onClick={() => onDelete(entry.id)} aria-label={'Forget ' + entry.phrase} className="p-2 text-rose-300 rounded-lg hover:bg-rose-950/40">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="rounded-md p-2 text-rose-300 hover:bg-rose-950/40"
+                      aria-label={'Forget ' + entry.phrase}
+                      onClick={() => onDelete(entry.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
               </div>
+            )}
+            {confirmClear ? (
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <span className="text-rose-200">Erase all learned words and recent questions on this device?</span>
+                <button type="button" className="rounded-lg bg-rose-700 px-3 py-2 text-white" onClick={() => { onForgetAll(); setConfirmClear(false); }}>Yes, forget everything</button>
+                <button type="button" className="rounded-lg border border-stone-600 px-3 py-2 text-stone-300" onClick={() => setConfirmClear(false)}>Cancel</button>
+              </div>
             ) : (
-              <p className="text-xs text-stone-500">No meanings saved yet. REMEMBER won't guess them for you.</p>
+              <button type="button" onClick={() => setConfirmClear(true)} className="text-xs text-rose-300 underline underline-offset-4">
+                Forget all language memory
+              </button>
             )}
           </div>
         )}
