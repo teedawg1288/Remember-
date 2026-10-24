@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Users, ShieldCheck, ArrowRight, MessageSquareQuote } from 'lucide-react';
-import { RoundTablePerspective } from '../types/sameStory';
+import { RoundTablePerspective, SameStoryResult } from '../types/sameStory';
 import { sound } from '../audio/soundEngine';
 
 interface RoundTableViewProps {
   perspectives: RoundTablePerspective[];
+  synthesis?: SameStoryResult['roundTableSynthesis'];
 }
 
-export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives }) => {
+export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, synthesis }) => {
   const [activeId, setActiveId] = useState(perspectives[0]?.id || 'barber');
   const activePerspective = perspectives.find((p) => p.id === activeId) || perspectives[0];
 
@@ -22,13 +23,13 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives }) 
       <div className="mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold mb-2">
           <Users className="w-3.5 h-3.5" />
-          <span>Requirement 9 &bull; The Round Table</span>
+          <span>The Round Table &bull; Different Ways of Knowing</span>
         </div>
         <h3 className="font-serif text-2xl font-bold text-white">
           The Round Table: Four Perspectives on One Dilemma
         </h3>
         <p className="text-xs sm:text-sm text-stone-300 mt-0.5">
-          Different fields describe this exact situation in completely different vocabularies. Listen to what each seat has to say:
+          Each seat translates the problem through a different field. Their ideas can disagree; agreement alone does not make a claim true.
         </p>
       </div>
 
@@ -75,7 +76,7 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives }) 
 
           <div className="text-right">
             <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 block mb-0.5">
-              Evidence Foundation:
+              Perspective's evidence claim (not independently checked):
             </span>
             <span className="text-xs font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-500/30">
               {activePerspective.evidenceStrength}
@@ -88,12 +89,27 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives }) 
           "{activePerspective.take}"
         </div>
 
+        {activePerspective.whatCouldChangeMyMind && (
+          <p className="mb-3 text-xs text-cyan-200"><strong>What could change this view:</strong> {activePerspective.whatCouldChangeMyMind}</p>
+        )}
+        {activePerspective.questionForOtherSeats && (
+          <p className="mb-3 text-xs text-stone-300"><strong>Question for another seat:</strong> {activePerspective.questionForOtherSeats}</p>
+        )}
+
         {/* Core Key Point */}
         <div className="flex items-center gap-2 text-xs bg-[#191d29] px-3.5 py-2 rounded-lg border border-amber-500/20 text-stone-200 font-medium">
           <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-          <span><strong className="text-amber-300">Core Takeaway:</strong> {activePerspective.keyPoint}</span>
+          <span><strong className="text-amber-300">Key Point:</strong> {activePerspective.keyPoint}</span>
         </div>
       </div>
+      {synthesis && (
+        <div className="mt-5 rounded-2xl border border-cyan-500/30 bg-[#101722] p-5 space-y-2 text-sm">
+          <p className="text-emerald-300"><strong>Common ground:</strong> {synthesis.sharedGround}</p>
+          <p className="text-amber-300"><strong>Where the seats disagree:</strong> {synthesis.keyDisagreement}</p>
+          <p className="text-stone-200"><strong>Missing evidence:</strong> {synthesis.missingEvidence}</p>
+          <p className="text-cyan-200"><strong>Next check:</strong> {synthesis.nextCheck}</p>
+        </div>
+      )}
     </div>
   );
 };
