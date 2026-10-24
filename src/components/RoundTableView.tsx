@@ -26,22 +26,14 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, sy
       <div className="mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold mb-2">
           <Users className="w-3.5 h-3.5" />
-          <span>The Round Table &bull; Different Ways of Knowing</span>
+          <span>The Round Table</span>
         </div>
         <h3 className="font-serif text-2xl font-bold text-white">
           The Round Table: {perspectives.length} Perspectives for This Question
         </h3>
         <p className="text-xs sm:text-sm text-stone-300 mt-0.5">
-          REMEMBER selects useful perspectives from the question itself. Tap a seat for another angle; agreement alone is not proof.
+          Compare different explanations. Tap a perspective to see what evidence could change it.
         </p>
-        {routing && (
-          <div className="mt-4 rounded-xl bg-[#0e1623] border border-cyan-500/25 px-4 py-3 space-y-1">
-            <p className="text-xs font-semibold text-cyan-300">Why these perspectives?</p>
-            <p className="text-sm text-stone-200">It sounds like you're asking: {routing.inferredNeed}</p>
-            <p className="text-xs text-stone-400">{routing.whyTheseSeats}</p>
-            <p className="text-[11px] text-stone-500">This is only a starting interpretation of your question. You choose which angle helps.</p>
-          </div>
-        )}
       </div>
 
       {/* Seat Selector Pills */}
