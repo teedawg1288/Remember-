@@ -30,7 +30,9 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
   onOpenResearchLab,
 }) => {
   const [activeStep, setActiveStep] = useState<number>(0);
-  const [isOverlayMode, setIsOverlayMode] = useState<boolean>(false);
+  const [isOverlayMode, setIsOverlayMode] = useState<boolean>(
+    Boolean(analysis.mechanismBridges?.[0]?.stages?.length)
+  );
   const [testOutcome, setTestOutcome] = useState<'worked' | 'mixed' | 'didnt_work' | null>(() => {
     return (localStorage.getItem(`test_outcome_${analysis.prediction?.id || analysis.id}`) as any) || null;
   });
@@ -129,13 +131,13 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-semibold mb-2">
             <Compass className="w-3.5 h-3.5" />
-            <span>Cross-Action Discovery · Visual Comparative Bridge</span>
+            <span>Cross-Domain Discovery</span>
           </div>
           <h2 className="font-serif text-2xl sm:text-4xl font-medium text-white tracking-tight">
-            From a Familiar Experience to a New Question
+            How the mechanisms compare
           </h2>
           <p className="text-xs sm:text-sm text-stone-300 mt-1 max-w-2xl">
-            Follow the proposed bridge step by step. The comparison may be useful even when the mechanism is not yet proven.
+            Compare the causal steps and find the difference that matters.
           </p>
         </div>
 
@@ -153,8 +155,8 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
         </button>
       </div>
 
-      {/* 5-Step Process Scrubber */}
-      <div className="relative z-10">
+      {/* Additional process steps remain available in the split view. */}
+      {!isOverlayMode && <div className="relative z-10">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-mono uppercase tracking-wider text-stone-400">
             Interactive Mechanism Scrubber
@@ -180,7 +182,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Dual-World Visual Stage */}
       <div className="relative z-10">
@@ -193,7 +195,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
                 Proposed Mechanism Alignment — Check Every Stage
               </span>
               <span className="text-xs font-serif italic text-amber-300">
-                "Similar functions do not prove identical causes."
+                "A match is a hypothesis until checked."
               </span>
             </div>
 
@@ -235,14 +237,6 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
               </p>
             )}
 
-            <div className="bg-[#101420] p-4 rounded-xl border border-stone-800 text-xs text-stone-300">
-              <span className="font-mono text-amber-400 uppercase font-bold block mb-1">
-                The Core Discovery:
-              </span>
-              <p className="font-serif text-sm sm:text-base text-stone-100 leading-relaxed">
-                "{analysis.underneathMechanism}"
-              </p>
-            </div>
           </div>
         ) : (
           /* Split Comparison View */

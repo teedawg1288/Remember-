@@ -117,38 +117,40 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
   // when an AI-generated or curated scenario does not supply this section.
   const storyChainData = analysis.storyChain;
   const scaleConnectionsData = analysis.scaleConnections;
-  const rosettaStoneData = getRosettaStoneForAnalysis(analysis);
+  const rosettaStoneData = analysis.isCustomGenerated && !analysis.meaningSynchronization
+    ? null // Do not force a human communication story onto a question about machinery.
+    : getRosettaStoneForAnalysis(analysis);
 
   const navTabs = [
     {
       id: 'map' as const,
       label: 'Living Discovery Map',
       icon: <Compass className="w-4 h-4" />,
-      desc: 'Interactive constellation, visual transformations & simulations',
+      desc: 'See the connections',
     },
     {
       id: 'story' as const,
       label: 'Your Story & Decisions',
       icon: <Eye className="w-4 h-4" />,
-      desc: 'The diagnosis, decision tree & historical parallels',
+      desc: 'Explore other explanations',
     },
     {
       id: 'bridge' as const,
       label: 'Cross-Domain Discovery',
       icon: <Radio className="w-4 h-4" />,
-      desc: 'Visual blueprint & real-world test',
+      desc: 'Compare mechanisms and tests',
     },
     {
       id: 'eras' as const,
       label: 'Through The Eras',
       icon: <History className="w-4 h-4" />,
-      desc: '3,400-year time portal across civilizations',
+      desc: 'What changed over time',
     },
     {
       id: 'rosetta' as const,
       label: 'The Living Rosetta Stone',
       icon: <Disc3 className="w-4 h-4" />,
-      desc: 'Life lenses & perspective translation',
+      desc: 'Translate meaning between perspectives',
     },
   ];
 
@@ -159,75 +161,44 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 animate-fade-in space-y-10">
-      {/* 1. Barbershop Conversational Hook & Diagnosis */}
-      <section className="bg-gradient-to-b from-[#181d28] via-[#12151e] to-[#0d1017] rounded-3xl border border-amber-500/30 p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-4xl space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 text-amber-200 border border-amber-500/30 text-xs font-semibold">
-              {persona === 'barber' ? (
-                <Scissors className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Wine className="w-3.5 h-3.5 text-amber-400" />
-              )}
-              <span>
-                {persona === 'barber'
-                  ? 'The Barber Chair · Street-Smart Diagnosis'
-                  : 'Late Night Counter · Deep Reflection'}
-              </span>
-            </div>
-
-            {onToggleSave && (
-              <button
-                onClick={() => {
-                  onToggleSave();
-                  sound.playDiscoveryChime();
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                  isSaved
-                    ? 'bg-amber-600/30 text-amber-300 border-amber-500/50'
-                    : 'bg-[#181c26] text-stone-300 border-stone-700 hover:border-stone-500'
-                }`}
-              >
-                <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-amber-400 text-amber-400' : ''}`} />
-                <span>{isSaved ? 'Saved to Vault' : 'Save Discovery'}</span>
-              </button>
-            )}
-          </div>
-
-          <p className="text-xs font-semibold tracking-wide text-cyan-200">
-            {analysis.isCustomGenerated
-              ? 'LIVE GEMINI ANALYSIS · Generated for this question; conclusions and sources still need checking.'
-              : 'PREPARED EXAMPLE · Illustrative comparison; not a fresh AI-generated answer.'}
-          </p>
-          {analysis.evidenceNotice && (
-            <p className="text-xs text-stone-400">{analysis.evidenceNotice}</p>
+      {/* The visible answer is a short evidence → hypothesis → check sequence.
+          Rich explanations remain in the analysis object and optional views. */}
+      <section className="rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#181d28] to-[#10141e] p-5 sm:p-8 space-y-5 shadow-xl">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[11px] uppercase tracking-widest font-semibold text-amber-300">
+            {analysis.isCustomGenerated ? 'AI analysis · not independently verified' : 'Prepared example'}
+          </span>
+          {onToggleSave && (
+            <button onClick={onToggleSave}
+              className="flex gap-2 items-center text-xs font-semibold px-3 py-2 rounded-lg border border-stone-700 text-stone-200 hover:border-amber-400 cursor-pointer">
+              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-400 text-amber-400' : ''}`} />
+              {isSaved ? 'Saved in Vault' : 'Save'}
+            </button>
           )}
-
-          {/* Conversational Opener Hook */}
-          <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight text-balance">
-            "{analysis.barberOpener}"
-          </h1>
-
-          {/* User's situation in plain words */}
-          <div className="bg-[#0b0e14]/80 border border-stone-800 rounded-2xl p-4 sm:p-5 text-stone-200 text-sm sm:text-base leading-relaxed">
-            <span className="text-amber-400 font-mono text-xs uppercase tracking-wider block mb-1 font-bold">
-              Your Situation in Plain Words:
-            </span>
-            "{analysis.userWordsSummary}"
-          </div>
-
-          {/* The Underneath Mechanism (Clean all-around border) */}
-          <div className="bg-amber-950/20 border border-amber-500/30 rounded-2xl p-5 sm:p-6 space-y-2">
-            <span className="text-amber-300 font-semibold font-serif text-lg sm:text-xl block">
-              "Different people, different places, but look at what's happening underneath:"
-            </span>
-            <p className="text-stone-100 text-sm sm:text-base leading-relaxed font-sans">
-              {analysis.underneathMechanism}
-            </p>
-          </div>
         </div>
+        <div>
+          <p className="text-[11px] text-stone-400 uppercase tracking-wide mb-1">Your question</p>
+          <h1 className="font-serif text-xl sm:text-2xl text-white font-semibold leading-relaxed">
+            {analysis.userOriginalInput || analysis.userWordsSummary}
+          </h1>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <article className="rounded-xl bg-[#0d121c] border border-stone-700 p-4">
+            <p className="text-xs font-bold text-amber-300 mb-2">1 · What we know</p>
+            <p className="text-sm text-stone-200">{analysis.userWordsSummary}</p>
+          </article>
+          <article className="rounded-xl bg-[#0d1822] border border-cyan-500/30 p-4">
+            <p className="text-xs font-bold text-cyan-300 mb-2">2 · What might explain it</p>
+            <p className="text-sm text-stone-100">{analysis.underneathMechanism}</p>
+          </article>
+          <article className="rounded-xl bg-[#101b16] border border-emerald-500/30 p-4">
+            <p className="text-xs font-bold text-emerald-300 mb-2">3 · Best next check</p>
+            <p className="text-sm text-stone-100">
+              {analysis.roundTableSynthesis?.nextCheck || analysis.unresolvedQuestion?.testablePossibility || 'Identify what evidence would distinguish the possible explanations.'}
+            </p>
+          </article>
+        </div>
+        <p className="text-xs text-stone-400">A useful explanation is a starting hypothesis, not a verdict. Check the evidence before acting.</p>
       </section>
 
       {/* 2. Clean, Story-Driven Exploration Tabs */}
@@ -359,6 +330,8 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             onOpenResearchLab={onOpenResearchLab}
           />
 
+          <details className="rounded-2xl border border-stone-700 bg-[#111822] p-4 sm:p-5">
+            <summary className="cursor-pointer text-sm text-cyan-200 font-semibold">More: what differs and what might transfer</summary>
           {/* What's Different & Why It Matters */}
           <div className="bg-[#141822] rounded-3xl border border-stone-800 p-6 sm:p-8 shadow-xl">
             <div className="flex items-center gap-2.5 mb-2">
@@ -370,7 +343,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
                   What's Different & Why Those Differences Matter
                 </h3>
                 <p className="text-xs text-stone-400 font-medium">
-                  REMEMBER's Rule: Never assume two situations are identical just because they look similar.
+                  What appears similar may have different causes.
                 </p>
               </div>
             </div>
@@ -425,7 +398,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
                   The Proposed Transfer ({analysis.borrowedInsight.donorField} &rarr; Current Question)
                 </span>
                 <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-snug">
-                  "Now here's something they figured out in another field that might help us understand this."
+                  "A possible connection from another field"
                 </h3>
 
                 <div className="bg-[#0d1017] rounded-2xl p-5 border border-amber-500/25 text-stone-200 text-sm sm:text-base leading-relaxed">
@@ -447,17 +420,24 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               </div>
             </div>
           </div>
+          </details>
         </section>
       )}
 
       {/* TAB 3: THROUGH THE ERAS (Time Continuum) */}
       {activeTab === 'eras' && (
         <section className="space-y-8 animate-fade-in">
-          <InteractiveDimensionSlider
-            currentDilemma={analysis.userOriginalInput || analysis.userWordsSummary}
-            underneathMechanism={analysis.underneathMechanism}
-            eras={analysis.eras}
-          />
+          {analysis.isCustomGenerated && analysis.eras?.length !== 5 ? (
+            <p role="status" className="rounded-2xl border border-stone-700 bg-[#141822] p-5 text-sm text-stone-300">
+              No question-specific era comparison was generated. REMEMBER will not reuse a historical story from another question.
+            </p>
+          ) : (
+            <InteractiveDimensionSlider
+              currentDilemma={analysis.userOriginalInput || analysis.userWordsSummary}
+              underneathMechanism={analysis.underneathMechanism}
+              eras={analysis.eras}
+            />
+          )}
 
           {/* Divergence: Case A Survived vs Case B Collapsed */}
           {analysis.differenceThatChangesEverything && (
@@ -522,79 +502,16 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
         </section>
       )}
 
-      {/* The Horizon Question */}
-      <section className="bg-[#151924] rounded-3xl border border-cyan-500/30 p-6 sm:p-8 shadow-xl">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="p-3 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 shrink-0 mt-1">
-            <HelpCircle className="w-6 h-6 sm:w-7 sm:h-7" />
-          </div>
-
-          <div className="space-y-3 max-w-4xl">
-            <span className="text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold">
-              The Horizon Question
-            </span>
-            <h3 className="font-serif text-xl sm:text-3xl font-bold text-white leading-snug">
-              "{analysis.unresolvedQuestion.conversationalHook}"
-            </h3>
-            <p className="text-base sm:text-lg text-stone-200 leading-relaxed font-medium">
-              {analysis.unresolvedQuestion.novelQuestion}
-            </p>
-
-            <div className="bg-[#0e111a] rounded-xl p-4 border border-cyan-500/20 text-xs sm:text-sm text-cyan-200 leading-relaxed">
-              <span className="font-mono uppercase text-[10px] text-cyan-400 font-bold block mb-1">
-                How We Could Actually Test This:
-              </span>
-              {analysis.unresolvedQuestion.testablePossibility}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Parting Barbershop Wisdom & Actions */}
-      <section className="bg-[#12151d] rounded-2xl border border-stone-800 p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4 max-w-2xl">
-          <div className="w-12 h-12 rounded-full bg-amber-600/20 border border-amber-500/40 flex items-center justify-center shrink-0 text-amber-300 font-serif font-bold text-lg">
-            "
-          </div>
-          <p className="text-stone-300 text-sm sm:text-base italic font-serif leading-relaxed">
-            {analysis.barberClosingWisdom}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-end">
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1c212e] hover:bg-[#252c3d] text-stone-200 text-xs font-semibold border border-stone-700 transition-all cursor-pointer"
-          >
-            {copied ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Copied Takeaway!</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="w-4 h-4 text-amber-400" />
-                <span>Share Story</span>
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={onOpenResearchLab}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/40 transition-all cursor-pointer"
-          >
-            <FlaskConical className="w-4 h-4 text-emerald-400" />
-            <span>Research Lab</span>
-          </button>
-
-          <button
-            onClick={onNewStory}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold transition-all shadow-md shadow-amber-500/20 cursor-pointer"
-          >
-            <span>Ask Another Story</span>
-          </button>
-        </div>
-      </section>
+      {/* Actions are available without repeating the answer or a stock closing speech. */}
+      <div className="flex flex-wrap items-center gap-3 justify-end border-t border-stone-800 pt-5">
+        <button onClick={handleShare} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-700 text-sm text-stone-200 cursor-pointer hover:border-amber-400">
+          <Share2 className="w-4 h-4" />{copied ? 'Copied!' : 'Share'}
+        </button>
+        <button onClick={onOpenResearchLab} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-500/40 text-sm text-emerald-200 cursor-pointer hover:border-emerald-400">
+          <FlaskConical className="w-4 h-4" /> Research Lab
+        </button>
+        <button onClick={onNewStory} className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-sm font-bold cursor-pointer">New Question</button>
+      </div>
 
       {/* Modal for exploring specific story history */}
       <StoryHistoryModal

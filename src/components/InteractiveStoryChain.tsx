@@ -48,11 +48,11 @@ export const InteractiveStoryChain: React.FC<InteractiveStoryChainProps> = ({ ch
             {viewMode === 'sideBySide'
               ? 'Compare Both Realities Side-by-Side'
               : isAlternative
-              ? 'Alternative Reality: Cycle Broken'
-              : 'What Usually Happens: The Misunderstanding'}
+              ? 'An Alternative Explanation'
+              : 'One Possible Explanation'}
           </h3>
           <p className="text-xs sm:text-sm text-stone-400 mt-1">
-            See how changing just one assumption at Step 2 completely rewires the ending.
+            Compare possible causes and outcomes. Evidence decides which explanation fits.
           </p>
         </div>
 

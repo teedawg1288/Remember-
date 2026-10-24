@@ -276,7 +276,16 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
       }
     }
 
-    return list;
+    // A missing comparison should not appear as a discovered connection.
+    return list.filter((node) => {
+      if (node.id === 'node-science' && analysis.isCustomGenerated) {
+        return Boolean(analysis.mechanismBridges?.length);
+      }
+      if (node.id === 'node-history') return Boolean(primaryParallel);
+      if (node.id === 'node-rosetta') return Boolean(analysis.meaningSynchronization);
+      if (node.id === 'node-prediction') return Boolean(prediction?.falsifiablePrediction);
+      return true;
+    });
   }, [analysis, isExpanded, primaryParallel, secondaryParallel, prediction, rosetta, diffCrucial]);
 
   const activeNode = nodes.find((n) => n.id === selectedNodeId) || null;
@@ -320,16 +329,14 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-400 font-bold">
-                Living Discovery Map · Real AI Reasoning Active
+                Living Discovery Map · Candidate Connections
               </span>
             </div>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              {analysis.stories[0]?.title
-                ? `Cross-Domain Investigation: ${analysis.stories[0].title}`
-                : 'The Living Pattern Constellation'}
+              Explore the connections
             </h2>
             <p className="text-xs sm:text-sm text-stone-300 max-w-2xl">
-              Your central dilemma is anchored in the middle. Touch any connected node to see where history, biology, or systems engineering already cracked this code.
+              Start with your question. Open a connection to see what matches, what differs, and what still needs checking.
             </p>
           </div>
 
@@ -450,15 +457,15 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
             <div className="relative z-10 space-y-2.5">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-mono font-bold">
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block" />
-                <span>YOUR CENTRAL DILEMMA</span>
+                <span>YOUR QUESTION</span>
               </div>
 
               <h3 className="font-serif text-base sm:text-lg font-bold text-white leading-snug line-clamp-3">
-                "{analysis.userWordsSummary || analysis.barberOpener}"
+                "{analysis.userOriginalInput || analysis.userWordsSummary}"
               </h3>
 
               <div className="pt-2 border-t border-stone-800 flex items-center justify-between text-[11px] font-mono text-stone-400">
-                <span className="text-amber-400 font-semibold">Underneath: {analysis.underneathMechanism?.split('.')[0] || 'Pattern Mechanism'}</span>
+                <span className="text-amber-400 font-semibold">Tap a connection to explore</span>
                 <span className="text-stone-500 italic">Tap to center</span>
               </div>
             </div>
@@ -529,7 +536,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
               className="px-4 py-2 rounded-full text-xs font-mono font-bold bg-[#141824] hover:bg-[#1c2233] border border-stone-700 hover:border-amber-500/50 text-stone-300 hover:text-amber-300 transition-all flex items-center gap-2 cursor-pointer shadow-md"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>{isExpanded ? 'Collapse to Core 4 Connections' : '+ Unfold 2 Additional Scale Connections'}</span>
+              <span>{isExpanded ? 'Show fewer connections' : 'Show more connections'}</span>
             </button>
           </div>
         </div>
@@ -583,7 +590,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
                 Dual-World Structural Alignment
               </h4>
               <span className="text-xs font-mono text-stone-400">
-                Connected by Shared Mechanism
+                Possible shared function
               </span>
             </div>
 
@@ -593,9 +600,9 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
               <div className="p-5 sm:p-6 rounded-2xl bg-[#0b0e15] border border-stone-800 space-y-4 shadow-inner">
                 <div className="flex items-center justify-between pb-2 border-b border-stone-800">
                   <span className="text-xs font-mono uppercase text-amber-300 font-bold">
-                    World A · Your Everyday Experience
+                    Original situation
                   </span>
-                  <span className="text-[10px] font-mono text-stone-400">Personal Reality</span>
+                  <span className="text-[10px] font-mono text-stone-400">Your question</span>
                 </div>
 
                 <div className="space-y-3">
@@ -654,7 +661,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                 <h5 className="font-serif text-sm sm:text-base font-bold text-white">
-                  The Crucial Difference That Changes Everything
+                  Where the comparison may break
                 </h5>
               </div>
               <p className="text-xs sm:text-sm text-stone-200 leading-relaxed">

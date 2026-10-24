@@ -32,9 +32,16 @@ export function assessPredictionIntegrity(
   if (supports === challenges) {
     issues.push('The proposed supporting and challenging observations are identical.');
   }
-  if ((/\d+(?:\.\d+)?\s*%/.test(prediction.falsifiablePrediction) || /\d+\s+out of\s+\d+/.test(normalized[0])) &&
-      !prediction.sourceUrl?.startsWith('https://')) {
-    issues.push('A numerical success claim has no checkable source attached.');
+  // A measured threshold (e.g. "chain elongation >0.75%") is not a
+  // claimed success rate. Flag unsupported statistical *outcome* claims,
+  // not every percent or "3 out of 10" measurement.
+  const claim = prediction.falsifiablePrediction.toLowerCase();
+  const percentOutcomeClaim =
+    /\b\d+(?:\.\d+)?\s*%\s*(?:of\s+(?:cases|people|repairs|attempts|the\s+time)|chance|probability|success|successful|accuracy|failure|effective|reliability)/.test(claim) ||
+    /\b(?:works?|succeeds?|success|fails?|failure|accuracy|chance|probability|likelihood|reliability)\s+(?:in\s+|about\s+|at\s+)?\d+(?:\.\d+)?\s*%/.test(claim) ||
+    /\b\d+\s+out\s+of\s+\d+\s+(?:cases|people|repairs|attempts|times)\b/.test(claim);
+  if (percentOutcomeClaim && !prediction.sourceUrl?.startsWith('https://')) {
+    issues.push('A numerical outcome-rate claim has no checkable source attached.');
   }
 
   // Catch a common intervention switch: a claim about "without changing X"

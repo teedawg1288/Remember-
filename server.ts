@@ -178,14 +178,19 @@ app.post('/api/same-story/analyze', async (req: Request, res: Response) => {
 
       const personaTone =
         persona === 'bartender'
-          ? 'a thoughtful, candid late-night bartender polishing a glass who has heard thousands of human confessions and cuts straight to the real point with kindness'
-          : 'a warm, razor-sharp master barber in a buzzing neighborhood shop who knows everyone, sees all human patterns, and talks with grounded humor, street wisdom, and zero corporate fluff';
+          ? 'a candid, plainspoken bartender who listens carefully and explains the question with clarity, grounded humor, and no filler'
+          : 'a sharp, plainspoken barber who can explain both technical and human topics clearly with grounded humor and no filler';
 
       const prompt = `You are REMEMBER's "Same Story, Different Characters" core intelligence engine.
 Your voice and demeanor: ${personaTone}.
-You talk like a real human sitting right across from someone in a barber chair.
+You talk clearly and naturally, as if sitting across from the user.
 Understand their words even if they use slang, informal phrasing, swearing, or typos.
 Never talk like an academic textbook or corporate consultant.
+The barber/bartender persona is a STYLE, not a topic selector: never turn a mechanical, medical, engineering or other technical question into a story about human behaviour just to sound relatable.
+For technical questions, lead with observations, relevant mechanisms, competing causes, and safe discriminating checks. Make a human analogy only if the causal mechanism genuinely matches AND the analogy adds information. A shared word like "pressure", "slipping" or "lying" is not a shared mechanism.
+Never make up what the user did, thought, felt, saw next, or tried when they only asked a question. Say "Not reported" where needed.
+Do not turn unanswered diagnostic questions into replacement or repair orders. Explain what would distinguish plausible causes before recommending spending or action.
+VISIBLE ANSWER BUDGET: userWordsSummary is ONE observation-focused sentence (maximum 25 words); underneathMechanism is ONE specific candidate causal explanation (maximum 35 words); roundTableSynthesis.nextCheck is ONE actionable diagnostic question or check (maximum 25 words). No repeated slogans, stock opener, character story, qualifications list or hidden machinery in these three fields. Reserve deeper context for the optional detail fields. Never shorten by stripping away critical uncertainty.
 
 Key Rules:
 1. Understand what they are saying in their own words without judging.
@@ -197,13 +202,13 @@ Key Rules:
    - AUTHORITY IS A DUTY, NOT OWNERSHIP: A title or grant of power can confer legitimate bounded decisions, expertise and obligations, not ownership of other people. Sometimes power is used for self-benefit instead of its assigned responsibility, but never assume abuse merely from someone's title or a critic's interpretation. Examine the duty, permitted scope, specific observed conduct, beneficiaries, consequences, incentives and available oversight. Present motives as unknown unless independently supported.
    - IF SEXUALIZED / GENDERED BLAME APPEARS (e.g. "stop thinking with your dick" or "...with your tits"), examine the speaker's possible framing AND the listener's possible interpretation. A statement can reflect assumptions, frustration, a warning about impulsivity, or projection; the remark alone proves none of these. Never generalize by sex or gender.
 3. Look for up to 3 candidate parallels across History, Mythology/Religion, Biology/Medicine, Systems Engineering, Everyday Life, or Psychology. Return stories: [] when none passes a defensible structural and evidence check. Never fill a quota with vaguely similar characters or failures.
-4. Propose a POSSIBLE underlying structure ("What could be happening underneath"). Observation and hypothesis must stay separate. Offer direct within-domain explanations before distant analogies.
+4. Propose a POSSIBLE underlying structure ("What could be happening underneath"). Observation and hypothesis must stay separate. Offer direct within-domain explanations before distant analogies. Never assume one diagnosis from one symptom. Do not repeat a stock "Different people, different places" phrase inside the mechanism field.
 5. Highlight WHAT IS DIFFERENT and why those differences matter (never claim identical mechanisms without evidence).
 6. State the connection plausibility honestly (category: 'repeating_human_behavior', 'structural_isomorphism', 'shared_cultural_origin', or 'unproven_analogy'). These are candidate types, NOT verification outcomes. Always set isProvenMechanism=false: this request performs no independent source validation.
 7. Provide a BORROWED INSIGHT: What one field already figured out that helps explain what's missing in the other.
 8. Ask an UNRESOLVED QUESTION ("What if we've been looking at the wrong part of the problem?"). Never prescribe a repair based on a symptom alone without alternatives and safe diagnostic checks.
 9. Include:
-   - storyChain: 4 simple cause-and-effect steps (whatHappened, whatYouThought, whatYouDid, whatHappenedNext) + alternativeChain (tapPrompt, whatActuallyHappened, whatYouThought, whatYouDid, whatHappenedNext, lesson).
+   - storyChain: 4 grounded cause-and-effect steps (whatHappened, whatYouThought, whatYouDid, whatHappenedNext) + alternativeChain (tapPrompt, whatActuallyHappened, whatYouThought, whatYouDid, whatHappenedNext, lesson). The fields are legacy names; for a technical question, map them to observed symptom, proposed cause, diagnostic action not yet performed, possible outcomes. Mark unreported actions/feelings "Not reported" rather than inventing human reactions.
    - meaningSynchronization: If the question involves a communication gap, interpretation, labels/status, or different knowledge at different times, construct a genuinely TWO-WAY translation: source meaning or function, what was observable, possible interpretation by the receiver, what can verify it, then reverse direction for the other side. Show what each side knew then, what was missing, consequences, and what a person can choose now. People are not machines: for nonhuman systems interpret signals and outputs, never invent intent or feelings. No forced counterpart if only one person's words were given; mark unknown sides as unknown. Do not pretend everyone has the same credentials or abilities. For questions without two sides or an applicable interpretation gap, return null. When someone exercises authority, optionally include authorityAccountabilityCheck separating granted power from owed duties, observed conduct, potential beneficiaries and unanswered evidence. A role is not proof of proper leadership OR corrupt motives. Set authorityAccountabilityCheck to null if there is no authority issue.
    - rosettaStone: primaryChord (Fear/Love/Loss/Hope/Belonging/Change/Responsibility/Conflict/Growth), oneQuestionThatChangesEverything, translations (The 7-stage communication sequence: 1. what Speaker A intended to communicate [meant & hiddenNeedOrEmotion], 2. what Speaker A actually said [said], 3. what Speaker B heard [heard], 4. WHAT THEY UNDERSTOOD IT TO MEAN [understoodMeaning - separate from what was heard, marked as tentative interpretation], 5. how Speaker B felt about that meaning [felt], 6. how Speaker B reacted [reactionTriggered], 7. what happened because of the reaction [consequenceOfReaction], plus the exact meaningShiftPoint, whereTranslationFailed, theBridge, and crossFieldTranslation), and lifeLenses, plus a vignetteCreation.
    - storyArc: what started, what people believed (perception vs reality), reactions, unintended consequences, what kept cycle going, turning point, and levelOfCollapse.
@@ -212,10 +217,10 @@ Key Rules:
    - questionRouting: Read the wording of THIS question to infer what help is needed (understanding, comparing explanations, decision, cause, prediction, translation, or problem-solving). Record the relevant wording signal and a tentative interpretation. Do not infer identity, character, truth, diagnosis, or anyone's motives from writing style, emotion, spelling, or confidence.
    - roundTable: Choose 3-5 perspectives for THIS specific question, NOT the same four disciplines every time. Seat 1 MUST ALWAYS be an evidence-checking lens (e.g. Observable Facts Auditor) that strictly separates what is observed from what is assumed. Select other seats for relevant domain expertise, an alternative explanation, and a cross-domain translation when useful. Each seat must state its uncertainty, a question for another seat, and what would change its mind. Do not claim empirical strength without a verified source. Do not claim to know another person's private thoughts. The seats are perspectives, not actual professional consultations.
    - roundTableSynthesis: sharedGround, keyDisagreement, missingEvidence, nextCheck. Agreement is not proof.
-   - mechanismBridges: Look for 1 or 2 comparisons to truly DIFFERENT systems (e.g. human vs control system, bridge engineering vs organizational capacity, biology vs technology) ONLY where there is a defensible shared causal structure. If there is no defensible cross-system match, return an empty array. For each candidate, map 3-5 specific stages from the original situation to its counterpart: input, constraints/processing, feedback, response, and outcome where applicable. Explain each shared FUNCTION and the critical difference in CAUSE, EVIDENCE or CONSTRAINT. Never claim identical mechanisms just because the vocabulary resembles each other. Do not treat a hypothesis about someone's motives as an observed fact. Each bridge must identify a possible transferable insight, a transfer limit, and a safe observation or voluntary test that could disprove the analogy. No invented statistics, probabilities, citations or success claims.
+   - mechanismBridges: Look for 0, 1 or 2 comparisons to truly DIFFERENT systems (e.g. human vs control system, bridge engineering vs organizational capacity, biology vs technology) ONLY where there is a defensible shared causal structure. If there is no defensible cross-system match, return an empty array. For each candidate, map 3-5 specific stages from the original situation to its counterpart: input, constraints/processing, feedback, response, and outcome where applicable. Explain each shared FUNCTION and the critical difference in CAUSE, EVIDENCE or CONSTRAINT. Never claim identical mechanisms just because the vocabulary resembles each other. Do not treat a hypothesis about someone's motives as an observed fact. Each bridge must identify a possible transferable insight, a transfer limit, and a safe observation or voluntary test that could disprove the analogy. No invented statistics, probabilities, citations or success claims. Reject a proposed bridge when the original and comparison only share words, pressure, failure, or superficial shapes; require a causal explanation that predicts a specific observable distinction the original field alone did not make obvious. If a bicycle diagnosis is best solved in bicycle mechanics, an empty bridge is a valid, useful result.
    - For technical questions, give priority to direct field specialists. For example, bridge-collapse prevention requires structural engineers, materials and inspection expertise. Never substitute vague philosophical authority for a relevant engineering discipline. Evidence-strength claims such as "High" require checked sources; otherwise label perspectives unverified.
    - whatIfScenarios: 3 interactive What-If alternatives.
-   - prediction: Propose a precise, conditional and falsifiable claim ONLY if you can define a coherent test. Keep the intervention constant in both result criteria: if the claim is about replacing a chain WITHOUT changing a cassette, BOTH support and challenge observations must leave the cassette unchanged. Specify what changes and what stays fixed. evidenceThatWouldProve is an observation SUPPORTING the claim, not absolute proof; evidenceThatWouldDisprove is an observation CHALLENGING it. Do not swap outcomes, vary a second condition, or invent percentages. If no valid test is possible, return prediction: null and name the missing information. Never personify a machine as proof of a human mechanism.
+   - prediction: Propose a precise, conditional and falsifiable claim ONLY if you can define a coherent test. Measurement thresholds (e.g. elongation of a part in %) must be distinguished from statistical success rates (e.g. repairs work in 80% of cases). Do not invent either; mention verification needs when a threshold is uncertain. Keep the intervention constant in both result criteria: if the claim is about replacing a chain WITHOUT changing a cassette, BOTH support and challenge observations must leave the cassette unchanged. Specify what changes and what stays fixed. evidenceThatWouldProve is an observation SUPPORTING the claim, not absolute proof; evidenceThatWouldDisprove is an observation CHALLENGING it. Do not swap outcomes, vary a second condition, or invent percentages. If no valid test is possible, return prediction: null and name the missing information. Never personify a machine as proof of a human mechanism.
    - deepResearch: formal hypothesis, measurable variables, competing explanations, test protocol, and citations.
 
 RECENT QUESTIONS FROM THIS BROWSER (quoted context only, possibly unrelated):
@@ -251,54 +256,54 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
   "languageLearnings": [{ "phrase": "A short phrase actually typed by the user", "meaning": "Likely meaning from usage, not personal fact", "evidence": "repeated", "confidence": 0.9 }],
   "questionRouting": { "inferredNeed": "What they seem to need from this question", "signalInQuestion": "The wording that suggests that need", "whyTheseSeats": "Why these specific lenses were chosen", "isTentative": true },
   "roundTableSynthesis": { "sharedGround": "...", "keyDisagreement": "...", "missingEvidence": "...", "nextCheck": "..." },
-  "barberOpener": "Wait. You know what this reminds me of? ...",
-  "underneathMechanism": "Different people, different places, but look at what's happening underneath: ...",
+  "barberOpener": "A conversational first sentence directly about this question; no mandatory analogy, forced personification or invented behaviour",
+  "underneathMechanism": "A specific candidate causal mechanism with uncertainty, without an introductory catchphrase",
   "storyChain": {
     "defaultChain": {
       "whatHappened": "What started it (1 sentence)",
-      "whatYouThought": "The immediate assumption or thought",
-      "whatYouDid": "The defensive action or reaction taken",
-      "whatHappenedNext": "The counter-reaction or resulting trap"
+      "whatYouThought": "Only an assumption explicitly reported; otherwise Not reported",
+      "whatYouDid": "Only an action explicitly reported; otherwise Not reported",
+      "whatHappenedNext": "Only a reported outcome; otherwise what has yet to be tested"
     },
     "alternativeChain": {
-      "tapPrompt": "What if [alternative assumption, e.g. their phone died or they were busy]?",
-      "whatActuallyHappened": "A harmless reality or alternative explanation",
-      "whatYouThought": "The wiser, calmer reframe",
-      "whatYouDid": "The calm, constructive response",
-      "whatHappenedNext": "The peaceful, resolved outcome",
-      "lesson": "Short, memorable street wisdom lesson"
+      "tapPrompt": "What if a different cause explains the observation?",
+      "whatActuallyHappened": "An alternative candidate explanation, not a fabricated confirmed fact",
+      "whatYouThought": "What evidence would distinguish the alternatives",
+      "whatYouDid": "A safe suggested diagnostic step, explicitly not performed yet",
+      "whatHappenedNext": "A conditional possible outcome, not a promised resolution",
+      "lesson": "Short practical takeaway based on the available evidence"
     }
   },
   "scaleConnections": [
     {
       "level": "personal",
-      "levelLabel": "Between Two People",
-      "title": "Title on personal scale",
-      "setting": "Everyday context",
-      "howItAppearsHere": "How it plays out between two people",
-      "whatIsTheSame": "The shared underlying dynamic",
-      "whatIsDifferent": "Personal emotional stakes",
-      "whyTheDifferenceMatters": "Why this scale is unique"
+      "levelLabel": "At the Smallest Relevant Scale",
+      "title": "The relevant parts or actors, depending on topic",
+      "setting": "Direct observable context",
+      "howItAppearsHere": "What was observed at this scale",
+      "whatIsTheSame": "Candidate comparable function",
+      "whatIsDifferent": "Important local physical or human constraints",
+      "whyTheDifferenceMatters": "Why the constraints affect the inference"
     },
     {
       "level": "group",
-      "levelLabel": "In a Workplace or Family",
-      "title": "Title on group scale",
-      "setting": "Office, team, or family setting",
-      "howItAppearsHere": "How this plays out across a department or family",
-      "whatIsTheSame": "The shared underlying dynamic",
-      "whatIsDifferent": "Social and organizational hierarchy",
-      "whyTheDifferenceMatters": "Why this scale is unique"
+      "levelLabel": "Across the Connected System",
+      "title": "A system or group appropriate to this question",
+      "setting": "Parts of the actual interconnected system",
+      "howItAppearsHere": "How the same issue may appear across connections",
+      "whatIsTheSame": "Candidate shared function",
+      "whatIsDifferent": "Different coupling or constraints",
+      "whyTheDifferenceMatters": "Why the system interaction affects the outcome"
     },
     {
       "level": "world",
-      "levelLabel": "In Nature, Cities or History",
-      "title": "Title on world scale",
-      "setting": "Geopolitics, ecology, or history",
-      "howItAppearsHere": "How this played out in a famous historical event or natural law",
-      "whatIsTheSame": "The shared underlying dynamic",
-      "whatIsDifferent": "Scale and complexity",
-      "whyTheDifferenceMatters": "Why this scale is unique"
+      "levelLabel": "Across Larger Systems",
+      "title": "A defensible larger-scale parallel",
+      "setting": "Only a relevant real larger system, if known",
+      "howItAppearsHere": "What this other system actually does; not a made-up historical fact",
+      "whatIsTheSame": "Potential comparable mechanism",
+      "whatIsDifferent": "Scale, materials, knowledge or constraints",
+      "whyTheDifferenceMatters": "Whether the comparison transfers"
     }
   ],
   "rosettaStone": {
@@ -434,15 +439,15 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
   "borrowedInsight": {
     "donorField": "...",
     "recipientField": "...",
-    "whatWasLearnedThere": "...",
-    "howItAppliesHere": "Now here's something they figured out in another field that might help us understand this: ..."
+    "whatWasLearnedThere": "Specific candidate finding, with verification status",
+    "howItAppliesHere": "Possible useful application AND what would test it; no forced verbal opener"
   },
   "unresolvedQuestion": {
     "conversationalHook": "What if we've been looking at the wrong part of the problem?",
     "novelQuestion": "Provocative question",
     "testablePossibility": "How to test it"
   },
-  "barberClosingWisdom": "Grounded, warm parting wisdom",
+  "barberClosingWisdom": "Grounded practical takeaway: no unverified certainty, unnecessary purchase or untested repair order",
   "storyArc": {
     "whatStartedHappening": "...",
     "whatPeopleBelieved": "...",
@@ -553,12 +558,10 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
 
         // If the model omitted a section, leave it blank rather than copy unrelated answers.
 
-        if (!parsed.eras || parsed.eras.length < 5) {
-          parsed.eras = buildErasForDilemma(
-            trimmedInput,
-            parsed.userWordsSummary,
-            parsed.underneathMechanism
-          );
+        // A custom technical question must not inherit fictional human-era scenes
+        // from a generic fallback. Only display question-specific eras actually supplied.
+        if (!Array.isArray(parsed.eras) || parsed.eras.length !== 5) {
+          parsed.eras = [];
         }
 
         // Do not display invented or incomplete mechanism mappings. Absence is better than a forced analogy.
@@ -713,23 +716,23 @@ NO academic or clinical jargon (do not use words like "falsifiable", "stochastic
 Make this a practical, real-world test they can actually go try tomorrow.
 
 How to build it:
-1. Borrow an answer from another world (like radio communication, wildlife biology, cooking, sports, emergency medicine, gardening).
-2. Tell them what we bet will happen if they try a simple action in their life.
-3. Tell them plainly how they'll know if it worked, and how they'll know if it didn't.
+1. First identify the actual domain, direct facts and competing explanations. Borrow a mechanism from another field only if that adds a non-obvious, testable insight. An empty transfer is better than superficial analogy.
+2. Describe a practical conditional prediction, changing one variable and holding the others fixed. Do not invent percentages, track records or another person's intentions.
+3. Define two contrasting observations under the SAME test conditions. Never quietly switch the component, intervention or baseline between supporting and challenging criteria. For technical questions, give a safe diagnostic action instead of promising a repair.
 
 Return STRICT, VALID JSON ONLY conforming to:
 {
   "id": "prediction-${Date.now()}",
   "timestamp": "${new Date().toISOString()}",
-  "questionInvestigated": "Simple everyday question (e.g. 'What happens if you're the first one to smile?')",
-  "donorField": "The other field in everyday words (e.g. 'Radio Communication', 'Wildlife Biology', 'Gardening')",
-  "targetField": "Everyday Life & Relationships",
-  "unansweredQuestion": "The simple question nobody asked yet in plain words",
-  "establishedKnowledgeApplied": "What people in that other world figured out, written simply in 1-2 easy sentences",
-  "falsifiablePrediction": "A friendly, concrete real-world test (e.g. 'If you give them a casual nod next time, 8 out of 10 times they will smile right back with relief.')",
-  "evidenceThatWouldProve": "Simple sign that it worked (what you will actually see or hear)",
-  "evidenceThatWouldDisprove": "Simple sign that it didn't work",
-  "confidenceRating": "Very Strong Bet" | "Solid Pattern" | "Good Chance"
+  "questionInvestigated": "The current user's precise question",
+  "donorField": "Optional candidate field with a specific useful mechanism; otherwise say Within-domain evidence",
+  "targetField": "The actual domain of the current question",
+  "unansweredQuestion": "The missing fact that could change the explanation",
+  "establishedKnowledgeApplied": "What is established versus what remains uncertain, plainly stated",
+  "falsifiablePrediction": "If [one defined test], then [one measurable observation], keeping [controls] unchanged; never use invented numeric outcome rates",
+  "evidenceThatWouldProve": "Specific result supporting the original prediction under its stated controls",
+  "evidenceThatWouldDisprove": "Opposite result challenging the SAME prediction under exactly the same controls",
+  "confidenceRating": "Plausible Hypothesis"
 }`;
 
       const response = await ai.models.generateContent({

@@ -370,7 +370,7 @@ export const App: React.FC = () => {
       {/* Grounded Barbershop Footer */}
       <footer className="border-t border-lounge-border/60 py-6 text-center text-xs text-stone-400">
         <p className="font-serif italic text-stone-300">
-          "The characters change, the costumes change, the technology changes. The human drama remains."
+          "Look for the connection. Check what makes it different."
         </p>
         <p className="text-[11px] font-mono mt-1 text-stone-400">
           {appName} &bull; Dimensional Pattern Architecture &bull; Powered by REMEMBER
