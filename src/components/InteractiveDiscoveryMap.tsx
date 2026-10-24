@@ -278,6 +278,9 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
     // A missing comparison should not appear as a discovered connection.
     return list.filter((node) => {
+      if (node.id === 'node-science' && analysis.isCustomGenerated) {
+        return Boolean(analysis.mechanismBridges?.length);
+      }
       if (node.id === 'node-history') return Boolean(primaryParallel);
       if (node.id === 'node-rosetta') return Boolean(analysis.meaningSynchronization);
       if (node.id === 'node-prediction') return Boolean(prediction?.falsifiablePrediction);
