@@ -225,9 +225,13 @@ export interface RosettaTranslationLayer {
   speakerB: {
     role: string;
     heard: string;
+    understoodMeaning?: string; // Stage 4: What they understood those words to mean
+    isConfirmedInterpretation?: boolean; // Whether confirmed or speculative
     felt: string;
     reactionTriggered: string;
+    consequenceOfReaction?: string; // Stage 7: What happened because of the reaction
   };
+  meaningShiftPoint?: string; // The exact point where the meaning changed
   whereTranslationFailed: string;
   theBridge: string;
   crossFieldTranslation?: {
@@ -300,6 +304,20 @@ export interface SameStoryResult {
   userResonanceVerdict?: 'resonates' | 'partially_resonates' | 'not_my_story';
   userPersonalTakeaway?: string;
   storyArc?: StoryDevelopmentArc;
+  familiarStartingPoint?: string;
+  evidenceNotice?: string;
+  questionRouting?: {
+    inferredNeed: string;
+    signalInQuestion: string;
+    whyTheseSeats: string;
+    isTentative: boolean;
+  };
+  roundTableSynthesis?: {
+    sharedGround: string;
+    keyDisagreement: string;
+    missingEvidence: string;
+    nextCheck: string;
+  };
   differenceThatChangesEverything?: DifferenceThatChangesEverything;
   mirrorEffect?: MirrorEffect;
   roundTable?: RoundTablePerspective[];

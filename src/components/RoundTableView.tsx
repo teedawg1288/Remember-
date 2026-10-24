@@ -10,10 +10,10 @@ interface RoundTableViewProps {
 }
 
 export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, synthesis, routing }) => {
-  const [activeId, setActiveId] = useState(perspectives[0]?.id || 'barber');
+  const [activeId, setActiveId] = useState(perspectives[0]?.id || 'lens-1');
   const activePerspective = perspectives.find((p) => p.id === activeId) || perspectives[0];
 
-  if (perspectives.length === 0) return null;
+  if (!perspectives || perspectives.length === 0) return null;
 
   const handleSelect = (id: string) => {
     setActiveId(id);
@@ -73,46 +73,55 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, sy
       </div>
 
       {/* Active Seat Spotlight Card */}
-      <div className="bg-[#0e1119] rounded-2xl border border-amber-500/30 p-5 sm:p-7 shadow-lg">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl sm:text-4xl">{activePerspective.avatar}</span>
-            <div>
-              <h4 className="font-serif text-xl sm:text-2xl font-bold text-white">
-                {activePerspective.name}
-              </h4>
-              <p className="text-xs text-amber-400/90 font-mono">{activePerspective.role}</p>
+      {activePerspective && (
+        <div className="bg-[#0e1119] rounded-2xl border border-amber-500/30 p-5 sm:p-7 shadow-lg">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl sm:text-4xl">{activePerspective.avatar}</span>
+              <div>
+                <h4 className="font-serif text-xl sm:text-2xl font-bold text-white">
+                  {activePerspective.name}
+                </h4>
+                <p className="text-xs text-amber-400/90 font-mono">{activePerspective.role}</p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 block mb-0.5">
+                Perspective's evidence claim (not independently checked):
+              </span>
+              <span className="text-xs font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                {activePerspective.evidenceStrength}
+              </span>
             </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 block mb-0.5">
-              Perspective's evidence claim (not independently checked):
-            </span>
-            <span className="text-xs font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-500/30">
-              {activePerspective.evidenceStrength}
-            </span>
+          {/* The Take */}
+          <div className="bg-[#151924] rounded-xl p-4 sm:p-5 border border-lounge-border text-stone-200 text-sm sm:text-base leading-relaxed italic font-serif mb-4">
+            "{activePerspective.take}"
+          </div>
+
+          {activePerspective.whatCouldChangeMyMind && (
+            <p className="mb-3 text-xs text-cyan-200">
+              <strong>What could change this view:</strong> {activePerspective.whatCouldChangeMyMind}
+            </p>
+          )}
+
+          {activePerspective.questionForOtherSeats && (
+            <p className="mb-3 text-xs text-stone-300">
+              <strong>Question for another seat:</strong> {activePerspective.questionForOtherSeats}
+            </p>
+          )}
+
+          {/* Core Key Point */}
+          <div className="flex items-center gap-2 text-xs bg-[#191d29] px-3.5 py-2 rounded-lg border border-amber-500/20 text-stone-200 font-medium">
+            <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+            <span><strong className="text-amber-300">Key Point:</strong> {activePerspective.keyPoint}</span>
           </div>
         </div>
+      )}
 
-        {/* The Take */}
-        <div className="bg-[#151924] rounded-xl p-4 sm:p-5 border border-lounge-border text-stone-200 text-sm sm:text-base leading-relaxed italic font-serif mb-4">
-          "{activePerspective.take}"
-        </div>
-
-        {activePerspective.whatCouldChangeMyMind && (
-          <p className="mb-3 text-xs text-cyan-200"><strong>What could change this view:</strong> {activePerspective.whatCouldChangeMyMind}</p>
-        )}
-        {activePerspective.questionForOtherSeats && (
-          <p className="mb-3 text-xs text-stone-300"><strong>Question for another seat:</strong> {activePerspective.questionForOtherSeats}</p>
-        )}
-
-        {/* Core Key Point */}
-        <div className="flex items-center gap-2 text-xs bg-[#191d29] px-3.5 py-2 rounded-lg border border-amber-500/20 text-stone-200 font-medium">
-          <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-          <span><strong className="text-amber-300">Key Point:</strong> {activePerspective.keyPoint}</span>
-        </div>
-      </div>
+      {/* Synthesis Section if present */}
       {synthesis && (
         <div className="mt-5 rounded-2xl border border-cyan-500/30 bg-[#101722] p-5 space-y-2 text-sm">
           <p className="text-emerald-300"><strong>Common ground:</strong> {synthesis.sharedGround}</p>

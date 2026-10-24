@@ -279,9 +279,13 @@ export const CURATED_STORIES: SameStoryResult[] = [
           speakerB: {
             role: 'The Receiver (Your Friend)',
             heard: 'You are giving me the cold shoulder and expecting me to read your mind.',
+            understoodMeaning: 'They understood this to mean that you find them untrustworthy, are keeping score of response times, and are intentionally freezing them out as punishment.',
+            isConfirmedInterpretation: false,
             felt: 'Confused, alienated, and defensive.',
             reactionTriggered: 'Pulling back even further because the interaction feels heavy.',
+            consequenceOfReaction: 'Both friends fell into three weeks of awkward silence, each convinced the other was the one who pulled away.',
           },
+          meaningShiftPoint: 'The acoustic words (or absence of them) were interpreted through unconfirmed assumptions, turning neutral delay into perceived emotional rejection.',
           whereTranslationFailed: 'A silent plea for warmth was expressed as coldness, and interpreted as hostility.',
           theBridge: 'Hey, I realized things felt quiet between us. I value our friendship and just wanted to see how you are doing—no rush at all.',
           crossFieldTranslation: {
@@ -564,9 +568,13 @@ export const CURATED_STORIES: SameStoryResult[] = [
           speakerB: {
             role: 'The Partner / Roommate',
             heard: 'You think I am lazy, careless, and a burden to live with.',
+            understoodMeaning: 'They understood this to mean that you do not respect their effort, consider them an obstacle rather than a teammate, and believe they cannot be trusted with shared responsibilities.',
+            isConfirmedInterpretation: false,
             felt: 'Criticized, belittled, and reluctant to help because it will never meet your standard.',
             reactionTriggered: 'Defensive paralysis or hiding in another room.',
+            consequenceOfReaction: 'The chores remained untouched, resentment simmered on both sides, and the household grew cold and transactional.',
           },
+          meaningShiftPoint: 'The cry for partnership was masked by angry slamming of dishes, causing the listener to decode a plea for help as a contemptuous character assassination.',
           whereTranslationFailed: 'Exhaustion was expressed as moral superiority; perceived incompetence was actually just different sensory thresholds.',
           theBridge: 'I feel overwhelmed managing the house alone. Can we sit down for 5 minutes and split the daily chores so neither of us has to carry it in our heads?',
           crossFieldTranslation: {
