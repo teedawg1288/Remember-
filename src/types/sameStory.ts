@@ -304,20 +304,6 @@ export interface SameStoryResult {
   userResonanceVerdict?: 'resonates' | 'partially_resonates' | 'not_my_story';
   userPersonalTakeaway?: string;
   storyArc?: StoryDevelopmentArc;
-  familiarStartingPoint?: string;
-  evidenceNotice?: string;
-  questionRouting?: {
-    inferredNeed: string;
-    signalInQuestion: string;
-    whyTheseSeats: string;
-    isTentative: boolean;
-  };
-  roundTableSynthesis?: {
-    sharedGround: string;
-    keyDisagreement: string;
-    missingEvidence: string;
-    nextCheck: string;
-  };
   differenceThatChangesEverything?: DifferenceThatChangesEverything;
   mirrorEffect?: MirrorEffect;
   roundTable?: RoundTablePerspective[];
