@@ -543,7 +543,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
       {activeTab === 'eras' && (
         <section className="space-y-8 animate-fade-in">
           <InteractiveDimensionSlider
-            currentDilemma={analysis.userWordsSummary || analysis.userOriginalInput}
+            currentDilemma={analysis.userOriginalInput || analysis.userWordsSummary}
             underneathMechanism={analysis.underneathMechanism}
             eras={analysis.eras}
           />

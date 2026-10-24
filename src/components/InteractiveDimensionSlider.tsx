@@ -12,7 +12,7 @@ import {
   Flame,
   ArrowRight,
 } from 'lucide-react';
-import { EraProjection } from '../types/sameStory';
+import { EraProjection, EraUnderstandingResult } from '../types/sameStory';
 import { buildErasForDilemma } from '../data/eraBuilder';
 import { sound } from '../audio/soundEngine';
 
@@ -35,8 +35,41 @@ export const InteractiveDimensionSlider: React.FC<InteractiveDimensionSliderProp
 
   const [activeEraIndex, setActiveEraIndex] = useState(3); // Default to Present Day (index 3)
   const [viewMode, setViewMode] = useState<'visual' | 'anatomy'>('visual');
+  const [lifeStage, setLifeStage] = useState<EraUnderstandingResult['lifeStage']>('starting_out');
+  const [eraTranslations, setEraTranslations] = useState<Record<string, EraUnderstandingResult>>({});
+  const [translating, setTranslating] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
 
   const currentEra = activeEras[activeEraIndex] || activeEras[3];
+  const translationKey = currentDilemma + '|' + currentEra.id + '|' + lifeStage;
+  const translation = eraTranslations[translationKey];
+  const lifeStages: { id: EraUnderstandingResult['lifeStage']; label: string }[] = [
+    { id: 'starting_out', label: 'Starting Out' },
+    { id: 'heavy_lifting', label: 'Carrying Responsibility' },
+    { id: 'looking_back', label: 'Looking Back' },
+  ];
+
+  const translateEra = async () => {
+    const key = translationKey;
+    setTranslating(true);
+    setTranslationError(null);
+    try {
+      const res = await fetch('/api/same-story/era-translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentDilemma, eraId: currentEra.id, lifeStage }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.translation) {
+        throw new Error(data.error || 'Era translation unavailable.');
+      }
+      setEraTranslations((prev) => ({ ...prev, [key]: data.translation as EraUnderstandingResult }));
+    } catch (err: any) {
+      setTranslationError(err?.message || 'Could not translate this era right now.');
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
@@ -70,7 +103,7 @@ export const InteractiveDimensionSlider: React.FC<InteractiveDimensionSliderProp
             Through The Eras: Your Story Across Millennia
           </h3>
           <p className="text-xs sm:text-sm text-stone-300 mt-1 max-w-2xl">
-            Watch how your exact situation played out across history. The costumes, languages, and technologies change, but the underlying human misunderstanding stays 100% identical.
+            Explore fictional versions of a problem across eras. Then compare how age, experience, available knowledge, words and tools could change its meaning. Similar outcomes do not prove identical causes.
           </p>
         </div>
 
@@ -156,6 +189,66 @@ export const InteractiveDimensionSlider: React.FC<InteractiveDimensionSliderProp
             );
           })}
         </div>
+      </div>
+
+      {/* Three clocks: period, lived experience and information available at the time */}
+      <div className="relative z-10 rounded-2xl border border-cyan-500/30 bg-[#0d1822] p-4 sm:p-5 space-y-4">
+        <div className="space-y-1">
+          <h4 className="font-serif text-xl text-white">Three Clocks Translator</h4>
+          <p className="text-xs text-stone-300">
+            Period: {currentEra.year} · Choose a stage of life separately. A stage is not a fixed age or ability.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {lifeStages.map((stage) => (
+            <button key={stage.id} type="button" onClick={() => { setLifeStage(stage.id); setTranslationError(null); }}
+              className={'rounded-lg px-3 py-2 text-xs font-medium border transition-colors ' +
+                (lifeStage === stage.id
+                  ? 'bg-cyan-600/25 border-cyan-400 text-cyan-100'
+                  : 'bg-[#151924] border-stone-700 text-stone-300')}>
+              {stage.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" disabled={translating} onClick={translateEra}
+            className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-stone-950 disabled:opacity-50">
+            {translating ? 'Translating era…' : translation ? 'Recheck this era' : 'Translate this era'}
+          </button>
+          <span className="text-[11px] text-stone-400">
+            Uses one AI request when tapped. Reconstruction, not verified historical testimony.
+          </span>
+        </div>
+        {translationError && <p role="alert" className="text-xs text-rose-300">{translationError}</p>}
+        {translation && (
+          <div className="space-y-4 pt-3 border-t border-cyan-500/20">
+            <div className="grid gap-3 md:grid-cols-2">
+              <article className="rounded-xl border border-stone-700 bg-[#121a27] p-4 space-y-2">
+                <p className="text-xs font-semibold text-cyan-300">Characters, masks and words</p>
+                <p className="text-sm text-stone-200">{translation.charactersAndRoleMasks}</p>
+                <p className="text-sm text-white"><span className="text-amber-300">A possible phrase then: </span>{translation.termOrPhraseThen}</p>
+                <p className="text-sm text-stone-200"><span className="text-cyan-300">Possible meaning then: </span>{translation.meaningThen}</p>
+                <p className="text-sm text-stone-200"><span className="text-cyan-300">Meaning today: </span>{translation.whatTheWordMeansToday}</p>
+              </article>
+              <article className="rounded-xl border border-stone-700 bg-[#121a27] p-4 space-y-2">
+                <p className="text-xs font-semibold text-cyan-300">Tools, knowledge and accepted norms</p>
+                <p className="text-sm text-stone-200"><span className="text-amber-300">Possible tools and options: </span>{translation.toolsAndOptions}</p>
+                <p className="text-sm text-stone-200"><span className="text-amber-300">Potentially known then: </span>{translation.reasonablyKnownThen}</p>
+                <p className="text-sm text-stone-200"><span className="text-amber-300">Unknown or unverified: </span>{translation.uncertainOrUnknowableThen}</p>
+                <p className="text-sm text-stone-200"><span className="text-amber-300">Social expectations and exceptions: </span>{translation.socialNormsAndExceptions}</p>
+              </article>
+            </div>
+            <div className="rounded-xl border border-amber-500/25 bg-amber-950/15 p-4 space-y-2">
+              <p className="text-xs font-semibold text-amber-300">Life stage × era: what might be understood?</p>
+              <p className="text-sm text-stone-200">{translation.interpretationAtThatLifeStage}</p>
+              <p className="text-sm text-stone-200"><span className="text-amber-300">Inherited rule: </span>{translation.inheritedRule}</p>
+              <p className="text-sm text-stone-200"><span className="text-emerald-300">What may still transfer: </span>{translation.whatStillTransfers}</p>
+              <p className="text-sm text-stone-200"><span className="text-rose-300">What might be outdated: </span>{translation.whatMayBeOutdated}</p>
+              <p className="text-sm text-white"><span className="text-cyan-300">A choice suited to the present: </span>{translation.presentDayChoice}</p>
+              <p className="text-[11px] text-stone-400 border-t border-stone-700 pt-2">{translation.evidenceNote}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* VIEW MODE 1: CINEMATIC VISUAL SCENE */}
@@ -431,7 +524,7 @@ export const InteractiveDimensionSlider: React.FC<InteractiveDimensionSliderProp
                     {currentEra.quote}
                   </p>
                   <span className="text-[10px] font-mono uppercase text-amber-400 mt-1 block font-bold">
-                    &bull; {currentEra.label}
+                    &bull; Fictional illustration · {currentEra.label}
                   </span>
                 </div>
               </div>
@@ -511,7 +604,7 @@ export const InteractiveDimensionSlider: React.FC<InteractiveDimensionSliderProp
           {/* How The Dilemma Looked in This Era */}
           <div className="space-y-2 md:col-span-2 bg-[#11141c] p-4 rounded-xl border border-lounge-border/70">
             <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5" /> How Your Dilemma Looked Here:
+              <Layers className="w-3.5 h-3.5" /> Fictional Version of the Dilemma:
             </span>
             <p className="text-xs sm:text-sm text-stone-200 leading-relaxed font-sans">
               "{currentEra.howTheDilemmaAppeared}"
@@ -525,7 +618,7 @@ export const InteractiveDimensionSlider: React.FC<InteractiveDimensionSliderProp
               </div>
               <div className="bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-500/20 text-emerald-200">
                 <span className="font-bold block text-[10px] uppercase font-mono text-emerald-400 mb-0.5">
-                  What Was Actually Happening:
+                  Possible Unseen Cause (fictional):
                 </span>
                 {currentEra.whatActuallyHappened}
               </div>
@@ -539,12 +632,12 @@ export const InteractiveDimensionSlider: React.FC<InteractiveDimensionSliderProp
         <div className="flex items-center gap-2.5">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           <span>
-            <strong className="text-white">The Timeless Law: </strong>
-            From linen tunics to tailored frock coats to spacesuits, the costumes change. The fear of being the first to say hello remains.
+            <strong className="text-white">Possible Recurring Structure: </strong>
+            Roles, words and tools change across periods. A similar reaction may reflect a comparable process, but its actual cause must be checked in each era.
           </span>
         </div>
         <div className="text-[11px] font-mono text-amber-400/90 shrink-0">
-          Pattern: Same Story, Different Characters
+          Question: Same mechanism or only similar outcome?
         </div>
       </div>
     </div>

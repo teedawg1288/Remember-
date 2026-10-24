@@ -271,6 +271,27 @@ export interface LifeLensStage {
   theSongMetaphor: string;
 }
 
+// A reconstruction of how a life stage might understand a situation in a chosen era.
+// Generated translations are hypotheses; they are not firsthand historical testimony.
+export interface EraUnderstandingResult {
+  eraId: string;
+  lifeStage: 'starting_out' | 'heavy_lifting' | 'looking_back';
+  charactersAndRoleMasks: string;
+  termOrPhraseThen: string;
+  meaningThen: string;
+  whatTheWordMeansToday: string;
+  toolsAndOptions: string;
+  reasonablyKnownThen: string;
+  uncertainOrUnknowableThen: string;
+  socialNormsAndExceptions: string;
+  interpretationAtThatLifeStage: string;
+  inheritedRule: string;
+  whatStillTransfers: string;
+  whatMayBeOutdated: string;
+  presentDayChoice: string;
+  evidenceNote: string;
+}
+
 export interface EraProjection {
   id: string;
   year: string;
@@ -316,6 +337,14 @@ export interface MeaningSynchronization {
   commonGround: string;
   unknowns: string;
   nextMutualCheck: string;
+  authorityAccountabilityCheck?: {
+    authorityGranted: string;
+    responsibilityOwed: string;
+    conductObserved: string;
+    whoBenefits: string;
+    unverifiedConcern: string;
+    checkForAccountability: string;
+  };
 }
 
 export interface SameStoryResult {
