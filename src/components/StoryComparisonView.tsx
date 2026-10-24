@@ -196,6 +196,15 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             )}
           </div>
 
+          <p className="text-xs font-semibold tracking-wide text-cyan-200">
+            {analysis.isCustomGenerated
+              ? 'LIVE GEMINI ANALYSIS · Generated for this question; conclusions and sources still need checking.'
+              : 'PREPARED EXAMPLE · Illustrative comparison; not a fresh AI-generated answer.'}
+          </p>
+          {analysis.evidenceNotice && (
+            <p className="text-xs text-stone-400">{analysis.evidenceNotice}</p>
+          )}
+
           {/* Conversational Opener Hook */}
           <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight text-balance">
             "{analysis.barberOpener}"

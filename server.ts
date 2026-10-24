@@ -10,7 +10,8 @@ import { analyzeQuestionAndBuildRoundTable } from './src/data/questionRouting.ts
 import type { SameStoryResult, CrossFieldPrediction, WhatIfScenario, EraProjection } from './src/types/sameStory.ts';
 
 // Attempt to read API key from environment or /app/.dev.env.json
-let geminiApiKey = process.env.GEMINI_API_KEY || '';
+let geminiApiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
+const geminiModel = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 if (!geminiApiKey && fs.existsSync('/app/.dev.env.json')) {
   try {
     const raw = fs.readFileSync('/app/.dev.env.json', 'utf-8');
@@ -22,6 +23,34 @@ if (!geminiApiKey && fs.existsSync('/app/.dev.env.json')) {
     console.warn('[Server] Could not parse /app/.dev.env.json:', err);
   }
 }
+
+// Return useful diagnostics without exposing the API key or raw provider internals.
+function geminiFailure(err: unknown): { status: number; code: string; error: string } {
+  const issue = err as { status?: number; response?: { status?: number }; message?: string } | null;
+  const status = Number(issue?.status ?? issue?.response?.status ?? 0);
+  const message = String(issue?.message || '').toLowerCase();
+  if (status === 402 || /payment required|prepay|credit balance|insufficient credits/.test(message)) {
+    return { status: 402, code: 'GEMINI_CREDITS', error: 'Gemini has no usable API credits. Check the billing or free-tier status of the project connected to your API key.' };
+  }
+  if (status === 429 || /resource exhausted|quota exceeded|rate limit/.test(message)) {
+    return { status: 429, code: 'GEMINI_QUOTA', error: 'Gemini has reached this project’s request limit. Check quota and try again later.' };
+  }
+  if (status === 401 || status === 403 || /invalid api key|api key not valid|permission denied|api key was reported as leaked/.test(message)) {
+    return { status: 403, code: 'GEMINI_AUTH', error: 'Gemini rejected this project’s key or permissions. Check GEMINI_API_KEY under AI Studio Settings → Secrets.' };
+  }
+  if (status === 404 || /model.*not found|model.*not supported/.test(message)) {
+    return { status: 502, code: 'GEMINI_MODEL', error: 'The selected Gemini model is not available to this project. Check the model and API access.' };
+  }
+  if (message === 'invalid_ai_response') {
+    return { status: 502, code: 'GEMINI_FORMAT', error: 'Gemini returned an incomplete analysis. No substitute story was shown. Please retry.' };
+  }
+  return { status: 502, code: 'GEMINI_UNAVAILABLE', error: 'Gemini could not complete this request. No prepared answer was substituted.' };
+}
+
+const missingGeminiKey = {
+  success: false, code: 'GEMINI_KEY_MISSING',
+  error: 'Gemini has no server-side key. Open AI Studio → Settings → Secrets and check GEMINI_API_KEY. Do not paste the key into source code.',
+};
 
 // Port resolution according to Cloud Run guidelines
 function getPort(): number {
@@ -60,6 +89,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     geminiConfigured: !!geminiApiKey,
+    geminiModel,
+    // Key presence is not proof of valid permissions or available credits.
+    connectionVerified: false,
     curatedCount: CURATED_STORIES.length,
     timestamp: new Date().toISOString(),
   });
@@ -133,30 +165,13 @@ app.post('/api/same-story/analyze', async (req: Request, res: Response) => {
         }))
     : [];
 
-  // Check if this closely matches one of our rich pre-computed gems
-  const lower = trimmedInput.toLowerCase();
-  const directMatch = CURATED_STORIES.find((c) => {
-    const qLower = c.userOriginalInput.toLowerCase();
-    const idLower = c.id.toLowerCase();
-    return (
-      lower.includes(idLower) ||
-      qLower.includes(lower.slice(0, 30)) ||
-      lower.includes(qLower.slice(0, 30)) ||
-      ((lower.includes('text') || lower.includes('ignore') || lower.includes('reply') || lower.includes('ghost')) && c.id === 'unanswered-text') ||
-      ((lower.includes('housework') || lower.includes('chore') || lower.includes('dishes') || lower.includes('clean') || lower.includes('sink')) && c.id === 'housework-chore-trap') ||
-      ((lower.includes('child') || lower.includes('tantrum') || lower.includes('parent') || lower.includes('candy') || lower.includes('giving in')) && c.id === 'parent-giving-in') ||
-      ((lower.includes('bystander') || lower.includes('responsibility') || lower.includes('someone else') || lower.includes('waits')) && c.id === 'bystander-freeze') ||
-      (lower.includes('burnout') && c.id.includes('burnout')) ||
-      (lower.includes('70 hours') && c.id.includes('burnout')) ||
-      (lower.includes('credit') && c.id.includes('post-success')) ||
-      (lower.includes('award') && c.id.includes('post-success')) ||
-      (lower.includes('habit') && c.id.includes('habit')) ||
-      (lower.includes('willpower') && c.id.includes('willpower')) ||
-      (lower.includes('binge') && c.id.includes('habit'))
-    );
-  });
+  // New questions always require live Gemini. Prepared demos are separate UI choices.
+  if (!geminiApiKey) {
+    res.status(503).json(missingGeminiKey);
+    return;
+  }
 
-  // If Gemini API Key is available, run live generation with prompt engineering
+  let analysisFailure: unknown = null;
   if (geminiApiKey) {
     try {
       const ai = new GoogleGenAI({ apiKey: geminiApiKey });
@@ -506,99 +521,35 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
   }
 }`;
 
-      let response;
-      try {
-        response = await ai.models.generateContent({
-          model: 'gemini-3.1-flash-lite',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            temperature: 0.7,
-          },
-        });
-      } catch (liteErr) {
-        console.warn('[Server] gemini-3.1-flash-lite failed, falling back to gemini-3.8-flash:', liteErr);
-        response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            temperature: 0.7,
-          },
-        });
-      }
+      // One explicit budget-conscious model per request. No silent switch to a pricier model.
+      const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.7,
+        },
+      });
 
       const text = response.text?.trim() || '';
       let parsed: SameStoryResult;
       try {
         const clean = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
         parsed = JSON.parse(clean);
-        parsed.isCustomGenerated = true;
-
-        if (!parsed.rosettaStone) {
-          parsed.rosettaStone = {
-            primaryChord: 'Belonging',
-            secondaryChords: ['Fear', 'Responsibility'],
-            oneQuestionThatChangesEverything: {
-              question: "If they were dealing with unseen exhaustion right now, how would you speak to them?",
-              whyItShiftsTheLens: "Shifts your posture from defending your pride to understanding their capacity.",
-            },
-            translations: [
-              {
-                speakerA: {
-                  role: 'Speaker A (The Reacher)',
-                  said: parsed.userWordsSummary,
-                  meant: 'I want to feel connected and safe in this relationship.',
-                  hiddenNeedOrEmotion: 'Need for mutual reassurance and belonging.',
-                },
-                speakerB: {
-                  role: 'Speaker B (The Listener)',
-                  heard: 'You are criticizing me and making demands I cannot meet.',
-                  understoodMeaning: 'They understood this to mean that you view them as inadequate or neglectful, and that complying requires surrendering their remaining energy.',
-                  isConfirmedInterpretation: false,
-                  felt: 'Overwhelmed, defensive, and judged before being understood.',
-                  reactionTriggered: 'Defensive withdrawal, avoidance, or cold silence.',
-                  consequenceOfReaction: 'Both parties retreated into mutual silent isolation, convinced the other person no longer cares.',
-                },
-                meaningShiftPoint: 'The acoustic words (or silence) were received through a filter of fatigue and decoded as an attack on adequacy rather than a reach for reassurance.',
-                whereTranslationFailed: 'A desire for connection was translated as an accusation.',
-                theBridge: 'I care about our relationship and just wanted to check in with zero pressure.',
-              },
-            ],
-            lifeLenses: [
-              {
-                stageId: 'starting_out',
-                stageTitle: 'Starting Out (Pride)',
-                tagline: 'When every bump feels like an attack on your worth',
-                howItAppearsHere: 'Scorekeeping and proving who needs who less.',
-                whatYouCouldNotSeeThen: 'That winning an argument often means losing the relationship.',
-                theSongMetaphor: 'Listening to fiery defiance tracks in the dark.',
-              },
-              {
-                stageId: 'heavy_lifting',
-                stageTitle: 'Carrying The Load (Responsibility)',
-                tagline: 'When fatigue teaches you to forgive others',
-                howItAppearsHere: 'Recognizing that silence is usually exhaustion, not malice.',
-                whatYouCouldNotSeeThen: 'That everyone is carrying heavy invisible luggage.',
-                theSongMetaphor: 'Hearing soulful ballads and understanding every lyric.',
-              },
-              {
-                stageId: 'looking_back',
-                stageTitle: 'Looking Back (Grace)',
-                tagline: 'When life is too short to carry grudges',
-                howItAppearsHere: 'Laughing off old friction and holding connection as precious.',
-                whatYouCouldNotSeeThen: 'That being right is meaningless compared to being close.',
-                theSongMetaphor: 'Listening with warmth to songs that once broke your heart.',
-              },
-            ],
-            vignetteCreation: {
-              title: 'The Unspoken Line',
-              type: 'micro_story',
-              text: 'Two people looked out at the same sunset, each waiting for the other to break the silence, each wishing they knew how to say: I just miss you.',
-              sensoryImage: 'The orange dusk fading into violet across empty telephone wires.',
-            },
-          };
+        if (!parsed || !Array.isArray(parsed.stories) || parsed.stories.length === 0 ||
+            typeof parsed.userWordsSummary !== 'string' ||
+            typeof parsed.underneathMechanism !== 'string' ||
+            !parsed.borrowedInsight || !parsed.plausibility || !Array.isArray(parsed.crucialDifferences)) {
+          throw new Error('INVALID_AI_RESPONSE');
         }
+        // Input provenance: always anchor the result to the question actually submitted.
+        parsed.userOriginalInput = trimmedInput;
+        parsed.id = 'ai-' + Date.now();
+        parsed.timestamp = new Date().toISOString();
+        parsed.isCustomGenerated = true;
+        parsed.evidenceNotice = 'AI-generated hypotheses. Sources and cross-domain transfers have not been independently verified.';
+
+        // If the model omitted a section, leave it blank rather than copy unrelated answers.
 
         if (!parsed.eras || parsed.eras.length < 5) {
           parsed.eras = buildErasForDilemma(
@@ -721,61 +672,17 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
         res.json({ success: true, result: parsed, languageLearnings });
         return;
       } catch (jsonErr) {
-        console.warn('[Server] Failed to parse Gemini JSON output, falling back to heuristic engine:', jsonErr);
+        console.warn('[Server] Gemini returned unusable JSON:', jsonErr);
+        analysisFailure = new Error('INVALID_AI_RESPONSE');
       }
     } catch (apiErr: any) {
-      console.error('[Server] Gemini generation error:', apiErr?.message || apiErr);
+      console.error('[Server] Gemini analysis request failed:', apiErr?.message || apiErr);
+      analysisFailure = apiErr;
     }
   }
 
-  // Fallback engine: Use direct match or dynamically adapt curated patterns
-  if (directMatch) {
-    const matchedEras = buildErasForDilemma(
-      trimmedInput,
-      directMatch.userWordsSummary,
-      directMatch.underneathMechanism
-    );
-    const customRouting = analyzeQuestionAndBuildRoundTable(trimmedInput);
-    res.json({
-      success: true,
-      result: {
-        ...directMatch,
-        userOriginalInput: trimmedInput,
-        eras: matchedEras,
-        questionRouting: customRouting.routing,
-        roundTable: customRouting.roundTable,
-        roundTableSynthesis: customRouting.synthesis,
-        isCustomGenerated: false,
-      },
-    });
-    return;
-  }
-
-  // Adaptive heuristic synthesis from curated knowledge base
-  const template = CURATED_STORIES[0];
-  const synSummary = `You're facing a stubborn impasse where the natural reflex feels like pushing harder against a locked door.`;
-  const synUnderneath = `Different people, different places, but look at what's happening underneath: when an established system hits an unexpected bottleneck, doubling down on the old playbook only accelerates fatigue. The structure itself is begging for a phase transition.`;
-  const customRouting = analyzeQuestionAndBuildRoundTable(trimmedInput);
-
-  const synthesized: SameStoryResult = {
-    ...template,
-    id: `adaptive-${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    userOriginalInput: trimmedInput,
-    userWordsSummary: synSummary,
-    barberOpener: `Wait. You know what this reminds me of? Pull up a chair. You think nobody's ever faced this before, but people have been running headfirst into this exact wall across history and science.`,
-    underneathMechanism: synUnderneath,
-    eras: buildErasForDilemma(trimmedInput, synSummary, synUnderneath),
-    questionRouting: customRouting.routing,
-    roundTable: customRouting.roundTable,
-    roundTableSynthesis: customRouting.synthesis,
-    isCustomGenerated: false,
-  };
-
-  res.json({
-    success: true,
-    result: synthesized,
-  });
+  const failure = geminiFailure(analysisFailure);
+  res.status(failure.status).json({ success: false, code: failure.code, error: failure.error });
 });
 
 // Dedicated Real-Time Prediction Generator (Requirement 7: performs real cross-field investigation)
@@ -787,6 +694,7 @@ app.post('/api/same-story/predict', async (req: Request, res: Response) => {
     return;
   }
 
+  let predictionFailure: unknown = null;
   if (geminiApiKey) {
     try {
       const ai = new GoogleGenAI({ apiKey: geminiApiKey });
@@ -823,7 +731,7 @@ Return STRICT, VALID JSON ONLY conforming to:
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: geminiModel,
         contents: prompt,
         config: { responseMimeType: 'application/json', temperature: 0.6 },
       });
@@ -833,20 +741,17 @@ Return STRICT, VALID JSON ONLY conforming to:
       res.json({ success: true, prediction: parsed });
       return;
     } catch (err: any) {
-      console.warn('[Server] Predict endpoint error, falling back:', err?.message || err);
+      console.warn('[Server] Prediction request failed:', err?.message || err);
+      predictionFailure = err;
     }
   }
 
-  // Fallback prediction
-  const fallback = CURATED_STORIES[0].prediction!;
-  res.json({
-    success: true,
-    prediction: {
-      ...fallback,
-      id: `pred-fallback-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-    },
-  });
+  if (!geminiApiKey) {
+    res.status(503).json(missingGeminiKey);
+    return;
+  }
+  const failure = geminiFailure(predictionFailure);
+  res.status(failure.status).json({ success: false, code: failure.code, error: failure.error });
 });
 
 // Optional, on-demand life-stage × historical-era translator.
@@ -918,7 +823,7 @@ Output a STRICT JSON object only with each value a string:
   try {
     const ai = new GoogleGenAI({ apiKey: geminiApiKey });
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
+      model: geminiModel,
       contents: prompt,
       config: { responseMimeType: 'application/json', temperature: 0.35 },
     });
@@ -951,6 +856,7 @@ app.post('/api/same-story/simulate-what-if', async (req: Request, res: Response)
     return;
   }
 
+  let simulationFailure: unknown = null;
   if (geminiApiKey) {
     try {
       const ai = new GoogleGenAI({ apiKey: geminiApiKey });
@@ -974,7 +880,7 @@ Return STRICT VALID JSON ONLY:
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: geminiModel,
         contents: prompt,
         config: { responseMimeType: 'application/json', temperature: 0.6 },
       });
@@ -984,21 +890,17 @@ Return STRICT VALID JSON ONLY:
       res.json({ success: true, scenario: parsed });
       return;
     } catch (err: any) {
-      console.warn('[Server] What-if simulation error:', err?.message || err);
+      console.warn('[Server] What-if simulation request failed:', err?.message || err);
+      simulationFailure = err;
     }
   }
 
-  // Fallback simulation
-  res.json({
-    success: true,
-    scenario: {
-      id: `sim-${Date.now()}`,
-      question: whatIfQuestion,
-      variableChanged: "Intervention applied to local system constraints",
-      simulatedOutcome: "The immediate stress drops by 40%, but downstream queues back up unless the upstream input rate is simultaneously regulated.",
-      historicalOrScientificBasis: "Demonstrated in Forrester system dynamics and traffic flow dampening models."
-    }
-  });
+  if (!geminiApiKey) {
+    res.status(503).json(missingGeminiKey);
+    return;
+  }
+  const failure = geminiFailure(simulationFailure);
+  res.status(failure.status).json({ success: false, code: failure.code, error: failure.error });
 });
 
 async function startServer() {
