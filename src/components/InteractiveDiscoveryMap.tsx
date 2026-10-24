@@ -630,7 +630,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
                 <div className="space-y-3">
                   <div>
-                    <span className="text-[11px] font-mono text-stone-400 block mb-1">What Actually Occurred There:</span>
+                    <span className="text-[11px] font-mono text-stone-400 block mb-1">What This Comparison Describes:</span>
                     <p className="text-sm text-stone-100 font-serif leading-snug">
                       {activeNode.details.whatHappenedThere}
                     </p>
@@ -638,7 +638,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
                   <div className="p-3.5 rounded-xl bg-[#141824] border border-stone-800 space-y-1">
                     <span className="text-[10px] font-mono uppercase font-bold block" style={{ color: activeNode.color.accent }}>
-                      The Breakthrough This Field Discovered:
+                      What This Field May Contribute:
                     </span>
                     <p className="text-xs text-stone-300">
                       {activeNode.details.howItDirectlyAppliesToYou}
