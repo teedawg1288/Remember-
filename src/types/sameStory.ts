@@ -292,6 +292,32 @@ export interface EraProjection {
   };
 }
 
+// Compare what was sent with what each side may have understood, in both directions.
+export interface MeaningDirection {
+  from: string;
+  to: string;
+  observableWordsOrSignal: string;
+  possibleIntendedMeaningOrFunction: string;
+  possibleReceivedMeaningOrEffect: string;
+  whatWouldConfirm: string;
+}
+
+export interface MeaningSynchronization {
+  contextType: 'people' | 'systems' | 'mixed';
+  assignedRoleOrTitle: string;
+  whatThatRoleActuallyEstablishes: string;
+  whatItDoesNotProve: string;
+  directions: MeaningDirection[];
+  informationAvailableThen: string;
+  informationMissingThen: string;
+  consequenceOrImpact: string;
+  newInformationOrOpportunity: string;
+  choiceAndResponsibilityNow: string;
+  commonGround: string;
+  unknowns: string;
+  nextMutualCheck: string;
+}
+
 export interface SameStoryResult {
   id: string;
   timestamp: string;
@@ -330,6 +356,7 @@ export interface SameStoryResult {
   mirrorEffect?: MirrorEffect;
   roundTable?: RoundTablePerspective[];
   mechanismBridges?: MechanismBridge[];
+  meaningSynchronization?: MeaningSynchronization;
   whatIfScenarios?: WhatIfScenario[];
   prediction?: CrossFieldPrediction;
   eras?: EraProjection[];
