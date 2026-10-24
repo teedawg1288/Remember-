@@ -38,55 +38,55 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
   });
   const [noteSaved, setNoteSaved] = useState(false);
 
-  const prediction = analysis.prediction || {
-    id: `pred-${analysis.id}`,
-    timestamp: new Date().toISOString(),
-    questionInvestigated: "What happens if you're the first one to give a casual nod next time?",
-    donorField: "Telecommunications & Radio Handshakes",
-    targetField: "Everyday Human Relationships",
-    unansweredQuestion: "Why do humans assume silence means hatred, while radio engineers assume silence simply means a noisy channel?",
-    establishedKnowledgeApplied: "In digital networks, when a packet goes unanswered, the system never severs the connection in anger. It pauses, drops power, and sends a low-energy probe packet.",
-    falsifiablePrediction: "If you offer a low-stakes neutral nod within 48 hours, in 8 out of 10 cases the other person will respond with visible relief, confirming they were merely distracted rather than hostile.",
-    evidenceThatWouldProve: "They immediately smile back, make warm eye contact, or mention they were overwhelmed.",
-    evidenceThatWouldDisprove: "They maintain deliberate aggressive coldness across multiple distinct encounters.",
-    confidenceRating: "Very Strong Bet",
+  const prediction: CrossFieldPrediction = analysis.prediction || {
+    id: `unavailable-${analysis.id}`,
+    timestamp: analysis.timestamp,
+    questionInvestigated: 'No specific prediction was supplied',
+    donorField: analysis.borrowedInsight?.donorField || 'Not determined',
+    targetField: analysis.borrowedInsight?.recipientField || 'Not determined',
+    unansweredQuestion: analysis.unresolvedQuestion?.novelQuestion || 'What evidence is still missing?',
+    establishedKnowledgeApplied: analysis.borrowedInsight?.whatWasLearnedThere || 'No verified donor finding available.',
+    falsifiablePrediction: 'A testable prediction has not been generated for this analysis.',
+    evidenceThatWouldProve: 'Define an observable result before testing.',
+    evidenceThatWouldDisprove: 'Define a result that would challenge the hypothesis.',
+    confidenceRating: 'Plausible Hypothesis' as const,
   };
 
   const steps = [
     {
       num: '01',
-      title: 'The Outgoing Pulse',
-      everyday: 'You send a text message or walk by and offer a greeting.',
-      scientific: 'A transmitter sends an initial data packet into the transmission medium.',
-      connection: 'In both domains, an expectation of acknowledgment is created.',
+      title: 'Start With What You Know',
+      everyday: analysis.userWordsSummary,
+      scientific: analysis.familiarStartingPoint || 'The observation supplied by the user',
+      connection: 'Separate an observation from the explanation assigned to it.',
     },
     {
       num: '02',
-      title: 'The Missing Response',
-      everyday: 'Dead silence. No text reply, no eye contact, no nod back.',
-      scientific: 'The receiver fails to return an ACK (acknowledgment receipt) within the default timeout window.',
-      connection: 'A gap of information opens. Zero feedback is returned.',
+      title: 'Find a Different Field',
+      everyday: analysis.borrowedInsight?.recipientField || 'Your original question',
+      scientific: analysis.borrowedInsight?.donorField || 'Potential comparison',
+      connection: analysis.borrowedInsight?.whatWasLearnedThere || 'Look for a relevant finding, not just a similar story.',
     },
     {
       num: '03',
-      title: 'The Diverging Reaction',
-      everyday: 'The human brain panics: "They hate me. They\'re disrespecting me. I will punish them by ignoring them back."',
-      scientific: 'The computer system treats silence neutrally: "Buffer full, interference, or line busy. Do NOT cut the wire."',
-      connection: 'Here is where humans fail and engineered systems succeed.',
+      title: 'Compare the Mechanisms',
+      everyday: analysis.stories?.[0]?.narrative || analysis.userWordsSummary,
+      scientific: analysis.stories?.[0]?.whatThisFieldAlreadyFiguredOut || 'Possible donor-domain explanation',
+      connection: analysis.underneathMechanism,
     },
     {
       num: '04',
-      title: 'The Crucial Difference',
-      everyday: 'Human pride creates a false score. We treat silence as an intentional insult and escalate the standoff.',
-      scientific: 'Systems have zero ego. They wait a measured interval and try a small low-power inquiry (Exponential Backoff).',
-      connection: 'The difference isn’t the problem; it’s that humans weaponize silence.',
+      title: 'Find the Critical Difference',
+      everyday: analysis.crucialDifferences?.[0]?.comparison || 'Where the situations may differ',
+      scientific: analysis.crucialDifferences?.[0]?.whyThisDifferenceMatters || 'A difference that may break the analogy',
+      connection: 'A shared pattern does not guarantee a shared cause or outcome.',
     },
     {
       num: '05',
-      title: 'The Borrowed Breakthrough',
-      everyday: 'Borrow the network protocol: don\'t retaliate. Wait 24 hours, then send a tiny low-stakes ping ("Hey, hope you\'re doing okay!").',
-      scientific: 'Exponential backoff handshake safely restores communications without overloading the receiver.',
-      connection: 'A scientific principle transforms an everyday personal standoff into a solved problem.',
+      title: 'Make a Testable Prediction',
+      everyday: prediction.falsifiablePrediction,
+      scientific: prediction.evidenceThatWouldDisprove,
+      connection: analysis.unresolvedQuestion?.testablePossibility || 'Collect evidence that could change the conclusion.',
     },
   ];
 
@@ -128,10 +128,10 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
             <span>Cross-Action Discovery · Visual Comparative Bridge</span>
           </div>
           <h2 className="font-serif text-2xl sm:text-4xl font-medium text-white tracking-tight">
-            When Two Worlds Reveal The Same Hidden Blueprint
+            From a Familiar Experience to a New Question
           </h2>
           <p className="text-xs sm:text-sm text-stone-300 mt-1 max-w-2xl">
-            Don't just read an analogy—see how your everyday situation matches what scientists and engineers already proved in another field.
+            Follow the proposed bridge step by step. The comparison may be useful even when the mechanism is not yet proven.
           </p>
         </div>
 
@@ -268,9 +268,9 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
               <div className="flex items-center justify-between pb-2 border-b border-stone-800">
                 <span className="text-xs font-mono uppercase text-cyan-400 font-bold flex items-center gap-1.5">
                   <Radio className="w-4 h-4" />
-                  The Parallel World: {prediction.donorField}
+                  Comparison from: {prediction.donorField}
                 </span>
-                <span className="text-[11px] text-cyan-300 font-mono">Proven Science</span>
+                <span className="text-[11px] text-cyan-300 font-mono">Donor-field idea · Check source</span>
               </div>
 
               <div>
@@ -306,7 +306,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
           </div>
 
           <span className="text-xs font-mono px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 self-start sm:self-auto shrink-0">
-            {prediction.confidenceRating}
+            {prediction.sourceUrl?.startsWith('https://') ? 'Candidate source supplied' : 'Untested transfer hypothesis'}
           </span>
         </div>
 

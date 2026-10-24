@@ -4,7 +4,6 @@ import { BarberInput } from './components/BarberInput';
 import { StoryComparisonView } from './components/StoryComparisonView';
 import { DeepResearchLabDrawer } from './components/DeepResearchLabDrawer';
 import { MyDiscoveriesScreen } from './components/screens/MyDiscoveriesScreen';
-import { CURATED_STORIES } from './data/curatedStories';
 import { SameStoryResult } from './types/sameStory';
 import { AlertCircle, Eye, MessageSquare, Sparkles, Box } from 'lucide-react';
 import { sound } from './audio/soundEngine';
@@ -35,7 +34,6 @@ export const App: React.FC = () => {
     } catch {
       // Fallback
     }
-    setHistoryList(CURATED_STORIES);
   }, []);
 
   const handleAnalyze = async (userInput: string) => {
@@ -49,8 +47,8 @@ export const App: React.FC = () => {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.success || !data.result) {
-        throw new Error(data.error || 'Could not analyze story parallel.');
+      if (!res.ok || !data.success || !data.result || !Array.isArray(data.result.stories)) {
+        throw new Error(data.error || 'The analysis could not be completed. Please try again.');
       }
 
       setActiveAnalysis(data.result);
@@ -65,9 +63,8 @@ export const App: React.FC = () => {
     } catch (err: any) {
       console.error('Analysis error:', err);
       setError(err?.message || 'Something went wrong while connecting the dots.');
-      const fallback = CURATED_STORIES[0];
-      setActiveAnalysis(fallback);
-      setActiveMainTab('show');
+      // Keep the user's question and any earlier result intact. Never substitute an unrelated story.
+      setActiveMainTab('talk');
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +157,7 @@ export const App: React.FC = () => {
             <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3.5 text-xs text-amber-200 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Notice: {error} (Displaying closest verified archetypal pattern)</span>
+                <span>Notice: {error}</span>
               </div>
               <button
                 onClick={() => setError(null)}
@@ -196,16 +193,11 @@ export const App: React.FC = () => {
               onToggleSave={() => handleToggleSaveStory(activeAnalysis)}
             />
           ) : (
-            // If user clicked SHOW ME directly before typing, default to first curated story
-            <StoryComparisonView
-              analysis={CURATED_STORIES[0]}
-              persona={persona}
-              onOpenResearchLab={() => setShowResearchLab(true)}
-              onNewStory={handleReset}
-              appName={appName}
-              isSaved={savedStories.some((s) => s.id === CURATED_STORIES[0].id)}
-              onToggleSave={() => handleToggleSaveStory(CURATED_STORIES[0])}
-            />
+            <div className="max-w-2xl mx-auto mt-16 rounded-3xl border border-stone-700 bg-[#141822] p-8 text-center space-y-4">
+              <h2 className="font-serif text-3xl text-white">Your discovery starts with a question.</h2>
+              <p className="text-stone-300 text-sm">Tell REMEMBER something you're trying to understand, or select a clearly labeled example.</p>
+              <button onClick={() => setActiveMainTab('talk')} className="rounded-xl bg-amber-500 px-5 py-3 font-bold text-stone-950">Let's Talk</button>
+            </div>
           )
         )}
 

@@ -57,6 +57,7 @@ export interface StoryParallel {
   whatActuallyHappened: string;
   whatThisFieldAlreadyFiguredOut: string;
   historicalRecordOrEvidence: string;
+  sourceUrl?: string; // A candidate source link, never automatically treated as verified
 }
 
 export interface CrucialDifference {
@@ -146,6 +147,8 @@ export interface RoundTablePerspective {
   take: string;
   evidenceStrength: 'Empirical / High' | 'Behavioral / Medium' | 'Intuitive / Everyday';
   keyPoint: string;
+  whatCouldChangeMyMind?: string;
+  questionForOtherSeats?: string;
 }
 
 export interface WhatIfScenario {
@@ -167,6 +170,14 @@ export interface CrossFieldPrediction {
   falsifiablePrediction: string;
   evidenceThatWouldProve: string;
   evidenceThatWouldDisprove: string;
+  sourceUrl?: string; // Candidate evidence for the donor mechanism
+  transferLimit?: string; // Where the analogy may stop applying
+  knownInUserSituation?: string; // User-provided starting point, not an inference
+  predictionStages?: {
+    borrowedFinding: string;
+    newPrediction: string;
+    howToTest: string;
+  };
   confidenceRating:
     | 'Empirically Supported Model'
     | 'Plausible Hypothesis'
@@ -260,6 +271,14 @@ export interface SameStoryResult {
   timestamp: string;
   userOriginalInput: string;
   userWordsSummary: string;
+  familiarStartingPoint?: string;
+  evidenceNotice?: string;
+  roundTableSynthesis?: {
+    sharedGround: string;
+    keyDisagreement: string;
+    missingEvidence: string;
+    nextCheck: string;
+  };
   barberOpener: string; // "Wait. You know what this reminds me of?"
   underneathMechanism: string;
   stories: StoryParallel[];

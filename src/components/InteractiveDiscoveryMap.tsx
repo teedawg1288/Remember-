@@ -39,8 +39,8 @@ export interface DiscoveryNode {
   fieldLabel: string;
   nodeTitle: string;
   tagline: string;
-  evidenceType: 'Verified Record' | 'Empirical Law' | 'Behavioral Pattern' | 'Testable Prediction' | 'Systemic Scale';
-  evidenceRating: 'High / Proven' | 'Moderate / Recurring' | 'Hypothesis / Testable';
+  evidenceType: 'Historical Parallel' | 'Cross-Field Comparison' | 'Possible Interpretation' | 'Testable Prediction' | 'Systemic Scale' | 'Citation to Check';
+  evidenceRating: 'Needs Independent Check' | 'Hypothesis / Testable';
   isomorphismSummary: string;
   color: {
     bg: string;
@@ -91,6 +91,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
   const primaryParallel = analysis.stories[0];
   const secondaryParallel = analysis.stories[1] || null;
   const prediction = analysis.prediction;
+  const scenarioList = analysis.whatIfScenarios || [];
   const rosetta = analysis.rosettaStone;
   const diffCrucial = analysis.differenceThatChangesEverything;
 
@@ -100,12 +101,12 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
       {
         id: 'node-history',
         domain: 'history',
-        fieldLabel: primaryParallel?.domainLabel || 'Historical Record',
-        nodeTitle: primaryParallel?.title || 'The Ancient Standoff',
-        tagline: primaryParallel?.timeAndPlace || 'Recorded Civilizational Echo',
-        evidenceType: 'Verified Record',
-        evidenceRating: 'High / Proven',
-        isomorphismSummary: primaryParallel?.whatActuallyHappened || 'A missing response was interpreted as an existential threat, triggering defensive mobilization.',
+        fieldLabel: primaryParallel?.domainLabel || 'Historical Parallel',
+        nodeTitle: primaryParallel?.title || 'Comparison not available',
+        tagline: primaryParallel?.timeAndPlace || 'Time and place not supplied',
+        evidenceType: 'Historical Parallel',
+        evidenceRating: 'Needs Independent Check',
+        isomorphismSummary: primaryParallel?.whatActuallyHappened || 'No source-backed historical account supplied.',
         color: {
           bg: 'from-amber-950/80 to-[#1e1710]',
           border: 'border-amber-500/50',
@@ -127,12 +128,12 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
       {
         id: 'node-science',
         domain: 'science',
-        fieldLabel: analysis.borrowedInsight?.donorField || 'Systems & Network Engineering',
-        nodeTitle: 'The Signal Handshake Law',
-        tagline: 'How Machines Handle Silence Without Ego',
-        evidenceType: 'Empirical Law',
-        evidenceRating: 'High / Proven',
-        isomorphismSummary: 'When a packet gets dropped, telecommunications protocols never retaliate or assume hatred; they back off and retry with low power.',
+        fieldLabel: analysis.borrowedInsight?.donorField || 'Other Field',
+        nodeTitle: analysis.borrowedInsight?.donorField || 'Candidate Cross-Field Insight',
+        tagline: 'Borrowed mechanism — inspect limits',
+        evidenceType: 'Cross-Field Comparison',
+        evidenceRating: 'Needs Independent Check',
+        isomorphismSummary: analysis.borrowedInsight?.whatWasLearnedThere || 'Candidate comparison; donor finding needs a source.',
         color: {
           bg: 'from-cyan-950/80 to-[#0e1a24]',
           border: 'border-cyan-500/50',
@@ -143,12 +144,12 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           accent: '#06b6d4',
         },
         details: {
-          donorField: analysis.borrowedInsight?.donorField || 'Telecommunications & Systems Engineering',
-          whatHappenedThere: 'In digital networks, when a message receives no ACK (acknowledgment receipt), the system uses Exponential Backoff—pausing briefly and sending a low-energy probe.',
-          howItDirectlyAppliesToYou: analysis.borrowedInsight?.howItAppliesHere || 'Treat silence not as rejection, but as temporary channel congestion or packet loss.',
-          theCrucialDifference: 'Computers have no ego to protect; they optimize for restoring the link, while humans optimize for preserving pride.',
-          whyDifferenceMatters: 'If you adopt the network protocol, you eliminate 90% of interpersonal grudges before they calcify.',
-          testableAction: 'Apply Exponential Backoff: Wait 24 hours, then send a single low-stakes ping with zero accusation.',
+          donorField: analysis.borrowedInsight?.donorField || 'Other Field',
+          whatHappenedThere: analysis.borrowedInsight?.whatWasLearnedThere || 'No donor finding described.',
+          howItDirectlyAppliesToYou: analysis.borrowedInsight?.howItAppliesHere || 'Transfer not established.',
+          theCrucialDifference: analysis.crucialDifferences?.[0]?.comparison || 'Different domains may involve different causes.',
+          whyDifferenceMatters: analysis.crucialDifferences?.[0]?.whyThisDifferenceMatters || 'The borrowed mechanism may not transfer.',
+          testableAction: analysis.unresolvedQuestion?.testablePossibility || 'Identify a safe observation that distinguishes alternatives.',
         },
       },
       {
@@ -159,9 +160,9 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           ? 'The Unseen Perspective'
           : 'The Translation Barrier',
         tagline: `Universal Chord: ${rosetta?.primaryChord || 'Belonging'}`,
-        evidenceType: 'Behavioral Pattern',
-        evidenceRating: 'Moderate / Recurring',
-        isomorphismSummary: rosetta?.oneQuestionThatChangesEverything?.whyItShiftsTheLens || 'What you experienced as a personal slight was an overwhelmed person collapsing under unseen burdens.',
+        evidenceType: 'Possible Interpretation',
+        evidenceRating: 'Needs Independent Check',
+        isomorphismSummary: rosetta?.oneQuestionThatChangesEverything?.whyItShiftsTheLens || 'Consider other possible interpretations of the same observation.',
         color: {
           bg: 'from-purple-950/80 to-[#191024]',
           border: 'border-purple-500/50',
@@ -173,8 +174,8 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
         },
         details: {
           donorField: 'Interpersonal Psychology & Lived Experience',
-          whatHappenedThere: rosetta?.translations?.[0]?.speakerB?.felt || 'The other party was drained, overwhelmed by unrelated personal crises, and had zero bandwidth to reply.',
-          howItDirectlyAppliesToYou: 'They did not wake up thinking of ways to slight you; they were simply surviving their day.',
+          whatHappenedThere: rosetta?.translations?.[0]?.speakerB?.felt || 'The other person’s experience has not been confirmed.',
+          howItDirectlyAppliesToYou: rosetta?.translations?.[0]?.theBridge || 'A different interpretation is possible; check rather than assume.',
           theCrucialDifference: 'You know your own internal intentions, but judge them only by their external absence.',
           whyDifferenceMatters: 'Fundamental Attribution Error: we forgive our own delays as "busy", but condemn theirs as "disrespectful".',
           testableAction: 'Ask: "If they were silently crying in their car 20 minutes ago, how would I want to speak to them right now?"',
@@ -185,10 +186,10 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
         domain: 'prediction',
         fieldLabel: 'Cause & Effect Experiment',
         nodeTitle: diffCrucial ? 'The Decisive Variable' : 'What If You Change One Decision?',
-        tagline: 'Falsifiable Simulation of Next Action',
+        tagline: 'Proposed next-step prediction — not tested',
         evidenceType: 'Testable Prediction',
         evidenceRating: 'Hypothesis / Testable',
-        isomorphismSummary: prediction?.falsifiablePrediction || 'Altering the first response from defensive silence to casual warmth changes the probability of mutual reconciliation from 18% to 84%.',
+        isomorphismSummary: prediction?.falsifiablePrediction || 'No prediction supplied for this question.',
         color: {
           bg: 'from-emerald-950/80 to-[#0e2119]',
           border: 'border-emerald-500/50',
@@ -199,12 +200,12 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           accent: '#10b981',
         },
         details: {
-          donorField: 'Empirical Behavioral Game Theory',
-          whatHappenedThere: 'Tit-for-Tat with Forgiveness outperforms rigid retaliation across 10,000 simulated iterations.',
-          howItDirectlyAppliesToYou: prediction?.establishedKnowledgeApplied || 'A single generous signal breaks an infinite loop of tit-for-tat silent punishment.',
-          theCrucialDifference: 'Waiting for the other person to apologize first creates an infinite deadlock where both lose.',
-          whyDifferenceMatters: 'The first person to reach out is not the weaker party; they are the leader who resets the game.',
-          testableAction: 'Test the Generous Probe: Send a casual photo, meme, or neutral query without asking "Why haven\'t you called?"',
+          donorField: prediction?.donorField || 'Proposed donor field',
+          whatHappenedThere: prediction?.establishedKnowledgeApplied || 'Donor-domain mechanism needs to be established.',
+          howItDirectlyAppliesToYou: prediction?.predictionStages?.newPrediction || prediction?.falsifiablePrediction || 'No transfer prediction available.',
+          theCrucialDifference: prediction?.transferLimit || 'An analogous structure does not imply the same outcome.',
+          whyDifferenceMatters: analysis.crucialDifferences?.[0]?.whyThisDifferenceMatters || 'Testing should examine whether the difference changes the result.',
+          testableAction: prediction?.predictionStages?.howToTest || 'No test designed yet.',
         },
       },
     ];
@@ -220,7 +221,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           nodeTitle: scale.title || 'Workplace & Group Contagion',
           tagline: scale.levelLabel || 'When This Spreads to Groups',
           evidenceType: 'Systemic Scale',
-          evidenceRating: 'Moderate / Recurring',
+          evidenceRating: 'Needs Independent Check',
           isomorphismSummary: scale.whatIsTheSame || 'Diffusion of responsibility spreads the exact same silence across whole organizations.',
           color: {
             bg: 'from-rose-950/80 to-[#221015]',
@@ -249,9 +250,9 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           domain: 'research',
           fieldLabel: 'Empirical Literature',
           nodeTitle: 'Peer-Reviewed Benchmark',
-          tagline: ref.citation ? ref.citation.slice(0, 42) + '...' : 'Verified Scientific Studies',
-          evidenceType: 'Verified Record',
-          evidenceRating: 'High / Proven',
+          tagline: ref.citation ? ref.citation.slice(0, 42) + '...' : 'No linked studies supplied',
+          evidenceType: 'Citation to Check',
+          evidenceRating: 'Needs Independent Check',
           isomorphismSummary: ref.relevance || 'Studies in cognitive bias confirm humans consistently overestimate malicious intent in ambiguous scenarios by over 300%.',
           color: {
             bg: 'from-sky-950/80 to-[#0e1d28]',
@@ -609,7 +610,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
                       The Ego's Instant Explanation:
                     </span>
                     <p className="text-xs text-stone-300">
-                      "They know what they did. They are deliberately slighting me, so I must withhold my warmth to maintain my dignity."
+                      {analysis.storyChain?.defaultChain?.whatYouThought || 'The meaning of this observation has not yet been established.'}
                     </p>
                   </div>
                 </div>
@@ -623,7 +624,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
                   </span>
                   <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" />
-                    Verified Dynamics
+                    Comparison to Examine
                   </span>
                 </div>
 
@@ -664,120 +665,38 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
             </div>
           </div>
 
-          {/* EXPERIMENTATION LAB: Change a Decision / Variable (Requirement 3) */}
-          <div className="p-6 rounded-2xl bg-[#0a0d14] border border-stone-800 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-800">
+          {/* Hypothetical branches — no invented simulation data */}
+          {!!scenarioList.length && (
+            <div className="p-6 rounded-2xl bg-[#0a0d14] border border-stone-800 space-y-5">
               <div>
-                <h4 className="font-serif text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-emerald-400" />
-                  Interactive Experiment: Test What Happens When You Change One Variable
-                </h4>
-                <p className="text-xs text-stone-400">
-                  Touch a different decision below to simulate how the outcome branches under the model:
-                </p>
+                <h4 className="font-serif text-lg font-bold text-white">Explore Possible Outcomes</h4>
+                <p className="text-xs text-stone-400">Choose an alternative. These are proposed scenarios, not measured or simulated results.</p>
               </div>
-              <span className="text-[10px] font-mono text-stone-400 bg-[#141824] px-2.5 py-1 rounded-md border border-stone-800">
-                Falsifiable Simulator
-              </span>
-            </div>
-
-            {/* Variable Selectors */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                onClick={() => {
-                  setActiveExperimentDecision('default');
-                  sound.playNodeChime(360);
-                }}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  activeExperimentDecision === 'default'
-                    ? 'bg-rose-950/40 border-rose-500/60 text-white shadow-md'
-                    : 'bg-[#111420] border-stone-800 text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                <span className="text-[10px] font-mono uppercase block font-bold text-rose-400 mb-1">
-                  Path 1 · Default Reaction
-                </span>
-                <p className="text-xs font-serif font-bold text-stone-200">
-                  Match their silence with coldness (Scorekeeping)
-                </p>
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveExperimentDecision('alternative');
-                  sound.playNodeChime(560);
-                }}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  activeExperimentDecision === 'alternative'
-                    ? 'bg-emerald-950/40 border-emerald-500/60 text-white shadow-md'
-                    : 'bg-[#111420] border-stone-800 text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                <span className="text-[10px] font-mono uppercase block font-bold text-emerald-400 mb-1">
-                  Path 2 · Low-Stakes Ping
-                </span>
-                <p className="text-xs font-serif font-bold text-stone-200">
-                  Send a neutral, casual check-in without asking "why"
-                </p>
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveExperimentDecision('third');
-                  sound.playNodeChime(640);
-                }}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  activeExperimentDecision === 'third'
-                    ? 'bg-cyan-950/40 border-cyan-500/60 text-white shadow-md'
-                    : 'bg-[#111420] border-stone-800 text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                <span className="text-[10px] font-mono uppercase block font-bold text-cyan-400 mb-1">
-                  Path 3 · In-Person Warm Hello
-                </span>
-                <p className="text-xs font-serif font-bold text-stone-200">
-                  Offer a smiling nod next time you cross paths
-                </p>
-              </button>
-            </div>
-
-            {/* Dynamic Simulated Outcome Output */}
-            <div className="p-4 sm:p-5 rounded-xl bg-[#121624] border border-stone-800 space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-stone-400 uppercase font-bold">Simulated Outcome:</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  activeExperimentDecision === 'default'
-                    ? 'bg-rose-500/20 text-rose-300'
-                    : 'bg-emerald-500/20 text-emerald-300'
-                }`}>
-                  {activeExperimentDecision === 'default' ? 'Deadlock Compounding' : 'Loop Dissolved in 24h'}
-                </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {scenarioList.slice(0, 3).map((scenario, index) => {
+                  const decision = (['default', 'alternative', 'third'] as const)[index];
+                  return (
+                    <button key={scenario.id || index} onClick={() => { setActiveExperimentDecision(decision); sound.playNodeChime(400 + 60 * index); }}
+                      className={`p-3.5 rounded-xl border text-left text-xs ${activeExperimentDecision === decision ? 'bg-cyan-950/50 border-cyan-500/60 text-white' : 'bg-[#111420] border-stone-800 text-stone-300'}`}>
+                      <span className="text-cyan-300 font-semibold block mb-1">Possibility {index + 1}</span>
+                      {scenario.question}
+                    </button>
+                  );
+                })}
               </div>
-
-              <p className="font-serif text-sm sm:text-base text-stone-100 leading-snug">
-                {activeExperimentDecision === 'default' && (
-                  <>
-                    "Both parties maintain mutual radio silence. Within 30 days, the silence transforms from casual delay into awkward avoidance. Each person tells their friends the other ghosted them."
-                  </>
-                )}
-                {activeExperimentDecision === 'alternative' && (
-                  <>
-                    "In 8 out of 10 recorded trials, the other person responds within 4 hours with visible relief: 'I am so sorry, work has been a nightmare this week!' The artificial cold war evaporates instantly."
-                  </>
-                )}
-                {activeExperimentDecision === 'third' && (
-                  <>
-                    "Face-to-face mirror neurons bypass digital anxiety. Seeing a warm, zero-threat expression instantly disables the other person's defensive posture without either party needing to swallow their pride."
-                  </>
-                )}
-              </p>
-
-              <div className="text-[11px] font-mono text-stone-400 pt-2 border-t border-stone-800/80 flex items-center justify-between">
-                <span>Actionable Takeaway: {activeNode.details.testableAction}</span>
-                <span className="text-emerald-400 font-bold">Verified by Game Theory</span>
-              </div>
+              {(() => {
+                const selectedIndex = Math.min((['default', 'alternative', 'third'] as const).indexOf(activeExperimentDecision), scenarioList.length - 1);
+                const scenario = scenarioList[selectedIndex];
+                return scenario ? (
+                  <div className="rounded-xl bg-[#121624] border border-stone-800 p-4 space-y-2">
+                    <p className="text-cyan-300 text-xs font-bold">Hypothetical outcome (unverified)</p>
+                    <p className="text-stone-200 text-sm">{scenario.simulatedOutcome}</p>
+                    <p className="text-amber-200 text-xs"><strong>Proposed comparison:</strong> {scenario.historicalOrScientificBasis}</p>
+                  </div>
+                ) : null;
+              })()}
             </div>
-          </div>
+          )}
 
           {/* Deep Navigation Bridges */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-stone-800">

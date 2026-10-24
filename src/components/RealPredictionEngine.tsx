@@ -27,6 +27,7 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
 }) => {
   const [activePrediction, setActivePrediction] = useState<CrossFieldPrediction>(prediction);
   const [isInvestigating, setIsInvestigating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [userInquiry, setUserInquiry] = useState('');
   const [testOutcome, setTestOutcome] = useState<'worked' | 'mixed' | 'didnt_work' | null>(() => {
     return (localStorage.getItem(`test_outcome_${prediction.id}`) as any) || null;
@@ -38,6 +39,7 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
 
   const handleRunFreshInvestigation = async () => {
     setIsInvestigating(true);
+    setError(null);
     sound.playNodeChime(540);
     try {
       const res = await fetch('/api/same-story/predict', {
@@ -46,13 +48,15 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
         body: JSON.stringify({ currentDilemma, userFocus: userInquiry.trim() }),
       });
       const data = await res.json();
+      if (!res.ok || !data.success || !data.prediction) throw new Error(data.error || 'Prediction unavailable.');
       if (data.success && data.prediction) {
         setActivePrediction(data.prediction);
         if (onPredictionUpdated) onPredictionUpdated(data.prediction);
         sound.playDiscoveryChime();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Prediction run failed:', err);
+      setError(err?.message || 'Could not investigate this question.');
     } finally {
       setIsInvestigating(false);
     }
@@ -71,16 +75,9 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
     setTimeout(() => setNoteSaved(false), 2000);
   };
 
-  // Turn academic confidence ratings into everyday language
-  const getFriendlyConfidence = (rating: string) => {
-    if (rating.toLowerCase().includes('empirical') || rating.toLowerCase().includes('supported')) {
-      return 'Very Strong Odds &bull; Seen It Work Hundreds of Times';
-    }
-    if (rating.toLowerCase().includes('plausible')) {
-      return 'Solid Bet &bull; Works In Most Situations';
-    }
-    return 'Good Chance &bull; Well Worth Trying';
-  };
+  const evidenceLabel = activePrediction.sourceUrl?.startsWith('https://')
+    ? 'Source offered · Check the transfer'
+    : 'Hypothesis · Source not supplied';
 
   return (
     <div className="bg-[#141822] rounded-3xl border border-cyan-500/40 p-6 sm:p-8 shadow-xl relative overflow-hidden space-y-6">
@@ -97,7 +94,7 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
             What Happens If You Try This?
           </h3>
           <p className="text-xs sm:text-sm text-stone-300 mt-1 max-w-2xl">
-            Another field already bumped into this exact wall and figured out the answer. Here’s a simple real-world test you can try right now:
+            REMEMBER is borrowing an idea from another field. The transfer is a hypothesis until tested in this situation.
           </p>
         </div>
 
@@ -135,15 +132,37 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
         </div>
 
         <span className="text-xs font-mono px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 self-start sm:self-auto">
-          {getFriendlyConfidence(activePrediction.confidenceRating)}
+          {evidenceLabel}
         </span>
       </div>
+
+      {error && <p role="alert" className="text-rose-300 text-sm">{error}</p>}
+      {activePrediction.sourceUrl?.startsWith('https://') && (
+        <a href={activePrediction.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-300 underline relative z-10">Inspect donor-field source (not independently verified)</a>
+      )}
+      {activePrediction.transferLimit && (
+        <p className="rounded-xl border border-amber-500/20 bg-amber-950/15 p-3 text-xs text-amber-200 relative z-10"><strong>Where this comparison may fail:</strong> {activePrediction.transferLimit}</p>
+      )}
+      {activePrediction.predictionStages && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 relative z-10">
+          {([
+            ['1 · What another field knows', activePrediction.predictionStages.borrowedFinding],
+            ['2 · What REMEMBER predicts here', activePrediction.predictionStages.newPrediction],
+            ['3 · How to check it', activePrediction.predictionStages.howToTest],
+          ] as const).map(([title, description]) => (
+            <div key={title} className="rounded-xl bg-[#101827] border border-cyan-500/25 p-4">
+              <p className="text-xs text-cyan-300 font-bold mb-2">{title}</p>
+              <p className="text-xs text-stone-200">{description}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Main Everyday Prediction Card */}
       <div className="bg-gradient-to-br from-cyan-950/20 via-[#151925] to-[#10131d] rounded-2xl p-5 sm:p-7 border border-cyan-500/30 shadow-lg relative z-10 space-y-4">
         <div>
           <span className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold block mb-1">
-            Here Is What We Bet Will Happen:
+            Proposed Prediction — Not Yet Established:
           </span>
           <h4 className="font-serif text-lg sm:text-2xl font-bold text-white leading-snug">
             "{activePrediction.falsifiablePrediction}"
@@ -175,7 +194,7 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
         <div className="bg-[#0f1516] rounded-2xl border border-emerald-500/30 p-5 space-y-2">
           <span className="text-xs font-mono uppercase text-emerald-400 font-bold block flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            How You Know It Worked:
+            What Would Support This Prediction:
           </span>
           <p className="text-xs sm:text-sm text-stone-200 leading-relaxed font-sans">
             {activePrediction.evidenceThatWouldProve}
@@ -185,7 +204,7 @@ export const RealPredictionEngine: React.FC<RealPredictionEngineProps> = ({
         <div className="bg-[#171114] rounded-2xl border border-rose-500/30 p-5 space-y-2">
           <span className="text-xs font-mono uppercase text-rose-400 font-bold block flex items-center gap-1.5">
             <XCircle className="w-4 h-4 text-rose-400" />
-            How You Know It Didn't Work:
+            What Would Challenge This Prediction:
           </span>
           <p className="text-xs sm:text-sm text-stone-200 leading-relaxed font-sans">
             {activePrediction.evidenceThatWouldDisprove}
