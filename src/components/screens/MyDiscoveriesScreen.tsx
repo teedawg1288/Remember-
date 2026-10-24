@@ -23,6 +23,7 @@ interface MyDiscoveriesScreenProps {
   savedStories: SameStoryResult[];
   onSelectStory: (story: SameStoryResult) => void;
   onClearHistory: () => void;
+  onClearLanguageMemory: () => void;
   onToggleSaveStory: (story: SameStoryResult) => void;
   onRemoveFromSaved?: (storyId: string) => void;
   onRemoveFromHistory?: (storyId: string) => void;
@@ -33,6 +34,7 @@ export const MyDiscoveriesScreen: React.FC<MyDiscoveriesScreenProps> = ({
   savedStories,
   onSelectStory,
   onClearHistory,
+  onClearLanguageMemory,
   onToggleSaveStory,
   onRemoveFromSaved,
   onRemoveFromHistory,
@@ -94,6 +96,7 @@ Barbershop Closing:
       localStorage.removeItem('remember_personal_notes');
       setPersonalNotes('');
       onClearHistory();
+      onClearLanguageMemory();
       sound.playNodeChime(320);
     }
   };
@@ -153,13 +156,13 @@ Barbershop Closing:
             </div>
             <div>
               <h3 className="font-serif text-lg font-bold text-white flex items-center gap-2">
-                <span>The Dignity Guarantee: Your History Is Never A Box</span>
+                <span>The Fresh Evidence Rule: Memory Is Not A Verdict</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-normal">
-                  Fresh Eyes Protocol Active
+                  Historical snapshots · Recheck current facts
                 </span>
               </h3>
               <p className="text-xs sm:text-sm text-stone-300 mt-1 leading-relaxed max-w-3xl">
-                REMEMBER never uses your past conversations, mistakes, or patterns against you. You are never typecast, labeled, or psychoanalyzed as who you are in the now. The song didn't change; you did. Every conversation starts with fresh eyes and total respect for who you are becoming.
+                Saved discoveries describe what was considered then, not who you permanently are. A familiar outcome is not proof of the same cause. A fresh situation deserves fresh evidence: what happened now, what was known, what options existed, and what changed. Previous harm can still need repair, but past labels cannot replace a present explanation.
               </p>
             </div>
           </div>
