@@ -9,6 +9,16 @@ import { SameStoryResult } from './types/sameStory';
 import { AlertCircle, Eye, MessageSquare, Sparkles, Box } from 'lucide-react';
 import { sound } from './audio/soundEngine';
 
+// Automatic language interpretations are provisional; old guesses expire.
+const INFERRED_MEANING_MAX_AGE_MS = 60 * 24 * 60 * 60 * 1000;
+const isFreshMemory = (entry: PersonalPhrase): boolean => {
+  if (entry.source !== 'inferred') return true; // User-entered meanings are controlled by the user.
+  const observedAt = Date.parse(entry.updatedAt || '');
+  return Number.isFinite(observedAt) &&
+    observedAt <= Date.now() &&
+    observedAt > Date.now() - INFERRED_MEANING_MAX_AGE_MS;
+};
+
 export const App: React.FC = () => {
   const [appName, setAppName] = useState<BrandNameOption>('REMEMBER');
   const [activeMainTab, setActiveMainTab] = useState<MainTabOption>('talk');
@@ -26,7 +36,7 @@ export const App: React.FC = () => {
       return Array.isArray(raw) ? raw.filter((p) =>
         p && typeof p.id === 'string' && typeof p.phrase === 'string' &&
         typeof p.meaning === 'string' && p.phrase.length <= 80 && p.meaning.length <= 300
-      ).slice(0, 50) : [];
+      ).filter(isFreshMemory).slice(0, 50) : [];
     } catch { return []; }
   });
   const [usePersonalLanguage, setUsePersonalLanguage] = useState(() => {
@@ -94,6 +104,7 @@ export const App: React.FC = () => {
     try {
       const relevantPhrases = usePersonalLanguage
         ? personalPhrases.filter((entry) => {
+            if (!isFreshMemory(entry)) return false;
             const normalize = (value: string) =>
               ' ' + value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
             const needle = normalize(entry.phrase);
@@ -105,7 +116,11 @@ export const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userInput, persona, personalDictionary: relevantPhrases,
-          conversationContext: usePersonalLanguage ? recentQuestions.slice(0, 6).reverse().map((q) => q.text) : [],
+          conversationContext: usePersonalLanguage
+            ? recentQuestions
+              .filter((q) => q.at > Date.now() - 30 * 24 * 60 * 60 * 1000)
+              .slice(0, 6).reverse().map((q) => q.text)
+            : [],
         }),
       });
 
@@ -116,10 +131,10 @@ export const App: React.FC = () => {
 
       if (usePersonalLanguage) {
         const signals = Array.isArray(data.languageLearnings) ? data.languageLearnings : [];
-        const corpus = (' ' + [userInput, ...recentQuestions.map((q) => q.text)]
-          .join(' ').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ') + ' ');
+        // Only current language is new evidence; don't reinforce a guess from old prompts alone.
+        const corpus = (' ' + userInput.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ') + ' ');
         setPersonalPhrases((prev) => {
-          const next = [...prev];
+          const next = prev.filter(isFreshMemory);
           for (const signal of signals.slice(0, 2)) {
             if (!signal || typeof signal.phrase !== 'string' || typeof signal.meaning !== 'string' ||
               !['explicit', 'repeated'].includes(signal.evidence) ||
@@ -303,6 +318,7 @@ export const App: React.FC = () => {
         {activeMainTab === 'discoveries' && (
           <>
           <MyDiscoveriesScreen
+            onClearLanguageMemory={forgetLearnedLanguage}
             historyList={historyList}
             savedStories={savedStories}
             onSelectStory={(s) => {
@@ -312,6 +328,8 @@ export const App: React.FC = () => {
             onClearHistory={() => {
               setSavedStories([]);
               setHistoryList([]);
+              setActiveAnalysis(null);
+              setShowResearchLab(false);
               localStorage.removeItem('remember_saved_discoveries');
             }}
             onToggleSaveStory={handleToggleSaveStory}
