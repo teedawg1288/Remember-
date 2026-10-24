@@ -49,11 +49,74 @@ describe('Prediction evidence integrity guard', () => {
     }).status).toBe('blocked');
   });
 
-  test('numerical success claims without a source are withheld', () => {
+  test('numerical outcome-rate claims without a source are withheld', () => {
+    for (const claim of [
+      'Changing this part works in 80% of cases.',
+      'The repair succeeds 80% of the time.',
+      'It succeeds in 8 out of 10 cases.',
+    ]) {
+      expect(assessPredictionIntegrity({ ...base, falsifiablePrediction: claim }).status).toBe('blocked');
+    }
+  });
+
+  test('measured physical thresholds are not confused with success rates', () => {
     expect(assessPredictionIntegrity({
-      ...base, falsifiablePrediction: 'Changing this part works in 80% of cases.',
+      ...base,
+      falsifiablePrediction: 'If the chain is elongated >0.75%, replacing it without the cassette will not fully resolve the skip under high torque.',
+    }).status).toBe('candidate');
+    expect(assessPredictionIntegrity({
+      ...base,
+      falsifiablePrediction: 'At 12% humidity, a sensor registers a different resistance.',
+    }).status).toBe('candidate');
+  });
+
+  test('statistical claims still require sources even if they mention technical components', () => {
+    expect(assessPredictionIntegrity({
+      ...base,
+      falsifiablePrediction: 'The bike repair succeeds in 80% of cases.',
     }).status).toBe('blocked');
   });
+});
+
+test('live-analysis prompts avoid forcing human drama and invented odds into technical questions', () => {
+  const server = readFileSync('server.ts', 'utf-8');
+  const liveStart = server.indexOf('const prompt = `You are REMEMBER');
+  const liveEnd = server.indexOf('Return STRICT, VALID JSON ONLY', liveStart);
+  const instructions = server.slice(liveStart, liveEnd);
+  expect(instructions).toContain('persona is a STYLE, not a topic selector');
+  expect(instructions).toContain('never turn a mechanical, medical, engineering');
+  expect(instructions).toContain('Never make up what the user did');
+  expect(server).not.toContain('8 out of 10 times they will smile right back');
+  expect(server).not.toContain('their phone died or they were busy');
+});
+
+test('primary UI prioritizes question, observation, explanation, and next check', () => {
+  const screen = readFileSync('src/components/StoryComparisonView.tsx', 'utf-8');
+  const input = readFileSync('src/components/BarberInput.tsx', 'utf-8');
+  const map = readFileSync('src/components/InteractiveDiscoveryMap.tsx', 'utf-8');
+  const bridge = readFileSync('src/components/CrossDomainVisualBridge.tsx', 'utf-8');
+  const roundTable = readFileSync('src/components/RoundTableView.tsx', 'utf-8');
+  expect(screen).toContain('1 · What we know');
+  expect(screen).toContain('2 · What might explain it');
+  expect(screen).toContain('3 · Best next check');
+  expect(screen).toContain('<details className="rounded-2xl');
+  expect(screen).not.toContain('"Different people, different places, but look at what');
+  expect(input).toContain('What are you trying to understand?');
+  expect(input).toContain('Try a sample question');
+  expect(input).not.toContain('Silence is never hostility');
+  expect(input.indexOf('<form onSubmit')).toBeLessThan(input.indexOf('Try a sample question'));
+  expect(map).not.toContain('already cracked this code');
+  expect(map).not.toContain('Real AI Reasoning Active');
+  expect(map).toContain("node.id === 'node-history'");
+  expect(bridge).toContain('How the mechanisms compare');
+  expect(roundTable).not.toContain('It sounds like you\'re asking:');
+});
+
+test('custom analyses do not fall back to unrelated fictional era scenes', () => {
+  const server = readFileSync('server.ts', 'utf-8');
+  const ui = readFileSync('src/components/StoryComparisonView.tsx', 'utf-8');
+  expect(server).toContain('parsed.eras = []');
+  expect(ui).toContain('No question-specific era comparison was generated.');
 });
 
 test('visual bridge cannot ship the old text-message fallback again', () => {
