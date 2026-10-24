@@ -32,6 +32,7 @@ import {
   LivingRosettaStone,
 } from '../types/sameStory';
 import { sound } from '../audio/soundEngine';
+import { getRosettaStoneForAnalysis } from '../data/curatedRosettaStones';
 
 export interface DiscoveryNode {
   id: string;
@@ -92,7 +93,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
   const secondaryParallel = analysis.stories[1] || null;
   const prediction = analysis.prediction;
   const scenarioList = analysis.whatIfScenarios || [];
-  const rosetta = analysis.rosettaStone;
+  const rosetta = getRosettaStoneForAnalysis(analysis);
   const diffCrucial = analysis.differenceThatChangesEverything;
 
   // Build the constellation nodes dynamically
@@ -118,11 +119,11 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
         },
         details: {
           donorField: primaryParallel?.timeAndPlace || 'Historical Record',
-          whatHappenedThere: primaryParallel?.whatActuallyHappened || primaryParallel?.narrative || 'Factions mobilized because neither was willing to confirm the other party\'s true intentions without appearing weak.',
-          howItDirectlyAppliesToYou: primaryParallel?.whatThisFieldAlreadyFiguredOut || 'When communication stops, the human mind fills the void with its deepest fears and treats assumptions as confirmed facts.',
-          theCrucialDifference: analysis.crucialDifferences?.[0]?.comparison || 'In history, thousands were bound by treaty and pride. In your personal life, a 15-second casual message can defuse the entire deadlock.',
-          whyDifferenceMatters: analysis.crucialDifferences?.[0]?.whyThisDifferenceMatters || 'You do not have a palace guard or treaties enforcing your silence; your pride is the only barrier.',
-          testableAction: 'Send a neutral, pressure-free inquiry: "Hey, thinking of you—hope your week is going smoothly!"',
+          whatHappenedThere: primaryParallel?.whatActuallyHappened || primaryParallel?.narrative || 'No account has been supplied for this comparison.',
+          howItDirectlyAppliesToYou: primaryParallel?.whatThisFieldAlreadyFiguredOut || 'No transferable finding has been supplied for this comparison.',
+          theCrucialDifference: analysis.crucialDifferences?.[0]?.comparison || 'The compared situations may have different causes, constraints, and stakes.',
+          whyDifferenceMatters: analysis.crucialDifferences?.[0]?.whyThisDifferenceMatters || 'Check whether the comparison still holds under each situation’s specific conditions.',
+          testableAction: analysis.unresolvedQuestion?.testablePossibility || 'Check what evidence would distinguish this comparison from a superficial similarity.',
         },
       },
       {
@@ -159,7 +160,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
         nodeTitle: rosetta?.oneQuestionThatChangesEverything?.question
           ? 'The Unseen Perspective'
           : 'The Translation Barrier',
-        tagline: `Universal Chord: ${rosetta?.primaryChord || 'Belonging'}`,
+        tagline: `Universal Chord: ${rosetta?.primaryChord || 'Not yet identified'}`,
         evidenceType: 'Possible Interpretation',
         evidenceRating: 'Needs Independent Check',
         isomorphismSummary: rosetta?.oneQuestionThatChangesEverything?.whyItShiftsTheLens || 'Consider other possible interpretations of the same observation.',
@@ -173,12 +174,12 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           accent: '#a855f7',
         },
         details: {
-          donorField: 'Interpersonal Psychology & Lived Experience',
+          donorField: 'Meaning & Lived Experience',
           whatHappenedThere: rosetta?.translations?.[0]?.speakerB?.felt || 'The other person’s experience has not been confirmed.',
           howItDirectlyAppliesToYou: rosetta?.translations?.[0]?.theBridge || 'A different interpretation is possible; check rather than assume.',
-          theCrucialDifference: 'You know your own internal intentions, but judge them only by their external absence.',
-          whyDifferenceMatters: 'Fundamental Attribution Error: we forgive our own delays as "busy", but condemn theirs as "disrespectful".',
-          testableAction: 'Ask: "If they were silently crying in their car 20 minutes ago, how would I want to speak to them right now?"',
+          theCrucialDifference: 'What was expressed, what was heard, and what was understood can be different; interpretations are not confirmed without checking.',
+          whyDifferenceMatters: 'A guessed meaning can change a response even when the guess is wrong. Compare each perspective with actual evidence.',
+          testableAction: rosetta?.oneQuestionThatChangesEverything?.question || 'Ask what each person or system meant and understood, then check the answer.',
         },
       },
       {
@@ -222,7 +223,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           tagline: scale.levelLabel || 'When This Spreads to Groups',
           evidenceType: 'Systemic Scale',
           evidenceRating: 'Needs Independent Check',
-          isomorphismSummary: scale.whatIsTheSame || 'Diffusion of responsibility spreads the exact same silence across whole organizations.',
+          isomorphismSummary: scale.whatIsTheSame || 'No shared group mechanism has been established.',
           color: {
             bg: 'from-rose-950/80 to-[#221015]',
             border: 'border-rose-500/50',
@@ -235,10 +236,10 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           details: {
             donorField: 'Organizational Systems & Sociology',
             whatHappenedThere: scale.howItAppearsHere || 'When expectations are unstated, everyone watches everyone else and no one acts.',
-            howItDirectlyAppliesToYou: 'Personal misunderstandings mirror team gridlock: silence creates phantom politics.',
-            theCrucialDifference: scale.whatIsDifferent || 'In a group, bystander apathy protects individual egos at the expense of the collective mission.',
-            whyDifferenceMatters: scale.whyTheDifferenceMatters || 'Explicit written protocols prevent unspoken friction from destroying group trust.',
-            testableAction: 'Name the unspoken elephant in a calm, collaborative tone: "Let\'s clarify roles so nobody gets stuck doing this alone."',
+            howItDirectlyAppliesToYou: scale.whatIsTheSame || 'Check whether the same causal mechanism is present at this scale.',
+            theCrucialDifference: scale.whatIsDifferent || 'The roles, incentives, and responsibilities may differ with scale.',
+            whyDifferenceMatters: scale.whyTheDifferenceMatters || 'Determine what changes when the number of actors or authority structure changes.',
+            testableAction: analysis.unresolvedQuestion?.testablePossibility || 'Check one key assumption in the larger group setting.',
           },
         });
       }
@@ -253,7 +254,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           tagline: ref.citation ? ref.citation.slice(0, 42) + '...' : 'No linked studies supplied',
           evidenceType: 'Citation to Check',
           evidenceRating: 'Needs Independent Check',
-          isomorphismSummary: ref.relevance || 'Studies in cognitive bias confirm humans consistently overestimate malicious intent in ambiguous scenarios by over 300%.',
+          isomorphismSummary: ref.relevance || 'The cited work needs to be read before drawing a conclusion.',
           color: {
             bg: 'from-sky-950/80 to-[#0e1d28]',
             border: 'border-sky-500/50',
@@ -265,10 +266,10 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
           },
           details: {
             donorField: 'Cognitive Science & Social Psychology',
-            whatHappenedThere: ref.citation || 'Journal of Experimental Social Psychology',
-            howItDirectlyAppliesToYou: analysis.deepResearch.formalHypothesis || 'Attribution of malice in absent communications decreases to near zero once context is provided.',
-            theCrucialDifference: 'Controlled laboratory trials isolate variables; your personal life feels high-stakes because you feel directly targeted.',
-            whyDifferenceMatters: 'Knowing the science protects you from emotional hijacking: you can recognize your amygdala misinterpreting silence.',
+            whatHappenedThere: ref.citation || 'Citation details not supplied',
+            howItDirectlyAppliesToYou: analysis.deepResearch.formalHypothesis || 'The finding cannot be generalized without checking the study.',
+            theCrucialDifference: 'Study conditions and real-world conditions may differ in ways that change the outcome.',
+            whyDifferenceMatters: 'A study supports only the findings established by its actual design, measures, and participants.',
             testableAction: 'Inspect the peer-reviewed methodology in the Deep Research Lab drawer.',
           },
         });
@@ -599,7 +600,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
                 <div className="space-y-3">
                   <div>
-                    <span className="text-[11px] font-mono text-stone-400 block mb-1">The Triggering Silence / Friction:</span>
+                    <span className="text-[11px] font-mono text-stone-400 block mb-1">What Happened Here:</span>
                     <p className="text-sm text-stone-100 font-serif leading-snug">
                       "{analysis.userWordsSummary}"
                     </p>
@@ -607,7 +608,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
                   <div className="p-3.5 rounded-xl bg-[#141824] border border-stone-800 space-y-1">
                     <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block">
-                      The Ego's Instant Explanation:
+                      A Possible Interpretation:
                     </span>
                     <p className="text-xs text-stone-300">
                       {analysis.storyChain?.defaultChain?.whatYouThought || 'The meaning of this observation has not yet been established.'}
@@ -630,7 +631,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
                 <div className="space-y-3">
                   <div>
-                    <span className="text-[11px] font-mono text-stone-400 block mb-1">What Actually Occurred There:</span>
+                    <span className="text-[11px] font-mono text-stone-400 block mb-1">What Is Reported or Proposed There:</span>
                     <p className="text-sm text-stone-100 font-serif leading-snug">
                       {activeNode.details.whatHappenedThere}
                     </p>
@@ -638,7 +639,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
                   <div className="p-3.5 rounded-xl bg-[#141824] border border-stone-800 space-y-1">
                     <span className="text-[10px] font-mono uppercase font-bold block" style={{ color: activeNode.color.accent }}>
-                      The Breakthrough This Field Discovered:
+                      What This Comparison Suggests:
                     </span>
                     <p className="text-xs text-stone-300">
                       {activeNode.details.howItDirectlyAppliesToYou}

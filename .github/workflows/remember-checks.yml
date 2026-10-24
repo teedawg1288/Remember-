@@ -15,3 +15,4 @@ jobs:
       - run: bun run lint
       - run: bun run build
       - run: node --test tests/server-contract.test.mjs
+      - run: bun test tests/situation-context.test.ts
