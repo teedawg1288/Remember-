@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Sparkles,
   ArrowRight,
-  Eye,
   MessageSquare,
   Home,
   Smile,
@@ -29,11 +27,9 @@ export const BarberInput: React.FC<BarberInputProps> = ({
   onAnalyze,
   onSelectCurated,
   isLoading,
-  persona,
   appName,
 }) => {
   const [text, setText] = useState('');
-  const [isRevealed, setIsRevealed] = useState(false);
   const [aiKeyStatus, setAiKeyStatus] = useState<'checking' | 'present' | 'missing' | 'unknown'>('checking');
 
   useEffect(() => {
@@ -49,6 +45,14 @@ export const BarberInput: React.FC<BarberInputProps> = ({
   }, []);
 
   const everydayScenarios = [
+    {
+      id: 'bike-skipping',
+      label: 'Why does a bicycle chain skip under load?',
+      icon: <Wrench className="w-4 h-4 text-emerald-300" />,
+      subtext: 'A direct mechanical problem to investigate without inventing a human story.',
+      prompt: 'Why does my bicycle chain skip only when I pedal hard?',
+      badge: 'Live AI',
+    },
     {
       id: 'unanswered-text',
       label: 'Someone ignored your text or walked past you',
@@ -110,12 +114,6 @@ export const BarberInput: React.FC<BarberInputProps> = ({
     onAnalyze(item.prompt);
   };
 
-  const handleToggleReveal = () => {
-    const nextState = !isRevealed;
-    setIsRevealed(nextState);
-    sound.playNodeChime(nextState ? 620 : 380);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || isLoading) return;
@@ -124,202 +122,72 @@ export const BarberInput: React.FC<BarberInputProps> = ({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-6 sm:py-10 space-y-10 animate-fade-in">
-      {/* 1. Cinematic Tactile Opening Hook */}
-      <div className="relative rounded-3xl bg-gradient-to-b from-[#151926] via-[#0f121a] to-[#0a0d14] border border-amber-500/30 p-6 sm:p-10 shadow-2xl overflow-hidden">
-        {/* Soft background ambient light */}
-        <div
-          className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-25 ${
-            isRevealed ? 'bg-amber-500/30' : 'bg-indigo-600/25'
-          }`}
-        />
-
-        <div className="relative z-10 max-w-3xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>{appName} · Understand What You Don't Know Through What You've Already Lived</span>
-          </div>
-
-          <h1 className="font-serif text-3xl sm:text-5xl font-medium tracking-tight text-white leading-tight">
-            Ever had this happen?
-          </h1>
-
-          <p className="text-sm sm:text-base text-stone-300 max-w-xl mx-auto leading-relaxed">
-            This opening example is fictional. Tap to compare two possible interpretations:
-          </p>
-        </div>
-
-        {/* The Tactile Moment: Touch to flip between Ego Assumption and The Unseen Truth */}
-        <div className="relative z-10 max-w-2xl mx-auto mt-6 rounded-2xl bg-[#080b12] border border-stone-800 p-5 sm:p-6 space-y-4 shadow-inner">
-          <div className="flex items-center justify-between pb-3 border-b border-stone-800">
-            <span className="text-xs font-mono uppercase tracking-wider text-stone-400 font-bold">
-              The Living Dilemma
-            </span>
-            <button
-              onClick={handleToggleReveal}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                isRevealed
-                  ? 'bg-amber-600 text-stone-950 border-amber-500 shadow-md'
-                  : 'bg-[#141824] text-stone-300 border-stone-700 hover:text-white'
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>{isRevealed ? 'Showing Another Possibility' : 'See Another Possible Explanation'}</span>
-            </button>
-          </div>
-
-          <div
-            onClick={handleToggleReveal}
-            className={`p-5 rounded-xl border transition-all duration-500 cursor-pointer ${
-              isRevealed
-                ? 'bg-gradient-to-r from-amber-950/40 via-stone-900 to-[#19150f] border-amber-500/40'
-                : 'bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/40 border-indigo-900/40'
-            }`}
-          >
-            <div className="flex items-center justify-between text-[11px] font-mono mb-2">
-              <span className={isRevealed ? 'text-amber-400 font-bold' : 'text-indigo-400 font-bold'}>
-                {isRevealed ? 'Perspective 2 · An Unverified Alternative' : 'Perspective 1 · One Interpretation'}
-              </span>
-              <span className="text-stone-400 italic">Tap card to flip</span>
-            </div>
-
-            <p className="font-serif text-base sm:text-lg text-stone-100 leading-snug">
-              {isRevealed
-                ? '"They were staring at the sidewalk because their father was rushed to the hospital 20 minutes ago. They walked past blind with grief, completely unaware anyone was there."'
-                : '"They looked in my direction and walked right past without saying hello. They think they are better than me. Next time I see them, I will ignore them first."'}
-            </p>
-
-            <div className="mt-4 pt-3 border-t border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-stone-400">
-              <span>{isRevealed ? 'The Discovery: Silence is never hostility' : 'The Result: A 3-week cold war begins over an empty thought'}</span>
-              {isRevealed ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleScenarioClick(everydayScenarios[0]);
-                  }}
-                  className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-950/40 cursor-pointer transition-all shrink-0"
-                >
-                  <span>Launch Living Discovery Map</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              ) : (
-                <span className="text-amber-400 underline underline-offset-4 font-sans text-xs">
-                  Touch card to reveal reality &rarr;
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Grid of Recognizable Everyday Situations */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+    <div className="w-full max-w-5xl mx-auto px-4 py-6 sm:py-10 space-y-6 animate-fade-in">
+      <section className="rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#181d28] to-[#0e1119] p-6 sm:p-9 shadow-xl">
+        <div className="max-w-3xl mx-auto space-y-5">
           <div>
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-white">
-              Pick a familiar situation you've experienced:
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-400">
-              Tap any dilemma to see what's really happening underneath and where another field already solved it:
-            </p>
+            <p className="text-[11px] text-amber-300 font-bold tracking-widest uppercase">{appName} · Let's Talk</p>
+            <h1 className="font-serif text-3xl sm:text-4xl text-white font-bold mt-2">What are you trying to understand?</h1>
+            <p className="text-sm text-stone-300 mt-2">A situation, a machine, a conversation, a question. Start wherever you are.</p>
           </div>
-          <span className="text-xs font-mono text-amber-400 bg-[#161a24] px-3 py-1 rounded-lg border border-stone-800 hidden sm:inline">
-            Instant Interactive View
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {everydayScenarios.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleScenarioClick(item)}
-              disabled={isLoading}
-              className="group text-left p-4 sm:p-5 rounded-2xl bg-[#12151e] hover:bg-[#181d2a] border border-stone-800 hover:border-amber-500/50 transition-all cursor-pointer shadow-md flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-1 mb-2">
-                  <div className="flex items-center gap-2 font-bold text-sm text-stone-100 group-hover:text-amber-200">
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </div>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#0b0e14] text-stone-400 border border-stone-800">
-                    {item.badge}
-                  </span>
-                </div>
-                <p className="text-xs text-stone-300 leading-relaxed line-clamp-2">
-                  {item.subtext}
-                </p>
-              </div>
-
-              <div className="text-[11px] font-mono text-amber-400/90 mt-4 flex items-center justify-between border-t border-stone-800/80 pt-2.5 group-hover:text-amber-300 transition-colors">
-                <span>See what's underneath</span>
-                <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 3. Conversational Writing Space */}
-      <div className="rounded-3xl bg-[#11141e] border border-stone-800 p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="max-w-2xl mx-auto space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-2">
-              <Compass className="w-4 h-4 text-amber-400" />
-              Or describe what happened to you in your own words:
-            </span>
-            <span className="text-[11px] text-stone-500 font-mono">No corporate jargon</span>
-          </div>
-
-          <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-950/15 px-3.5 py-3 text-xs text-stone-200 leading-relaxed">
-            {aiKeyStatus === 'present'
-              ? 'Gemini key detected on the server. Credits and connection have not been tested — try your own question to verify.'
-              : aiKeyStatus === 'missing'
-                ? 'Prepared examples work, but live AI questions need GEMINI_API_KEY. In Google AI Studio, open Settings → Secrets and check the server-side key.'
+          {aiKeyStatus !== 'present' && (
+            <p role="status" className="text-xs text-amber-200 bg-amber-950/20 border border-amber-500/30 p-3 rounded-xl">
+              {aiKeyStatus === 'missing'
+                ? 'Live questions need the Gemini key in AI Studio Settings → Secrets. Prepared examples still work.'
                 : aiKeyStatus === 'checking'
-                  ? 'Checking whether the AI key is available…'
-                  : 'Could not read the AI status. Try a question; any live AI error will explain what failed.'}
-          </div>
-
+                  ? 'Checking live AI availability…'
+                  : 'AI status could not be checked; submitting a question will show any connection error.'}
+            </p>
+          )}
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="rounded-2xl bg-[#090b11] border border-stone-800 focus-within:border-amber-500/60 transition-colors p-4">
+            <label htmlFor="remember-question" className="block text-sm font-semibold text-stone-200">Your question</label>
+            <div className="rounded-2xl border border-stone-700 bg-[#090c14] p-4 focus-within:border-amber-400/70">
               <textarea
+                id="remember-question"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Someone said something that bugged me... / A coworker stopped replying... / I'm stuck doing all the work at home..."
-                rows={3}
-                className="w-full bg-transparent text-stone-100 placeholder-stone-500 text-sm focus:outline-none resize-none leading-relaxed"
+                placeholder="Why does my bike skip under load? / What did the other person understand? / Why does this keep happening?"
+                rows={4}
                 disabled={isLoading}
+                className="w-full bg-transparent text-stone-100 placeholder-stone-500 text-sm focus:outline-none resize-none leading-relaxed"
               />
-
-              <div className="flex items-center justify-between pt-3 border-t border-stone-900 text-xs">
-                <span className="text-[11px] text-stone-500 font-mono">
-                  {text.length > 0 ? `${text.length} characters` : 'Talk naturally. We look for the pattern.'}
-                </span>
-
+              <div className="flex items-center justify-between pt-3 border-t border-stone-800 gap-3">
+                <span className="text-[11px] text-stone-400">{text.length ? `${text.length} characters` : 'Your words are enough.'}</span>
                 <button
                   type="submit"
                   disabled={isLoading || !text.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 shadow-md shadow-amber-950/30"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-stone-950 font-bold text-sm flex items-center gap-2 cursor-pointer"
                 >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Finding Pattern...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Show Me What's Happening</span>
-                      <Send className="w-3.5 h-3.5" />
-                    </>
-                  )}
+                  {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <span>{isLoading ? 'Analyzing…' : 'Show Me'}</span>
                 </button>
               </div>
             </div>
           </form>
         </div>
-      </div>
+      </section>
+
+      <details className="group rounded-2xl border border-stone-800 bg-[#11151e] p-4 sm:p-5">
+        <summary className="cursor-pointer text-sm font-semibold text-stone-200 flex justify-between items-center">
+          <span>Try a sample question</span>
+          <span className="text-xs text-amber-300">Examples <ArrowRight className="w-3 h-3 inline" /></span>
+        </summary>
+        <p className="text-xs text-stone-400 mt-3 mb-3">Examples are starting points, not evidence of what actually happened to you.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {everydayScenarios.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleScenarioClick(item)}
+              disabled={isLoading}
+              className="rounded-xl border border-stone-700 hover:border-amber-500/50 bg-[#141a25] p-4 text-left cursor-pointer disabled:opacity-50"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-white">{item.icon}{item.label}</span>
+              <span className="block text-[11px] text-stone-400 mt-2">{item.badge === 'Live AI' ? 'Live AI question' : 'Prepared example'}</span>
+            </button>
+          ))}
+        </div>
+      </details>
     </div>
   );
 };
