@@ -147,6 +147,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 
   // Each view reads only this analysis. Never borrow unanswered-text content
   // when an AI-generated or curated scenario does not supply this section.
+  const firstMechanismBridge = analysis.mechanismBridges?.[0];
   const storyChainData = analysis.storyChain;
   const scaleConnectionsData = analysis.scaleConnections;
   const rosettaStoneData = analysis.isCustomGenerated && !analysis.meaningSynchronization
@@ -230,7 +231,31 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             </p>
           </article>
         </div>
-        <p className="text-xs text-stone-400">A useful explanation is a starting hypothesis, not a verdict. Check the evidence before acting.</p>
+
+        <div className="rounded-xl bg-gradient-to-r from-cyan-950/35 to-[#101923] border border-cyan-500/40 p-4 sm:p-5 space-y-2">
+          <p className="text-[11px] text-cyan-300 uppercase font-bold tracking-widest">Cross-system connection · Candidate</p>
+          {firstMechanismBridge ? (
+            <>
+              <h3 className="font-serif text-lg text-white font-semibold">
+                {firstMechanismBridge.originalSystem} <span className="text-cyan-400">↔</span> {firstMechanismBridge.comparisonSystem}
+              </h3>
+              <p className="text-sm text-stone-100"><strong>Possibly shared mechanism:</strong> {firstMechanismBridge.sharedMechanism}</p>
+              <p className="text-xs text-amber-200"><strong>Where it may differ:</strong> {firstMechanismBridge.transferLimit}</p>
+              <button type="button" onClick={() => handleSelectTab('bridge')}
+                className="text-sm text-cyan-300 font-semibold underline underline-offset-4 cursor-pointer">Compare the steps →</button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-stone-200">
+                <strong>Lead from {analysis.borrowedInsight?.donorField || 'another field'}:</strong> {analysis.borrowedInsight?.whatWasLearnedThere || 'No specific counterpart has been mapped yet.'}
+              </p>
+              <p className="text-xs text-stone-400">This is a possible lead, not yet a validated stage-by-stage mechanism.</p>
+              <button type="button" onClick={() => handleSelectTab('bridge')}
+                className="text-sm text-cyan-300 font-semibold underline underline-offset-4 cursor-pointer">Explore or challenge this connection →</button>
+            </>
+          )}
+        </div>
+        <p className="text-xs text-stone-400">These are working comparisons, not claims of proven equivalence.</p>
       </section>
 
       {/* 2. Clean, Story-Driven Exploration Tabs */}
@@ -292,6 +317,15 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
       {/* TAB 1: YOUR STORY & DECISIONS */}
       {activeTab === 'story' && (
         <section className="space-y-8 animate-fade-in">
+          {/* Functional correspondence is the core parallel; historical stories are optional. */}
+          {analysis.mechanismBridges?.length ? (
+            <MechanismBridgeView key={analysis.id} bridges={analysis.mechanismBridges} />
+          ) : (
+            <p className="rounded-xl border border-cyan-500/30 bg-[#0f1b26] p-4 text-sm text-cyan-200">
+              A full stage-by-stage mechanism was not generated yet. Open Cross-Domain Discovery or run cross-examination below to investigate the lead.
+            </p>
+          )}
+
           {/* Cause and Effect Flow with Branching Decisions */}
           {storyChainData ? (
             <InteractiveStoryChain chainData={storyChainData} />
@@ -315,14 +349,14 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-serif text-2xl font-bold text-white">
-                  Possible Parallels to Compare
+                  Historical Examples to Examine
                 </h3>
                 <p className="text-xs sm:text-sm text-stone-400">
-                  Compare the shared function, crucial differences and quality of the sources:
+                  Optional source-specific examples; the cross-system mechanism above is a separate discovery.
                 </p>
               </div>
               <span className="text-xs font-mono text-amber-400 bg-[#161a24] px-3 py-1 rounded-lg border border-stone-800">
-                {analysis.stories.length} Parallels
+                {analysis.stories.length} Historical Examples
               </span>
             </div>
 
@@ -339,7 +373,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               </div>
             ) : (
               <p className="rounded-2xl border border-amber-500/30 bg-amber-950/15 p-5 text-sm text-amber-100">
-                No source-backed historical parallel was supplied. Cross-examination can explore possible connections and what would challenge them.
+                No historical example was supplied. That does not mean the question has no cross-system mechanism: examine the candidate connection above or run cross-examination below.
               </p>
             )}
           </div>
