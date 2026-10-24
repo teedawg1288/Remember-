@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CrossFieldPrediction, SameStoryResult } from '../types/sameStory';
 import { sound } from '../audio/soundEngine';
+import { assessPredictionIntegrity } from '../data/predictionIntegrity';
 
 interface CrossDomainVisualBridgeProps {
   analysis: SameStoryResult;
@@ -38,6 +39,8 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
   });
   const [noteSaved, setNoteSaved] = useState(false);
 
+  const predictionIntegrity = assessPredictionIntegrity(analysis.prediction);
+  const candidateBridge = analysis.mechanismBridges?.[0];
   const prediction: CrossFieldPrediction = analysis.prediction || {
     id: `unavailable-${analysis.id}`,
     timestamp: analysis.timestamp,
@@ -101,6 +104,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
   };
 
   const handleSetOutcome = (outcome: 'worked' | 'mixed' | 'didnt_work') => {
+    if (predictionIntegrity.status !== 'candidate') return;
     setTestOutcome(outcome);
     localStorage.setItem(`test_outcome_${prediction.id}`, outcome);
     sound.playNodeChime(outcome === 'worked' ? 620 : outcome === 'mixed' ? 480 : 360);
@@ -186,41 +190,50 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
             <div className="flex items-center justify-between border-b border-stone-800 pb-3">
               <span className="text-xs font-mono text-cyan-400 uppercase font-bold flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
-                The Underlying Structural Isomorphism (Identical Wiring)
+                Proposed Mechanism Alignment — Check Every Stage
               </span>
               <span className="text-xs font-serif italic text-amber-300">
-                "Different costumes, same wire."
+                "Similar functions do not prove identical causes."
               </span>
             </div>
 
-            {/* Visual Schematic Diagram */}
-            <div className="py-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div className="p-4 rounded-xl bg-[#121624] border border-cyan-500/30">
-                  <span className="text-[10px] font-mono uppercase text-cyan-400 block mb-1">Phase A</span>
-                  <h4 className="font-serif font-bold text-white text-base">The Signal & Silence</h4>
-                  <p className="text-xs text-stone-300 mt-2 leading-relaxed">
-                    A handshake pulse is dispatched. When zero reply is returned, an informational void occurs.
-                  </p>
+            {/* Candidate bridge uses the actual question's model-generated stages only. */}
+            {candidateBridge && candidateBridge.stages?.length >= 3 ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl border border-amber-500/30 bg-[#151821] p-4">
+                    <span className="text-amber-300 font-bold">Original · {candidateBridge.originalDomain}</span>
+                    <p className="text-stone-200 mt-2">{candidateBridge.originalSystem}</p>
+                  </div>
+                  <div className="rounded-xl border border-cyan-500/30 bg-[#111b28] p-4">
+                    <span className="text-cyan-300 font-bold">Comparison · {candidateBridge.comparisonDomain}</span>
+                    <p className="text-stone-200 mt-2">{candidateBridge.comparisonSystem}</p>
+                  </div>
                 </div>
-
-                <div className="p-4 rounded-xl bg-[#1b151a] border border-rose-500/30">
-                  <span className="text-[10px] font-mono uppercase text-rose-400 block mb-1">Phase B</span>
-                  <h4 className="font-serif font-bold text-rose-200 text-base">The Human Flaw: Ego</h4>
-                  <p className="text-xs text-stone-300 mt-2 leading-relaxed">
-                    Humans invent an aggressive motive ("they snubbed me") and retaliate, creating the very standoff they feared.
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {candidateBridge.stages.slice(0, 5).map((stage, idx) => (
+                    <div key={idx} className="rounded-xl border border-stone-700 bg-[#111520] p-4 space-y-2">
+                      <h4 className="font-bold text-cyan-200 text-sm">{idx + 1}. {stage.stage}</h4>
+                      <p className="text-xs text-stone-200"><strong>Original:</strong> {stage.inOriginalSystem}</p>
+                      <p className="text-xs text-stone-200"><strong>Comparison:</strong> {stage.inComparisonSystem}</p>
+                      <p className="text-xs text-emerald-200"><strong>Possibly shared function:</strong> {stage.sameFunction}</p>
+                      <p className="text-xs text-rose-200"><strong>Important difference:</strong> {stage.importantDifference}</p>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="p-4 rounded-xl bg-[#111a19] border border-emerald-500/30">
-                  <span className="text-[10px] font-mono uppercase text-emerald-400 block mb-1">Phase C</span>
-                  <h4 className="font-serif font-bold text-emerald-200 text-base">The Borrowed Solution</h4>
-                  <p className="text-xs text-stone-300 mt-2 leading-relaxed">
-                    Send a zero-stakes, gentle second pulse. In 80%+ of cases, communication immediately re-opens.
-                  </p>
+                <div className="rounded-xl bg-[#111520] border border-cyan-500/20 p-4 space-y-2 text-xs text-stone-200">
+                  <p><strong className="text-cyan-300">Potential transfer:</strong> {candidateBridge.possibleTransfer}</p>
+                  <p><strong className="text-rose-300">Where it may break:</strong> {candidateBridge.transferLimit}</p>
+                  <p><strong className="text-amber-300">Safe next check:</strong> {candidateBridge.safeNextCheck}</p>
+                  <p className="text-stone-400">AI-generated structural proposal — not a proven equivalence.</p>
                 </div>
               </div>
-            </div>
+            ) : (
+              <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-950/15 p-5 text-sm text-amber-100">
+                REMEMBER has not supplied a complete, stage-by-stage mechanism bridge for this question.
+                A similar outcome is not enough to claim the same cause.
+              </p>
+            )}
 
             <div className="bg-[#101420] p-4 rounded-xl border border-stone-800 text-xs text-stone-300">
               <span className="font-mono text-amber-400 uppercase font-bold block mb-1">
@@ -234,14 +247,14 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
         ) : (
           /* Split Comparison View */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-            {/* World 1: Everyday Human Life */}
+            {/* World 1: The actual question */}
             <div className="bg-[#0e121c] rounded-2xl border border-stone-800 p-6 space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-stone-800">
                 <span className="text-xs font-mono uppercase text-amber-400 font-bold flex items-center gap-1.5">
                   <Users className="w-4 h-4" />
-                  Your Everyday World
+                  The Original Situation
                 </span>
-                <span className="text-[11px] text-stone-400 font-mono">Interpersonal</span>
+                <span className="text-[11px] text-stone-400 font-mono">User-provided question</span>
               </div>
 
               <div>
@@ -255,11 +268,13 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
 
               <div className="p-3.5 rounded-xl bg-[#090c14] border border-stone-800/80 text-xs text-stone-400">
                 <span className="text-stone-300 font-mono uppercase block mb-1 text-[10px]">
-                  What it feels like:
+                  What needs checking:
                 </span>
-                {activeStep <= 1 && 'Waiting, watching, and wondering why they went quiet.'}
-                {activeStep === 2 && 'Offended pride taking over: "Fine, I will never speak to them again."'}
-                {activeStep >= 3 && 'A cold wall of silence where both people wait for the other to break.'}
+                {activeStep === 0 && 'This is an observation. Its cause still needs independent evidence.'}
+                {activeStep === 1 && 'Check whether the donor field is genuinely different and relevant.'}
+                {activeStep === 2 && 'Test the proposed causal steps, not just similar-looking outcomes.'}
+                {activeStep === 3 && 'A difference in causes or constraints may break the analogy.'}
+                {activeStep === 4 && 'A valid test must change only the variable the prediction identifies.'}
               </div>
             </div>
 
@@ -268,14 +283,14 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
               <div className="flex items-center justify-between pb-2 border-b border-stone-800">
                 <span className="text-xs font-mono uppercase text-cyan-400 font-bold flex items-center gap-1.5">
                   <Radio className="w-4 h-4" />
-                  Comparison from: {prediction.donorField}
+                  Candidate comparison: {analysis.borrowedInsight?.donorField || prediction.donorField}
                 </span>
                 <span className="text-[11px] text-cyan-300 font-mono">Donor-field idea · Check source</span>
               </div>
 
               <div>
                 <span className="text-[10px] font-mono uppercase text-cyan-300/80 block">
-                  How this exact problem is solved there:
+                  Potential comparison-side information:
                 </span>
                 <p className="font-serif text-base sm:text-lg text-cyan-100 mt-1 leading-snug">
                   {currentStep.scientific}
@@ -284,7 +299,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
 
               <div className="p-3.5 rounded-xl bg-[#090d18] border border-cyan-500/20 text-xs text-stone-300">
                 <span className="text-cyan-400 font-mono uppercase block mb-1 text-[10px]">
-                  The Borrowed Rule:
+                  Possible transferable idea (check evidence):
                 </span>
                 {currentStep.connection}
               </div>
@@ -298,7 +313,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-xs font-mono uppercase text-cyan-400 font-bold block mb-1">
-              The Real-World Prediction (Put It To The Test)
+              Proposed Prediction — Check the Test First
             </span>
             <h3 className="font-serif text-xl sm:text-2xl text-white font-bold">
               "{prediction.falsifiablePrediction}"
@@ -310,12 +325,21 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
           </span>
         </div>
 
+        {predictionIntegrity.status === 'blocked' ? (
+          <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-950/25 p-5 text-sm text-amber-100 space-y-3">
+            <p className="font-bold">This prediction's test did not pass REMEMBER's basic consistency check.</p>
+            {predictionIntegrity.issues.map((issue, idx) => <p key={idx}>{issue}</p>)}
+            <p className="text-stone-300">The proposed proof/failure criteria and outcome buttons are withheld. Define a test that checks the original claim without changing a different variable.</p>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-amber-200">Basic consistency checks passed, but these are still AI-proposed criteria — not independent proof that the experiment is valid.</p>
         {/* Observable Proof Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div className="bg-[#0b0f17] p-4 rounded-xl border border-emerald-500/30 space-y-1.5">
             <span className="text-emerald-400 font-bold font-mono uppercase flex items-center gap-1.5 text-[11px]">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              How You Know It Worked:
+              Possible observation supporting the prediction:
             </span>
             <p className="text-stone-200 leading-relaxed font-sans">
               {prediction.evidenceThatWouldProve}
@@ -325,7 +349,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
           <div className="bg-[#120c11] p-4 rounded-xl border border-rose-500/30 space-y-1.5">
             <span className="text-rose-400 font-bold font-mono uppercase flex items-center gap-1.5 text-[11px]">
               <XCircle className="w-4 h-4 text-rose-400" />
-              How You Know It Didn't Work:
+              Possible observation challenging the prediction:
             </span>
             <p className="text-stone-200 leading-relaxed font-sans">
               {prediction.evidenceThatWouldDisprove}
@@ -337,10 +361,10 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
         <div className="pt-4 border-t border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-xs font-mono uppercase text-amber-400 font-bold block">
-              Did you try this in your own life?
+              Did you test the proposed change?
             </span>
             <p className="text-xs text-stone-400">
-              Tap your result so your discoveries grow with your real experience:
+              Log what you observed. This does not independently verify the mechanism:
             </p>
           </div>
 
@@ -389,7 +413,7 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
               type="text"
               value={testNote}
               onChange={(e) => setTestNote(e.target.value)}
-              placeholder="What happened when you tried it? (e.g., 'Gave them a casual nod this morning, they immediately smiled back with relief')..."
+              placeholder="What did you directly observe when you tested the proposed change?"
               className="w-full bg-[#090b10] border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-100 placeholder-stone-500 focus:outline-none focus:border-cyan-500"
             />
             <button
@@ -399,6 +423,8 @@ export const CrossDomainVisualBridge: React.FC<CrossDomainVisualBridgeProps> = (
               {noteSaved ? 'Saved!' : 'Save Log'}
             </button>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
