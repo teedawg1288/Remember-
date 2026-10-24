@@ -1,1 +1,44 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #0c0e12;
+  color: #e6e2dd;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar for conversational stream and story panes */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(18, 21, 28, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(213, 129, 69, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(213, 129, 69, 0.5);
+}
+
+/* Atmospheric subtle noise / texture */
+.bar-counter-glow {
+  background: radial-gradient(circle at 50% 0%, rgba(213, 129, 69, 0.12) 0%, rgba(12, 14, 18, 0) 70%);
+}
+
+.story-card-glow {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%);
+}

@@ -1,130 +1,275 @@
 import React, { useState } from 'react';
-import { ScreenId } from '../types/translation';
-import { RotateCcw, User, LogOut, BookOpen } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import {
+  Scissors,
+  Wine,
+  Sparkles,
+  BookOpen,
+  Volume2,
+  VolumeX,
+  ChevronDown,
+  MessageSquare,
+  Eye,
+  Bookmark,
+} from 'lucide-react';
+import { sound } from '../audio/soundEngine';
+
+export type BrandNameOption = 'ARCHETYPE' | 'PARALLEL' | 'ECHOS' | 'SYNAPSE' | 'REMEMBER';
+export type MainTabOption = 'talk' | 'show' | 'discoveries';
 
 interface HeaderProps {
-  currentScreen: ScreenId;
-  onSelectScreen: (screen: ScreenId) => void;
-  onStartOver: () => void;
-  onOpenHowItWorks: () => void;
-  onOpenAuth: () => void;
-  hasActiveTranslation: boolean;
-  savedCount: number;
-  onOpenAIStatus?: () => void;
+  appName: BrandNameOption;
+  onAppNameChange: (name: BrandNameOption) => void;
+  activeMainTab: MainTabOption;
+  onMainTabChange: (tab: MainTabOption) => void;
+  persona: 'barber' | 'bartender';
+  onPersonaChange: (p: 'barber' | 'bartender') => void;
+  onReset: () => void;
+  showResearchLab: boolean;
+  onToggleResearchLab: () => void;
+  hasActiveStory: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onSelectScreen,
-  onStartOver,
-  onOpenHowItWorks,
-  onOpenAuth,
-  onOpenAIStatus,
+  appName,
+  onAppNameChange,
+  activeMainTab,
+  onMainTabChange,
+  persona,
+  onPersonaChange,
+  onReset,
+  showResearchLab,
+  onToggleResearchLab,
+  hasActiveStory,
 }) => {
-  const { user, signOutUser } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNameMenu, setShowNameMenu] = useState(false);
+  const [isMuted, setIsMuted] = useState(sound.getIsMuted());
+
+  const brandOptions: { name: BrandNameOption; subtitle: string; tag: string }[] = [
+    { name: 'REMEMBER', subtitle: 'The Living Rosetta Stone', tag: 'Core Vision' },
+    { name: 'PARALLEL', subtitle: 'Same Story, Different Characters', tag: 'Cinematic' },
+    { name: 'ARCHETYPE', subtitle: 'The Universal Pattern Engine', tag: 'Alternative' },
+    { name: 'ECHOS', subtitle: 'What History Figured Out First', tag: 'Historical' },
+    { name: 'SYNAPSE', subtitle: 'Cross-Disciplinary Bridge', tag: 'Scientific' },
+  ];
+
+  const handleToggleSound = () => {
+    const muted = sound.toggleMute();
+    setIsMuted(muted);
+    if (!muted) {
+      sound.playNodeChime(600);
+    }
+  };
+
+  const handleSelectName = (name: BrandNameOption) => {
+    onAppNameChange(name);
+    setShowNameMenu(false);
+    sound.playDiscoveryChime();
+  };
+
+  const currentBrand = brandOptions.find((b) => b.name === appName) || brandOptions[0];
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-slate-100 transition-colors">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
-        {/* Brand Wordmark (Tap to start fresh or return to Let's Talk) */}
-        <button
-          onClick={() => onSelectScreen('talk')}
-          className="text-left group flex items-center gap-2.5 shrink-0 focus-visible:outline-teal-400"
-          title="The Last 10% — Return to conversation"
-        >
-          <div className="w-8 h-8 rounded-xl bg-teal-500 text-slate-950 flex items-center justify-center font-serif text-lg font-bold shadow-xs">
-            10
-          </div>
-          <div className="flex flex-col">
-            <span className="font-serif font-bold text-lg sm:text-xl text-white tracking-tight leading-none group-hover:text-teal-300 transition-colors">
-              THE LAST 10%
-            </span>
-            <span className="text-[10px] text-slate-400 font-sans truncate">
-              Understand what you don&apos;t know through what you do
-            </span>
-          </div>
-        </button>
-
-        {/* Clean Controls: New Conversation, Purpose Info, User Account */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* New / Reset Conversation */}
-          <button
-            onClick={onStartOver}
-            className="px-2.5 sm:px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl transition-colors flex items-center gap-1.5"
-            title="Start fresh conversation"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-teal-400" />
-            <span className="hidden sm:inline">New</span>
-          </button>
-
-          {/* AI Connection & Model Status */}
-          {onOpenAIStatus && (
-            <button
-              onClick={onOpenAIStatus}
-              className="px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl transition-colors flex items-center gap-1.5"
-              title="OpenAI & Gemini Connection Status"
+    <header className="border-b border-lounge-border/70 bg-[#0f1117]/95 backdrop-blur-md sticky top-0 z-40 px-3 sm:px-8 py-2.5 transition-all">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+        {/* Brand identity with interactive name switcher */}
+        <div className="relative">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div
+              onClick={onReset}
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 flex items-center justify-center shadow-lg shadow-amber-900/30 border border-amber-500/40 cursor-pointer hover:scale-105 transition-transform shrink-0"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="hidden sm:inline font-mono text-[11px]">AI Engine</span>
-            </button>
-          )}
-
-          {/* How It Works Modal trigger */}
-          <button
-            onClick={onOpenHowItWorks}
-            className="p-2 sm:px-2.5 sm:py-1.5 text-xs font-medium text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-750 border border-slate-700/80 rounded-xl transition-colors flex items-center gap-1.5"
-            title="How The Last 10% works"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden md:inline text-slate-300">How it works</span>
-          </button>
-
-          {/* User Account / Sign In */}
-          {user ? (
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center gap-2 transition-colors"
-              >
-                <div className="w-5 h-5 rounded-full bg-teal-400 text-slate-950 font-bold flex items-center justify-center text-[10px]">
-                  {user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <span className="max-w-[90px] truncate hidden md:inline">
-                  {user.displayName || user.email?.split('@')[0]}
-                </span>
-              </button>
-
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 py-1.5 z-50 text-xs animate-fadeIn text-slate-200">
-                  <div className="px-3 py-2 border-b border-slate-800">
-                    <p className="font-semibold text-white truncate">
-                      {user.displayName || 'Signed In'}
-                    </p>
-                    <p className="text-slate-400 truncate text-[11px]">{user.email}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      signOutUser();
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-rose-400 hover:bg-slate-800 flex items-center gap-2 transition-colors"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
+              {persona === 'barber' ? (
+                <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-amber-100" />
+              ) : (
+                <Wine className="w-4 h-4 sm:w-5 sm:h-5 text-amber-100" />
               )}
             </div>
-          ) : (
+
+            <div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  onClick={() => setShowNameMenu(!showNameMenu)}
+                  className="group flex items-center gap-1 font-serif text-lg sm:text-2xl font-black tracking-tight text-white hover:text-amber-300 transition-colors cursor-pointer"
+                  title="Choose your preferred name"
+                >
+                  <span>{currentBrand.name}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-stone-400 group-hover:text-amber-400 transition-colors" />
+                </button>
+
+                <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-widest px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold hidden sm:inline">
+                  Pattern Intelligence
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-400 font-medium hidden md:block">
+                {currentBrand.subtitle}
+              </p>
+            </div>
+          </div>
+
+          {/* Name Selection Dropdown Menu */}
+          {showNameMenu && (
+            <div className="absolute top-12 left-0 z-50 w-72 bg-[#141822] border border-amber-500/40 rounded-2xl shadow-2xl p-2.5 animate-fade-in backdrop-blur-xl">
+              <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold border-b border-lounge-border/60 mb-1 flex items-center justify-between">
+                <span>Select Brand Identity:</span>
+                <span className="text-stone-400">Live</span>
+              </div>
+              <div className="space-y-1">
+                {brandOptions.map((opt) => (
+                  <button
+                    key={opt.name}
+                    onClick={() => handleSelectName(opt.name)}
+                    className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                      appName === opt.name
+                        ? 'bg-amber-600/25 border border-amber-500/40 text-amber-200'
+                        : 'hover:bg-[#1c212f] text-stone-300 hover:text-white'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-serif font-bold text-sm flex items-center gap-2">
+                        <span>{opt.name}</span>
+                        {appName === opt.name && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        )}
+                      </div>
+                      <span className="text-[11px] text-stone-400 block">{opt.subtitle}</span>
+                    </div>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#10131a] text-stone-300 border border-lounge-border/40">
+                      {opt.tag}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Center: The Three Core Pillars (Requirement 3) */}
+        <div className="flex items-center bg-[#131620] p-1 rounded-2xl border border-lounge-border/80 shadow-inner">
+          <button
+            onClick={() => {
+              onMainTabChange('talk');
+              sound.playNodeChime(420);
+            }}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeMainTab === 'talk'
+                ? 'bg-amber-600 text-stone-950 shadow-md shadow-amber-950/40'
+                : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>LET'S TALK</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onMainTabChange('show');
+              sound.playNodeChime(480);
+            }}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeMainTab === 'show'
+                ? 'bg-amber-600 text-stone-950 shadow-md shadow-amber-950/40'
+                : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>SHOW ME</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onMainTabChange('discoveries');
+              sound.playNodeChime(540);
+            }}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeMainTab === 'discoveries'
+                ? 'bg-amber-600 text-stone-950 shadow-md shadow-amber-950/40'
+                : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            <Bookmark className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">MY DISCOVERIES</span>
+            <span className="sm:hidden">VAULT</span>
+          </button>
+        </div>
+
+        {/* Right controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Audio Synthesizer toggle */}
+          <button
+            onClick={handleToggleSound}
+            className={`p-2 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+              !isMuted
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-[#181c25] text-stone-400 border-lounge-border hover:text-stone-200'
+            }`}
+            title={isMuted ? 'Enable 3D sound feedback' : 'Mute 3D sound effects'}
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+          </button>
+
+          {/* Persona selector: Barber vs Bartender */}
+          <div className="hidden lg:flex items-center bg-[#181c25] p-1 rounded-xl border border-lounge-border text-xs font-medium">
             <button
-              onClick={onOpenAuth}
-              className="px-2.5 sm:px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs"
+              onClick={() => {
+                onPersonaChange('barber');
+                sound.playNodeChime(420);
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+                persona === 'barber'
+                  ? 'bg-amber-600/30 text-amber-200 border border-amber-500/40 shadow-sm'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+              title="Barbershop: lively, sharp, street-smart"
             >
-              <User className="w-3.5 h-3.5 text-teal-400" />
-              <span>Sign In</span>
+              <Scissors className="w-3 h-3" />
+              <span>Barbershop</span>
+            </button>
+            <button
+              onClick={() => {
+                onPersonaChange('bartender');
+                sound.playNodeChime(360);
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+                persona === 'bartender'
+                  ? 'bg-amber-600/30 text-amber-200 border border-amber-500/40 shadow-sm'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+              title="Bartender: observant, candid, late-night"
+            >
+              <Wine className="w-3 h-3" />
+              <span>Bartender</span>
+            </button>
+          </div>
+
+          {/* Research Lab toggle */}
+          {hasActiveStory && (
+            <button
+              onClick={() => {
+                onToggleResearchLab();
+                sound.playNodeChime(showResearchLab ? 320 : 560);
+              }}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                showResearchLab
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-[#181c25] text-stone-300 border-lounge-border hover:border-stone-500'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Lab</span>
             </button>
           )}
+
+          {/* New Story reset button */}
+          <button
+            onClick={() => {
+              onReset();
+              sound.playNodeChime(440);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs transition-all shadow-md shadow-amber-600/25 cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-stone-950" />
+            <span className="hidden sm:inline">New</span>
+          </button>
         </div>
       </div>
     </header>
