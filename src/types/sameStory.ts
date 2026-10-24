@@ -273,6 +273,12 @@ export interface SameStoryResult {
   userWordsSummary: string;
   familiarStartingPoint?: string;
   evidenceNotice?: string;
+  questionRouting?: {
+    inferredNeed: string;
+    signalInQuestion: string;
+    whyTheseSeats: string;
+    isTentative: boolean;
+  };
   roundTableSynthesis?: {
     sharedGround: string;
     keyDisagreement: string;

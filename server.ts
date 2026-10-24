@@ -145,7 +145,8 @@ Key Rules:
    - storyArc: what started, what people believed (perception vs reality), reactions, unintended consequences, what kept cycle going, turning point, and levelOfCollapse.
    - differenceThatChangesEverything: Case A survived vs Case B collapsed, the crucial difference, and cross-field application.
    - mirrorEffect: external metaphor, gentle non-judgmental question, objective facts vs subjective perceptions, and blind spot.
-   - roundTable: 4 perspectives (Barber, Systems Engineer, Biologist, Historian), each with a different question, a possible disagreement, and what would change its mind. Do not claim empirical strength without a real source.
+   - questionRouting: Read the wording of THIS question to infer what help is needed (understanding, comparing explanations, decision, cause, prediction, translation, or problem-solving). Record the relevant wording signal and a tentative interpretation. Do not infer identity, character, truth, diagnosis, or anyone's motives from writing style, emotion, spelling, or confidence.
+   - roundTable: Choose 3-5 perspectives for THIS specific question, NOT the same four disciplines every time. Always include a grounded evidence-checking lens separating observations from interpretations. Select other seats for relevant domain expertise, an alternative explanation, and a cross-domain translation when useful. Each seat must state its uncertainty, a question for another seat, and what would change its mind. Do not claim empirical strength without a verified source. Do not claim to know another person's private thoughts. The seats are perspectives, not actual professional consultations.
    - roundTableSynthesis: sharedGround, keyDisagreement, missingEvidence, nextCheck. Agreement is not proof.
    - whatIfScenarios: 3 interactive What-If alternatives.
    - prediction: three stages — borrowedFinding, newPrediction, howToTest. Clearly distinguish established donor-domain knowledge from a proposed transfer into a new setting. No invented odds, outcome data or simulations. If a relevant source is known provide sourceUrl, otherwise leave it empty. Include transferLimit.
@@ -156,7 +157,7 @@ Key Rules:
 User's Story/Situation:
 """${trimmedInput}"""
 
-Return STRICT, VALID JSON ONLY conforming to:
+Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the example seats and placeholder names with 3-5 distinct lenses chosen for this particular question):
 {
   "id": "generated-${Date.now()}",
   "timestamp": "${new Date().toISOString()}",
@@ -164,6 +165,7 @@ Return STRICT, VALID JSON ONLY conforming to:
   "userWordsSummary": "1-2 sentences of the user's situation without inventing details",
   "familiarStartingPoint": "A fact, skill, or familiar experience the user actually mentioned",
   "evidenceNotice": "AI-generated comparisons need independent source verification.",
+  "questionRouting": { "inferredNeed": "What they seem to need from this question", "signalInQuestion": "The wording that suggests that need", "whyTheseSeats": "Why these specific lenses were chosen", "isTentative": true },
   "roundTableSynthesis": { "sharedGround": "...", "keyDisagreement": "...", "missingEvidence": "...", "nextCheck": "..." },
   "barberOpener": "Wait. You know what this reminds me of? ...",
   "underneathMechanism": "Different people, different places, but look at what's happening underneath: ...",
@@ -344,10 +346,9 @@ Return STRICT, VALID JSON ONLY conforming to:
     "hiddenBlindSpot": "..."
   },
   "roundTable": [
-    { "id": "barber", "name": "The Barber", "role": "Corner Wisdom", "avatar": "💈", "color": "from-amber-600 to-amber-800", "take": "...", "evidenceStrength": "Intuitive / Everyday", "keyPoint": "..." },
-    { "id": "engineer", "name": "The Systems Engineer", "role": "Dynamics", "avatar": "⚙️", "color": "from-cyan-600 to-cyan-800", "take": "...", "evidenceStrength": "Empirical / High", "keyPoint": "..." },
-    { "id": "biologist", "name": "The Evolutionary Biologist", "role": "Adaptation", "avatar": "🧬", "color": "from-emerald-600 to-emerald-800", "take": "...", "evidenceStrength": "Empirical / High", "keyPoint": "..." },
-    { "id": "historian", "name": "The Historian", "role": "Centuries Record", "avatar": "📜", "color": "from-purple-600 to-purple-800", "take": "...", "evidenceStrength": "Behavioral / Medium", "keyPoint": "..." }
+    { "id": "lens-1", "name": "Relevant evidence-checking perspective", "role": "What is observed versus assumed", "avatar": "🔎", "color": "from-cyan-600 to-cyan-800", "take": "...", "evidenceStrength": "Intuitive / Everyday", "keyPoint": "...", "whatCouldChangeMyMind": "...", "questionForOtherSeats": "..." },
+    { "id": "lens-2", "name": "Relevant domain perspective", "role": "A field that fits this exact question", "avatar": "🧭", "color": "from-amber-600 to-amber-800", "take": "...", "evidenceStrength": "Intuitive / Everyday", "keyPoint": "...", "whatCouldChangeMyMind": "...", "questionForOtherSeats": "..." },
+    { "id": "lens-3", "name": "Relevant contrasting perspective", "role": "An alternative worth checking", "avatar": "⚖️", "color": "from-purple-600 to-purple-800", "take": "...", "evidenceStrength": "Intuitive / Everyday", "keyPoint": "...", "whatCouldChangeMyMind": "...", "questionForOtherSeats": "..." }
   ],
   "whatIfScenarios": [
     { "id": "wi-1", "question": "...", "variableChanged": "...", "simulatedOutcome": "...", "historicalOrScientificBasis": "..." }

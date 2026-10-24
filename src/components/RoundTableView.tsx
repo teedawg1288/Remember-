@@ -6,11 +6,14 @@ import { sound } from '../audio/soundEngine';
 interface RoundTableViewProps {
   perspectives: RoundTablePerspective[];
   synthesis?: SameStoryResult['roundTableSynthesis'];
+  routing?: SameStoryResult['questionRouting'];
 }
 
-export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, synthesis }) => {
+export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, synthesis, routing }) => {
   const [activeId, setActiveId] = useState(perspectives[0]?.id || 'barber');
   const activePerspective = perspectives.find((p) => p.id === activeId) || perspectives[0];
+
+  if (perspectives.length === 0) return null;
 
   const handleSelect = (id: string) => {
     setActiveId(id);
@@ -26,15 +29,23 @@ export const RoundTableView: React.FC<RoundTableViewProps> = ({ perspectives, sy
           <span>The Round Table &bull; Different Ways of Knowing</span>
         </div>
         <h3 className="font-serif text-2xl font-bold text-white">
-          The Round Table: Four Perspectives on One Dilemma
+          The Round Table: {perspectives.length} Perspectives for This Question
         </h3>
         <p className="text-xs sm:text-sm text-stone-300 mt-0.5">
-          Each seat translates the problem through a different field. Their ideas can disagree; agreement alone does not make a claim true.
+          REMEMBER selects useful perspectives from the question itself. Tap a seat for another angle; agreement alone is not proof.
         </p>
+        {routing && (
+          <div className="mt-4 rounded-xl bg-[#0e1623] border border-cyan-500/25 px-4 py-3 space-y-1">
+            <p className="text-xs font-semibold text-cyan-300">Why these perspectives?</p>
+            <p className="text-sm text-stone-200">It sounds like you're asking: {routing.inferredNeed}</p>
+            <p className="text-xs text-stone-400">{routing.whyTheseSeats}</p>
+            <p className="text-[11px] text-stone-500">This is only a starting interpretation of your question. You choose which angle helps.</p>
+          </div>
+        )}
       </div>
 
       {/* Seat Selector Pills */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
         {perspectives.map((seat) => (
           <button
             key={seat.id}
