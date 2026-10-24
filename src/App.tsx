@@ -19,10 +19,10 @@ export const App: React.FC = () => {
   const [showResearchLab, setShowResearchLab] = useState(false);
   const [historyList, setHistoryList] = useState<SameStoryResult[]>([]);
   const [savedStories, setSavedStories] = useState<SameStoryResult[]>([]);
-  // Explicit, user-controlled vocabulary. Local to this browser; never silently inferred.
+  // Local language memory: inferred from user wording, never a factual profile.
   const [personalPhrases, setPersonalPhrases] = useState<PersonalPhrase[]>(() => {
     try {
-      const raw = JSON.parse(localStorage.getItem('remember_personal_language_v1') || '[]');
+      const raw = JSON.parse(localStorage.getItem('remember_learned_language_v2') || localStorage.getItem('remember_personal_language_v1') || '[]');
       return Array.isArray(raw) ? raw.filter((p) =>
         p && typeof p.id === 'string' && typeof p.phrase === 'string' &&
         typeof p.meaning === 'string' && p.phrase.length <= 80 && p.meaning.length <= 300
@@ -35,7 +35,7 @@ export const App: React.FC = () => {
   });
 
   useEffect(() => {
-    try { localStorage.setItem('remember_personal_language_v1', JSON.stringify(personalPhrases)); }
+    try { localStorage.setItem('remember_learned_language_v2', JSON.stringify(personalPhrases)); }
     catch { /* Browsing storage may be disabled. */ }
   }, [personalPhrases]);
 
@@ -44,11 +44,31 @@ export const App: React.FC = () => {
     catch { /* Browsing storage may be disabled. */ }
   }, [usePersonalLanguage]);
 
-  const savePersonalPhrase = (entry: PersonalPhrase) => {
-    setPersonalPhrases((prev) => [
-      entry,
-      ...prev.filter((p) => p.id !== entry.id && p.phrase.toLowerCase() !== entry.phrase.toLowerCase()),
-    ].slice(0, 50));
+  // Keep only a short, expiring tail of past questions for contextual translation.
+  const [recentQuestions, setRecentQuestions] = useState<{ text: string; at: number }[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('remember_recent_questions_v2') || '[]');
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      return Array.isArray(raw) ? raw.filter((q) =>
+        q && typeof q.text === 'string' && q.text.length <= 400 &&
+        typeof q.at === 'number' && q.at > cutoff
+      ).slice(0, 8) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('remember_recent_questions_v2', JSON.stringify(recentQuestions)); }
+    catch { /* Browsing storage may be disabled. */ }
+  }, [recentQuestions]);
+
+  const forgetLearnedLanguage = () => {
+    setPersonalPhrases([]);
+    setRecentQuestions([]);
+    try {
+      localStorage.removeItem('remember_personal_language_v1');
+      localStorage.removeItem('remember_learned_language_v2');
+      localStorage.removeItem('remember_recent_questions_v2');
+    } catch { /* Browser storage may be disabled. */ }
   };
 
   // Sync document title dynamically with active brand name
@@ -83,12 +103,48 @@ export const App: React.FC = () => {
       const res = await fetch('/api/same-story/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userInput, persona, personalDictionary: relevantPhrases }),
+        body: JSON.stringify({
+          userInput, persona, personalDictionary: relevantPhrases,
+          conversationContext: usePersonalLanguage ? recentQuestions.slice(0, 6).reverse().map((q) => q.text) : [],
+        }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success || !data.result || !Array.isArray(data.result.stories)) {
         throw new Error(data.error || 'The analysis could not be completed. Please try again.');
+      }
+
+      if (usePersonalLanguage) {
+        const signals = Array.isArray(data.languageLearnings) ? data.languageLearnings : [];
+        const corpus = (' ' + [userInput, ...recentQuestions.map((q) => q.text)]
+          .join(' ').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ') + ' ');
+        setPersonalPhrases((prev) => {
+          const next = [...prev];
+          for (const signal of signals.slice(0, 2)) {
+            if (!signal || typeof signal.phrase !== 'string' || typeof signal.meaning !== 'string' ||
+              !['explicit', 'repeated'].includes(signal.evidence) ||
+              typeof signal.confidence !== 'number' || signal.confidence < 0.85) continue;
+            const phrase = signal.phrase.trim().slice(0, 80);
+            const meaning = signal.meaning.trim().slice(0, 200);
+            const normalized = phrase.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+            if (normalized.length < 2 || !meaning || !corpus.includes(' ' + normalized + ' ')) continue;
+            const existing = next.find((p) => p.phrase.toLocaleLowerCase() === phrase.toLocaleLowerCase());
+            if (existing && existing.source !== 'inferred') continue;
+            const entry: PersonalPhrase = {
+              id: existing?.id || String(Date.now()) + '-' + normalized.slice(0, 16),
+              phrase, meaning, updatedAt: new Date().toISOString(),
+              source: 'inferred', confidence: signal.confidence,
+            };
+            const idx = next.findIndex((p) => p.id === entry.id);
+            if (idx >= 0) next.splice(idx, 1);
+            next.unshift(entry);
+          }
+          return next.slice(0, 50);
+        });
+        setRecentQuestions((prev) => [
+          { text: userInput.trim().slice(0, 400), at: Date.now() },
+          ...prev.filter((q) => q.text.trim().toLocaleLowerCase() !== userInput.trim().toLocaleLowerCase()),
+        ].slice(0, 8));
       }
 
       setActiveAnalysis(data.result);
@@ -219,13 +275,6 @@ export const App: React.FC = () => {
               persona={persona}
               appName={appName}
             />
-            <PersonalLanguagePanel
-              entries={personalPhrases}
-              enabled={usePersonalLanguage}
-              onToggleEnabled={setUsePersonalLanguage}
-              onSave={savePersonalPhrase}
-              onDelete={(id) => setPersonalPhrases((prev) => prev.filter((p) => p.id !== id))}
-            />
           </>
         )}
 
@@ -252,6 +301,7 @@ export const App: React.FC = () => {
 
         {/* PILLAR 3: MY DISCOVERIES */}
         {activeMainTab === 'discoveries' && (
+          <>
           <MyDiscoveriesScreen
             historyList={historyList}
             savedStories={savedStories}
@@ -276,6 +326,15 @@ export const App: React.FC = () => {
               setHistoryList((prev) => prev.filter((s) => s.id !== storyId));
             }}
           />
+          <PersonalLanguagePanel
+            entries={personalPhrases}
+            enabled={usePersonalLanguage}
+            recentCount={recentQuestions.length}
+            onToggleEnabled={setUsePersonalLanguage}
+            onDelete={(id) => setPersonalPhrases((prev) => prev.filter((p) => p.id !== id))}
+            onForgetAll={forgetLearnedLanguage}
+          />
+          </>
         )}
       </main>
 
