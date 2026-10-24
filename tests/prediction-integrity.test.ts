@@ -116,7 +116,24 @@ test('custom analyses do not fall back to unrelated fictional era scenes', () =>
   const server = readFileSync('server.ts', 'utf-8');
   const ui = readFileSync('src/components/StoryComparisonView.tsx', 'utf-8');
   expect(server).toContain('parsed.eras = []');
-  expect(ui).toContain('No question-specific era comparison was generated.');
+  expect(ui).toContain('No period-specific example was supplied.');
+});
+
+test('cross-examination is an optional, evidence-oriented route, not a forced invented historical story', () => {
+  const server = readFileSync('server.ts', 'utf-8');
+  const panel = readFileSync('src/components/CrossExaminationPanel.tsx', 'utf-8');
+  const story = readFileSync('src/components/StoryComparisonView.tsx', 'utf-8');
+  const divergence = readFileSync('src/components/DifferenceThatChangesEverythingView.tsx', 'utf-8');
+  expect(server).toContain("app.post('/api/same-story/cross-examine'");
+  expect(server).toContain('SILENT CROSS-EXAMINATION');
+  expect(server).toContain('Never place a modern invention in antiquity');
+  expect(panel).toContain('Uses one additional live Gemini request');
+  expect(story).toContain('runCrossExamination');
+  expect(story).toContain('focus="eras"');
+  expect(story).toContain('focus="parallels"');
+  expect(story).toContain('focus="mechanism"');
+  expect(divergence).not.toContain('The Divergence Law');
+  expect(divergence).toContain('hypothetical paths, not documented cases');
 });
 
 test('visual bridge cannot ship the old text-message fallback again', () => {

@@ -14,13 +14,13 @@ export const DifferenceThatChangesEverythingView: React.FC<DifferenceThatChanges
       <div className="mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold mb-2">
           <Scale className="w-3.5 h-3.5" />
-          <span>Requirement 6 &bull; The Divergence Law</span>
+          <span>Compare Two Possible Paths</span>
         </div>
         <h3 className="font-serif text-2xl font-bold text-white">
-          The Difference That Changes Everything
+          The Difference That Might Matter
         </h3>
         <p className="text-xs sm:text-sm text-stone-300 mt-0.5">
-          Two situations can look identical on the surface, but one survives while the other collapses. What is the single difference that decided the outcome?
+          These are hypothetical paths, not documented cases. What changes between them, and what observation would distinguish their outcomes?
         </p>
       </div>
 
@@ -31,7 +31,7 @@ export const DifferenceThatChangesEverythingView: React.FC<DifferenceThatChanges
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase text-emerald-400 font-bold mb-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Case A &bull; Survived / Recovered</span>
+              <span>Path A &bull; Possible Outcome</span>
             </div>
             <h4 className="font-serif text-lg font-bold text-white mb-2">
               {diff.caseASurvived.name}
@@ -41,7 +41,7 @@ export const DifferenceThatChangesEverythingView: React.FC<DifferenceThatChanges
             </p>
           </div>
           <div className="bg-emerald-950/30 p-3 rounded-xl border border-emerald-500/30 text-xs text-emerald-200 font-medium">
-            <span className="font-bold block mb-0.5">Outcome:</span>
+            <span className="font-bold block mb-0.5">Predicted outcome · Unverified:</span>
             {diff.caseASurvived.outcome}
           </div>
         </div>
@@ -51,7 +51,7 @@ export const DifferenceThatChangesEverythingView: React.FC<DifferenceThatChanges
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase text-rose-400 font-bold mb-2">
               <XCircle className="w-4 h-4 text-rose-400" />
-              <span>Case B &bull; Collapsed / Relapsed</span>
+              <span>Path B &bull; Possible Outcome</span>
             </div>
             <h4 className="font-serif text-lg font-bold text-white mb-2">
               {diff.caseBCollapsed.name}
@@ -61,7 +61,7 @@ export const DifferenceThatChangesEverythingView: React.FC<DifferenceThatChanges
             </p>
           </div>
           <div className="bg-rose-950/30 p-3 rounded-xl border border-rose-500/30 text-xs text-rose-200 font-medium">
-            <span className="font-bold block mb-0.5">Outcome:</span>
+            <span className="font-bold block mb-0.5">Predicted outcome · Unverified:</span>
             {diff.caseBCollapsed.outcome}
           </div>
         </div>
@@ -70,7 +70,7 @@ export const DifferenceThatChangesEverythingView: React.FC<DifferenceThatChanges
       {/* The Crucial Difference Banner */}
       <div className="bg-gradient-to-r from-amber-950/30 to-[#191d29] border-l-4 border-amber-500 rounded-r-2xl p-5 mb-6">
         <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold block mb-1">
-          The Deciding Pivot:
+          Possible deciding variable:
         </span>
         <h4 className="font-serif text-lg sm:text-xl font-bold text-white mb-1">
           "{diff.theCrucialDifference}"
@@ -86,7 +86,7 @@ export const DifferenceThatChangesEverythingView: React.FC<DifferenceThatChanges
           <Sparkles className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
           <div>
             <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold block mb-1">
-              Cross-Field Discovery Question:
+              Question to cross-examine:
             </span>
             <p className="text-xs sm:text-sm text-stone-200 leading-relaxed font-medium">
               "{diff.crossFieldDiscoveryApplication}"

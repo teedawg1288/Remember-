@@ -347,6 +347,31 @@ export interface MeaningSynchronization {
   };
 }
 
+/** Optional, on-demand adversarial review. These are AI suggestions, not verified findings. */
+export interface CrossExaminationResult {
+  observed: string;
+  hypotheses: Array<{
+    explanation: string;
+    whatWouldSupport: string;
+    whatWouldChallenge: string;
+  }>;
+  nextCheck: string;
+  crossDomainCandidates: Array<{
+    system: string;
+    sharedMechanism: string;
+    criticalDifference: string;
+    howToChallenge: string;
+  }>;
+  eraCandidates: Array<{
+    period: string;
+    comparableFunction: string;
+    toolsAndLimits: string;
+    wordsAndKnowledge: string;
+    whatChanged: string;
+  }>;
+  evidenceBoundary: string;
+}
+
 export interface SameStoryResult {
   id: string;
   timestamp: string;

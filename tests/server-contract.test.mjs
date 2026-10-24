@@ -46,6 +46,9 @@ for (const entry of [
         ['/api/same-story/predict', { currentDilemma: 'A metal hinge squeaks at different temperatures' }],
         ['/api/same-story/simulate-what-if', { currentDilemma: 'A metal hinge squeaks', whatIfQuestion: 'What if it gets warmer?' }],
       ];
+      if (entry.name.includes('TypeScript')) {
+        calls.push(['/api/same-story/cross-examine', { question: 'Why does my bicycle skip under torque?', proposedMechanism: 'Possibly worn chain engagement' }]);
+      }
       for (const [route, body] of calls) {
         const response = await fetch(origin + route, {
           method: 'POST',
@@ -55,7 +58,7 @@ for (const entry of [
         assert.equal(response.status, 503, route + ' must fail honestly');
         const payload = await response.json();
         assert.equal(payload.success, false);
-        assert.ok(!payload.result && !payload.prediction && !payload.scenario, route + ' must not invent a result');
+        assert.ok(!payload.result && !payload.prediction && !payload.scenario && !payload.examination, route + ' must not invent a result');
       }
     } finally {
       child.kill();
