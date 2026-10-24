@@ -438,9 +438,9 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
           {/* Perspective Translation (Said vs Meant vs Heard vs Felt) */}
           {analysis.rosettaStone && !!analysis.rosettaStone.translations?.length && <RosettaStoneTranslator rosettaStone={analysis.rosettaStone} />}
 
-          {/* Round Table of 4 Disciplines */}
+          {/* Question-selected Round Table perspectives */}
           {analysis.roundTable && (
-            <RoundTableView perspectives={analysis.roundTable} synthesis={analysis.roundTableSynthesis} />
+            <RoundTableView perspectives={analysis.roundTable} synthesis={analysis.roundTableSynthesis} routing={analysis.questionRouting} />
           )}
 
           {/* Mirror Effect */}
