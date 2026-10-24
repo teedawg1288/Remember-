@@ -35,6 +35,7 @@ test('REMEMBER never substitutes canned answers when AI is unavailable', async (
       ['/api/same-story/analyze', { userInput: 'Why does a metal hinge squeak at different temperatures?' }],
       ['/api/same-story/predict', { currentDilemma: 'A metal hinge squeaks at different temperatures' }],
       ['/api/same-story/simulate-what-if', { currentDilemma: 'A metal hinge squeaks', whatIfQuestion: 'What if it gets warmer?' }],
+      ['/api/same-story/round-table', { userQuestion: 'Why does this hinge squeak?', lenses: [{ id: 'engineer', name: 'Engineer', role: 'Systems', weight: 60 }, { id: 'scientist', name: 'Scientist', role: 'Materials', weight: 40 }] }],
     ];
     for (const [route, body] of calls) {
       const response = await fetch(origin + route, {
@@ -45,7 +46,7 @@ test('REMEMBER never substitutes canned answers when AI is unavailable', async (
       assert.equal(response.status, 503, `${route} must fail honestly`);
       const payload = await response.json();
       assert.equal(payload.success, false);
-      assert.ok(!payload.result && !payload.prediction && !payload.scenario, `${route} must not fabricate a result`);
+      assert.ok(!payload.result && !payload.prediction && !payload.scenario && !payload.perspectives, `${route} must not fabricate a result`);
     }
   } finally {
     child.kill();
