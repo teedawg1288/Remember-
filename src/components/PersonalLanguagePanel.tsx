@@ -46,9 +46,9 @@ export const PersonalLanguagePanel: React.FC<PersonalLanguagePanelProps> = ({
         {isOpen && (
           <div className="mt-4 space-y-4 border-t border-stone-700 pt-4">
             <p className="text-sm leading-relaxed text-stone-300">
-              REMEMBER learns how you use words and shorthand from normal conversations.
-              You don't have to explain or fill out a form. Its interpretations are guesses,
-              not facts about you or anyone else.
+              REMEMBER uses your wording to learn shorthand, not to decide who you are.
+              A similar action today may have a completely different cause than it did before.
+              Current evidence takes priority over old guesses. No form is needed.
             </p>
             <label className="flex items-center justify-between gap-4 text-sm text-stone-200">
               <span>Remember language from our conversations</span>
@@ -61,10 +61,11 @@ export const PersonalLanguagePanel: React.FC<PersonalLanguagePanelProps> = ({
             </label>
             <p className="text-xs leading-relaxed text-stone-400">
               Up to 8 recent questions (30 days) and learned word meanings are stored on
-              this browser only, not synced to an account. While enabled, relevant memories
-              and recent questions go to the AI when you ask something new. Disabling memory
-              stops their use; forgetting removes the saved copies here. Avoid using this on
-              a shared device if your questions are private.
+              this browser only, not synced to an account. AI-inferred meanings expire after
+              60 days unless fresh evidence updates them; earlier user-saved meanings remain until removed.
+              When enabled, relevant recent context is sent to the AI with new questions.
+              Disabling stops future use; Forget All deletes these saved copies on this device.
+              Don't use this on a shared device if your questions are private.
             </p>
             <p className="text-xs text-stone-400">
               {recentCount} recent questions · {entries.length} learned meanings
