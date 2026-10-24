@@ -89,17 +89,17 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
     switch (category) {
       case 'structural_isomorphism':
         return {
-          label: 'Deep Structural Mechanism',
+          label: 'Possible Structural Match · Unverified',
           color: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
         };
       case 'repeating_human_behavior':
         return {
-          label: 'Evolved Behavioral Pattern',
+          label: 'Possible Repeating Behaviour',
           color: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
         };
       case 'shared_cultural_origin':
         return {
-          label: 'Shared Cultural Root',
+          label: 'Possible Shared Cultural Root',
           color: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
         };
       case 'unproven_analogy':
@@ -312,10 +312,10 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-serif text-2xl font-bold text-white">
-                  Where This Exact Story Played Out Before
+                  Possible Parallels to Compare
                 </h3>
                 <p className="text-xs sm:text-sm text-stone-400">
-                  Different characters and time periods, but the exact same human dynamic:
+                  Compare the shared function, crucial differences and quality of the sources:
                 </p>
               </div>
               <span className="text-xs font-mono text-amber-400 bg-[#161a24] px-3 py-1 rounded-lg border border-stone-800">
@@ -323,23 +323,31 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {analysis.stories.map((story, idx) => (
-                <StoryCard
-                  key={story.id || idx}
-                  story={story}
-                  index={idx}
-                  onExplore={(s) => setSelectedStory(s)}
-                />
-              ))}
-            </div>
+            {analysis.stories.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {analysis.stories.map((story, idx) => (
+                  <StoryCard
+                    key={story.id || idx}
+                    story={story}
+                    index={idx}
+                    onExplore={(s) => setSelectedStory(s)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-amber-500/30 bg-amber-950/15 p-5 text-sm text-amber-100">
+                No defensible external parallel was identified for this question. REMEMBER will not manufacture one.
+              </p>
+            )}
           </div>
 
           {/* Character Swap */}
-          <InteractiveCharacterSwap
-            stories={analysis.stories}
-            userWordsSummary={analysis.userWordsSummary}
-          />
+          {analysis.stories.length > 0 && (
+            <InteractiveCharacterSwap
+              stories={analysis.stories}
+              userWordsSummary={analysis.userWordsSummary}
+            />
+          )}
         </section>
       )}
 
@@ -393,13 +401,14 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             {/* Plausibility Check */}
             <div className="mt-6 pt-5 border-t border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase text-stone-400">Connection Integrity:</span>
+                <span className="text-xs font-mono uppercase text-stone-400">Connection Claim (Not Verified):</span>
                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${plausibilityBadge.color}`}>
                   {plausibilityBadge.label}
                 </span>
               </div>
               <p className="text-xs text-stone-300 sm:max-w-xl leading-relaxed">
                 {analysis.plausibility.analysis}
+                <span className="block mt-2 text-amber-200">Model-generated assessment; no independent mechanism verification has been performed.</span>
               </p>
             </div>
           </div>
@@ -413,7 +422,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 
               <div className="space-y-3">
                 <span className="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">
-                  The Borrowed Insight ({analysis.borrowedInsight.donorField} &rarr; Your Life)
+                  The Proposed Transfer ({analysis.borrowedInsight.donorField} &rarr; Current Question)
                 </span>
                 <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-snug">
                   "Now here's something they figured out in another field that might help us understand this."
@@ -421,14 +430,14 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 
                 <div className="bg-[#0d1017] rounded-2xl p-5 border border-amber-500/25 text-stone-200 text-sm sm:text-base leading-relaxed">
                   <p className="text-amber-200 font-semibold mb-2">
-                    What was already established in {analysis.borrowedInsight.donorField}:
+                    Candidate finding from {analysis.borrowedInsight.donorField} — needs a source check:
                   </p>
                   <p className="text-stone-300 mb-4 italic">
                     "{analysis.borrowedInsight.whatWasLearnedThere}"
                   </p>
                   <div className="pt-3 border-t border-stone-800">
                     <span className="text-amber-400 font-mono text-xs uppercase tracking-wider block mb-1 font-bold">
-                      How To Apply It Right Now:
+                      Possible Application — Verify Before Acting:
                     </span>
                     <p className="text-white font-medium">
                       {analysis.borrowedInsight.howItAppliesHere}
