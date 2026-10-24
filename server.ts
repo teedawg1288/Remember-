@@ -175,6 +175,10 @@ Never talk like an academic textbook or corporate consultant.
 Key Rules:
 1. Understand what they are saying in their own words without judging.
 2. ABSOLUTE DIGNITY & NO-BOXING RULE: Never use the person's past history, previous mistakes, or saved memories against them. Never assume that past struggles or patterns define who they are "in the now." Never typecast, label, or psychoanalyze them into a permanent personality category (e.g. NEVER say "you're someone who always...", "given your history...", or treat them as a fixed character). The song didn't change; the person did. Past events were situations they navigated, not a permanent diagnosis. Treat every conversation with fresh eyes, unconditional dignity, and total respect for who they are becoming right now.
+   - ROLE IS NOT WORTH: A title, job, gender, status, age, past label, or social identity does not make a person inherently better, more credible, or less worthy. Qualification, lawful authority, training, demonstrated skill, access, practice and safety constraints CAN matter for specific tasks. Equal human dignity does not mean every person currently has every skill or can legally and safely perform every role. Judge the claim and demonstrated ability, not prestige or stereotypes.
+   - IDENTITY IS NOT A SENTENCE: Describe actions and their impact rather than declaring who someone permanently IS. What was known and available at the time may explain a choice, but ignorance does not automatically remove harm, responsibility, or legitimate consequences. Focus on what can be learned, repaired and chosen now that information has changed.
+   - INTERPRETATION IS NOT IDENTITY: People decide how they view others, but their interpretation does not establish who the other person really is or what they secretly intended. Show what is observed separately from what is imagined, and invite both sides to correct the translation. Do not rank human worth or make stereotype-based conclusions.
+   - IF SEXUALIZED / GENDERED BLAME APPEARS (e.g. "stop thinking with your dick" or "...with your tits"), examine the speaker's possible framing AND the listener's possible interpretation. A statement can reflect assumptions, frustration, a warning about impulsivity, or projection; the remark alone proves none of these. Never generalize by sex or gender.
 3. Find 2 to 3 parallel stories across History, Mythology/Religion, Biology/Medicine, Systems Engineering, Everyday Life, or Psychology.
 4. Pinpoint the COMMON UNDERLYING STRUCTURE ("What's actually happening underneath").
 5. Highlight WHAT IS DIFFERENT and why those differences matter (never claim identical mechanisms without evidence).
@@ -183,6 +187,7 @@ Key Rules:
 8. Ask an UNRESOLVED QUESTION ("What if we've been looking at the wrong part of the problem?").
 9. Include:
    - storyChain: 4 simple cause-and-effect steps (whatHappened, whatYouThought, whatYouDid, whatHappenedNext) + alternativeChain (tapPrompt, whatActuallyHappened, whatYouThought, whatYouDid, whatHappenedNext, lesson).
+   - meaningSynchronization: If the question involves a communication gap, interpretation, labels/status, or different knowledge at different times, construct a genuinely TWO-WAY translation: source meaning or function, what was observable, possible interpretation by the receiver, what can verify it, then reverse direction for the other side. Show what each side knew then, what was missing, consequences, and what a person can choose now. People are not machines: for nonhuman systems interpret signals and outputs, never invent intent or feelings. No forced counterpart if only one person's words were given; mark unknown sides as unknown. Do not pretend everyone has the same credentials or abilities. For questions without two sides or an applicable interpretation gap, return null.
    - rosettaStone: primaryChord (Fear/Love/Loss/Hope/Belonging/Change/Responsibility/Conflict/Growth), oneQuestionThatChangesEverything, translations (The 7-stage communication sequence: 1. what Speaker A intended to communicate [meant & hiddenNeedOrEmotion], 2. what Speaker A actually said [said], 3. what Speaker B heard [heard], 4. WHAT THEY UNDERSTOOD IT TO MEAN [understoodMeaning - separate from what was heard, marked as tentative interpretation], 5. how Speaker B felt about that meaning [felt], 6. how Speaker B reacted [reactionTriggered], 7. what happened because of the reaction [consequenceOfReaction], plus the exact meaningShiftPoint, whereTranslationFailed, theBridge, and crossFieldTranslation), and lifeLenses, plus a vignetteCreation.
    - storyArc: what started, what people believed (perception vs reality), reactions, unintended consequences, what kept cycle going, turning point, and levelOfCollapse.
    - differenceThatChangesEverything: Case A survived vs Case B collapsed, the crucial difference, and cross-field application.
@@ -339,6 +344,38 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
       "text": "Evocative artistic micro-story (2-3 sentences)",
       "sensoryImage": "Vivid sensory detail"
     }
+  },
+  "meaningSynchronization": {
+    "contextType": "people",
+    "assignedRoleOrTitle": "Actual title/label in dispute, or 'No title stated'",
+    "whatThatRoleActuallyEstablishes": "Only specific training, authority or function established, if any",
+    "whatItDoesNotProve": "Title or label never proves inherent worth, character or actual comprehension",
+    "directions": [
+      {
+        "from": "Speaker / system A",
+        "to": "Listener / system B",
+        "observableWordsOrSignal": "Actual words/signal given; if absent write 'Not provided'",
+        "possibleIntendedMeaningOrFunction": "Meaning/function, explicitly tentative if inferred",
+        "possibleReceivedMeaningOrEffect": "Possible reading/effect, not a claimed private thought",
+        "whatWouldConfirm": "Exact neutral question or observable measurement to check"
+      },
+      {
+        "from": "Speaker / system B",
+        "to": "Listener / system A",
+        "observableWordsOrSignal": "Actual reply/signal if given, otherwise 'Not provided'",
+        "possibleIntendedMeaningOrFunction": "Possible meaning/function or 'Unknown'",
+        "possibleReceivedMeaningOrEffect": "How A may interpret it; uncertain if unconfirmed",
+        "whatWouldConfirm": "Exact question or measurement to check reverse interpretation"
+      }
+    ],
+    "informationAvailableThen": "Only information established at the earlier decision",
+    "informationMissingThen": "What remains uncertain or unavailable",
+    "consequenceOrImpact": "Observed effects, with unverified effects clearly labelled",
+    "newInformationOrOpportunity": "What's genuinely new or potentially learnable now",
+    "choiceAndResponsibilityNow": "What may change now without erasing past harm",
+    "commonGround": "A shared fact or goal, not assumed agreement",
+    "unknowns": "Specific unresolved meanings or evidence",
+    "nextMutualCheck": "A fair, non-leading question each side could answer"
   },
   "stories": [
     {
@@ -583,6 +620,29 @@ Return STRICT, VALID JSON ONLY conforming to (for roundTable, replace the exampl
               typeof stage.importantDifference === 'string'
             )
           );
+        }
+
+        // Only show complete two-way comparisons; don't fabricate a second person's response.
+        const sync = parsed.meaningSynchronization;
+        const expectedTextFields = [
+          'assignedRoleOrTitle', 'whatThatRoleActuallyEstablishes', 'whatItDoesNotProve',
+          'informationAvailableThen', 'informationMissingThen', 'consequenceOrImpact',
+          'newInformationOrOpportunity', 'choiceAndResponsibilityNow', 'commonGround',
+          'unknowns', 'nextMutualCheck',
+        ] as const;
+        const expectedDirectionFields = [
+          'from', 'to', 'observableWordsOrSignal',
+          'possibleIntendedMeaningOrFunction', 'possibleReceivedMeaningOrEffect', 'whatWouldConfirm',
+        ] as const;
+        if (!sync || !['people', 'systems', 'mixed'].includes(sync.contextType) ||
+            !expectedTextFields.every((field) => typeof sync[field] === 'string' && sync[field].trim()) ||
+            !Array.isArray(sync.directions) || sync.directions.length !== 2 ||
+            !sync.directions.every((direction) =>
+              expectedDirectionFields.every((field) =>
+                typeof direction?.[field] === 'string' && direction[field].trim()
+              )
+            )) {
+          delete parsed.meaningSynchronization;
         }
 
         // Ensure roundTable and questionRouting are question-aware
