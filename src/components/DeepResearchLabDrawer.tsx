@@ -50,8 +50,7 @@ export const DeepResearchLabDrawer: React.FC<DeepResearchLabDrawerProps> = ({
             <span className="font-bold text-emerald-300 block mb-0.5">
               Academic Separation Layer:
             </span>
-            The conversational stories translate intuition into human language. This lab separates
-            colloquial metaphors from formal empirical hypotheses, measurable variables, and competing explanations.
+            The conversational stories help generate hypotheses. This lab presents possible measurements and competing explanations; no source or model output should be treated as independently verified just because it appears here.
           </div>
 
           <div className="space-y-6">
@@ -121,7 +120,7 @@ export const DeepResearchLabDrawer: React.FC<DeepResearchLabDrawerProps> = ({
             <div>
               <h4 className="text-xs font-mono uppercase tracking-wider text-stone-400 font-bold mb-2 flex items-center gap-1.5">
                 <BookCheck className="w-4 h-4 text-stone-400" />
-                Peer-Reviewed References & Literature:
+                Candidate References & Literature (Check Independently):
               </h4>
               <div className="space-y-2">
                 {research.peerReviewedReferences.map((ref, i) => (
@@ -130,6 +129,10 @@ export const DeepResearchLabDrawer: React.FC<DeepResearchLabDrawerProps> = ({
                     className="bg-[#0e1119] border border-lounge-border/50 rounded-xl p-3 text-xs"
                   >
                     <p className="font-medium text-stone-200 mb-1">{ref.citation}</p>
+                    {ref.doiOrSource && /^https:\/\//i.test(ref.doiOrSource) && (
+                      <a className="text-cyan-300 underline block my-1" href={ref.doiOrSource} target="_blank" rel="noopener noreferrer">Inspect candidate source</a>
+                    )}
+                    {!ref.doiOrSource && <p className="text-amber-300 text-[11px]">No linked source supplied; citation unverified.</p>}
                     <p className="text-[11px] text-amber-400/80 italic font-mono">
                       Relevance: {ref.relevance}
                     </p>
