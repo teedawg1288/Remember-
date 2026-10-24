@@ -297,6 +297,7 @@ export const App: React.FC = () => {
         {activeMainTab === 'show' && (
           activeAnalysis ? (
             <StoryComparisonView
+              key={`${activeAnalysis.id}:${activeAnalysis.userOriginalInput}`}
               analysis={activeAnalysis}
               persona={persona}
               onOpenResearchLab={() => setShowResearchLab(true)}
