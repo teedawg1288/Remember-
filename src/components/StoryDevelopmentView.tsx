@@ -67,10 +67,10 @@ export const StoryDevelopmentView: React.FC<StoryDevelopmentViewProps> = ({ arc 
           <span>The Progression Arc &bull; Beyond Beginning & Ending</span>
         </div>
         <h3 className="font-serif text-2xl font-bold text-white">
-          How The Story Actually Developed
+          One Possible Development of the Story
         </h3>
         <p className="text-xs sm:text-sm text-stone-300 mt-0.5">
-          Step-by-step breakdown of how beliefs, reactions, and feedback loops drove the situation:
+          A proposed sequence linking events, interpretations, reactions, and consequences. Confirm the steps against what actually happened:
         </p>
       </div>
 
