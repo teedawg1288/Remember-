@@ -47,6 +47,8 @@ import { MechanismBridgeView } from './MechanismBridgeView';
 import { MeaningSynchronizationView } from './MeaningSynchronizationView';
 import { WhatIfPlayground } from './WhatIfPlayground';
 import { CrossDomainVisualBridge } from './CrossDomainVisualBridge';
+import { CrossExaminationPanel } from './CrossExaminationPanel';
+import type { CrossExaminationResult } from '../types/sameStory';
 import { InteractiveDiscoveryMap } from './InteractiveDiscoveryMap';
 import { sound } from '../audio/soundEngine';
 import { getRosettaStoneForAnalysis } from '../data/curatedRosettaStones';
@@ -72,6 +74,9 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 }) => {
   const [selectedStory, setSelectedStory] = useState<StoryParallel | null>(null);
   const [copied, setCopied] = useState(false);
+  const [crossExam, setCrossExam] = useState<CrossExaminationResult | null>(null);
+  const [crossExamBusy, setCrossExamBusy] = useState(false);
+  const [crossExamError, setCrossExamError] = useState<string | null>(null);
   // Default to 'map' so the living, touch-responsive discovery map is the center stage!
   const [activeTab, setActiveTab] = useState<'map' | 'story' | 'bridge' | 'eras' | 'rosetta'>('map');
 
@@ -83,6 +88,33 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
     sound.playDiscoveryChime();
     confetti({ particleCount: 50, spread: 70, origin: { y: 0.85 } });
     setTimeout(() => setCopied(false), 2500);
+  };
+
+
+  // One on-demand examination reused across tabs. No hidden model calls.
+  const runCrossExamination = async () => {
+    if (crossExamBusy) return;
+    setCrossExamBusy(true);
+    setCrossExamError(null);
+    try {
+      const response = await fetch('/api/same-story/cross-examine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: analysis.userOriginalInput || analysis.userWordsSummary,
+          proposedMechanism: analysis.underneathMechanism,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.success || !payload.examination) {
+        throw new Error(payload.error || 'Could not cross-examine this question.');
+      }
+      setCrossExam(payload.examination as CrossExaminationResult);
+    } catch (err: any) {
+      setCrossExamError(err?.message || 'Cross-examination is unavailable right now.');
+    } finally {
+      setCrossExamBusy(false);
+    }
   };
 
   const getPlausibilityBadge = (category: string) => {
@@ -307,7 +339,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               </div>
             ) : (
               <p className="rounded-2xl border border-amber-500/30 bg-amber-950/15 p-5 text-sm text-amber-100">
-                No defensible external parallel was identified for this question. REMEMBER will not manufacture one.
+                No source-backed historical parallel was supplied. Cross-examination can explore possible connections and what would challenge them.
               </p>
             )}
           </div>
@@ -319,6 +351,13 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               userWordsSummary={analysis.userWordsSummary}
             />
           )}
+          <CrossExaminationPanel
+            focus="parallels"
+            result={crossExam}
+            busy={crossExamBusy}
+            error={crossExamError}
+            onRun={runCrossExamination}
+          />
         </section>
       )}
 
@@ -421,6 +460,13 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             </div>
           </div>
           </details>
+          <CrossExaminationPanel
+            focus="mechanism"
+            result={crossExam}
+            busy={crossExamBusy}
+            error={crossExamError}
+            onRun={runCrossExamination}
+          />
         </section>
       )}
 
@@ -429,7 +475,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
         <section className="space-y-8 animate-fade-in">
           {analysis.isCustomGenerated && analysis.eras?.length !== 5 ? (
             <p role="status" className="rounded-2xl border border-stone-700 bg-[#141822] p-5 text-sm text-stone-300">
-              No question-specific era comparison was generated. REMEMBER will not reuse a historical story from another question.
+              No period-specific example was supplied. Cross-examination below can test whether a historically plausible functional comparison exists.
             </p>
           ) : (
             <InteractiveDimensionSlider
@@ -439,7 +485,15 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
             />
           )}
 
-          {/* Divergence: Case A Survived vs Case B Collapsed */}
+          <CrossExaminationPanel
+            focus="eras"
+            result={crossExam}
+            busy={crossExamBusy}
+            error={crossExamError}
+            onRun={runCrossExamination}
+          />
+
+          {/* Hypothetical divergent paths are not historical events. */}
           {analysis.differenceThatChangesEverything && (
             <DifferenceThatChangesEverythingView diff={analysis.differenceThatChangesEverything} />
           )}
