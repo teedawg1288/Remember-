@@ -132,11 +132,11 @@ export const BarberInput: React.FC<BarberInputProps> = ({
           </h1>
 
           <p className="text-sm sm:text-base text-stone-300 max-w-xl mx-auto leading-relaxed">
-            Touch the dilemma below to see how our minds invent an enemy out of silence:
+            Touch the dilemma below to see how one event can have more than one explanation:
           </p>
         </div>
 
-        {/* The Tactile Moment: Touch to flip between Ego Assumption and The Unseen Truth */}
+        {/* The tactile moment: compare an initial interpretation with an unverified alternative. */}
         <div className="relative z-10 max-w-2xl mx-auto mt-6 rounded-2xl bg-[#080b12] border border-stone-800 p-5 sm:p-6 space-y-4 shadow-inner">
           <div className="flex items-center justify-between pb-3 border-b border-stone-800">
             <span className="text-xs font-mono uppercase tracking-wider text-stone-400 font-bold">
@@ -151,7 +151,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>{isRevealed ? 'Showing Reality' : 'Touch to Reveal What Was Unseen'}</span>
+              <span>{isRevealed ? 'Showing Another Possibility' : 'See Another Possible Explanation'}</span>
             </button>
           </div>
 
@@ -165,19 +165,19 @@ export const BarberInput: React.FC<BarberInputProps> = ({
           >
             <div className="flex items-center justify-between text-[11px] font-mono mb-2">
               <span className={isRevealed ? 'text-amber-400 font-bold' : 'text-indigo-400 font-bold'}>
-                {isRevealed ? 'Perspective 2 · What Was Actually Happening' : 'Perspective 1 · What You Felt In The Moment'}
+                {isRevealed ? 'Perspective 2 · One Other Possible Explanation' : 'Perspective 1 · The Meaning You Assigned'}
               </span>
               <span className="text-stone-400 italic">Tap card to flip</span>
             </div>
 
             <p className="font-serif text-base sm:text-lg text-stone-100 leading-snug">
               {isRevealed
-                ? '"They were staring at the sidewalk because their father was rushed to the hospital 20 minutes ago. They walked past blind with grief, completely unaware anyone was there."'
+                ? '"They might have been distracted, preoccupied, or dealing with something you could not see. We do not know what was happening without more information."'
                 : '"They looked in my direction and walked right past without saying hello. They think they are better than me. Next time I see them, I will ignore them first."'}
             </p>
 
             <div className="mt-4 pt-3 border-t border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-stone-400">
-              <span>{isRevealed ? 'The Discovery: Silence is never hostility' : 'The Result: A 3-week cold war begins over an empty thought'}</span>
+              <span>{isRevealed ? 'The Discovery: The same silence can have different explanations' : 'The Result: A reaction based on an untested assumption can have real consequences'}</span>
               {isRevealed ? (
                 <button
                   type="button"
@@ -192,7 +192,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
                 </button>
               ) : (
                 <span className="text-amber-400 underline underline-offset-4 font-sans text-xs">
-                  Touch card to reveal reality &rarr;
+                  Touch card to compare possibilities &rarr;
                 </span>
               )}
             </div>
@@ -208,7 +208,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
               Pick a familiar situation you've experienced:
             </h2>
             <p className="text-xs sm:text-sm text-stone-400">
-              Tap any dilemma to see what's really happening underneath and where another field already solved it:
+              Tap a dilemma to explore possible mechanisms, crucial differences, and what another field may help explain:
             </p>
           </div>
           <span className="text-xs font-mono text-amber-400 bg-[#161a24] px-3 py-1 rounded-lg border border-stone-800 hidden sm:inline">
