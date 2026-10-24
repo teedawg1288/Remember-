@@ -16,6 +16,7 @@ export const WhatIfPlayground: React.FC<WhatIfPlaygroundProps> = ({
   const [selectedScenario, setSelectedScenario] = useState<WhatIfScenario>(scenarios[0]);
   const [customQuestion, setCustomQuestion] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSelect = (scenario: WhatIfScenario) => {
     setSelectedScenario(scenario);
@@ -27,6 +28,7 @@ export const WhatIfPlayground: React.FC<WhatIfPlaygroundProps> = ({
     if (!customQuestion.trim() || isSimulating) return;
 
     setIsSimulating(true);
+    setError(null);
     sound.playNodeChime(520);
     try {
       const res = await fetch('/api/same-story/simulate-what-if', {
@@ -35,14 +37,16 @@ export const WhatIfPlayground: React.FC<WhatIfPlaygroundProps> = ({
         body: JSON.stringify({ currentDilemma, whatIfQuestion: customQuestion.trim() }),
       });
       const data = await res.json();
+      if (!res.ok || !data.success || !data.scenario) throw new Error(data.error || 'What-if exploration unavailable.');
       if (data.success && data.scenario) {
         setActiveScenarioList((prev) => [data.scenario, ...prev]);
         setSelectedScenario(data.scenario);
         setCustomQuestion('');
         sound.playDiscoveryChime();
       }
-    } catch (err) {
-      console.warn('Simulation failed:', err);
+    } catch (err: any) {
+      console.warn('Scenario exploration failed:', err);
+      setError(err?.message || 'Could not explore that scenario.');
     } finally {
       setIsSimulating(false);
     }
@@ -54,13 +58,13 @@ export const WhatIfPlayground: React.FC<WhatIfPlaygroundProps> = ({
       <div className="mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold mb-2">
           <PlayCircle className="w-3.5 h-3.5" />
-          <span>Requirement 8 &bull; Counterfactual Playground</span>
+          <span>What-If &bull; Hypothetical Scenarios</span>
         </div>
         <h3 className="font-serif text-2xl font-bold text-white">
-          Play With The Story: The What-If Simulator
+          Explore What Might Happen
         </h3>
         <p className="text-xs sm:text-sm text-stone-300 mt-0.5">
-          Change a single condition in the story and watch how the chain reaction ripples across the entire system:
+          Change one condition and consider possible consequences. These are hypotheses, not results from a validated simulation.
         </p>
       </div>
 
@@ -109,18 +113,19 @@ export const WhatIfPlayground: React.FC<WhatIfPlaygroundProps> = ({
         <div className="bg-[#161a25] rounded-xl p-4 sm:p-5 border border-emerald-500/30 text-stone-100 text-sm sm:text-base leading-relaxed mb-4 font-sans">
           <span className="text-xs font-mono uppercase text-emerald-400 font-bold block mb-1 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            Projected System Ripple:
+            Possible Consequences (Not Tested):
           </span>
           {selectedScenario.simulatedOutcome}
         </div>
 
         {/* Historical or Scientific Basis */}
         <div className="bg-[#10131b] rounded-xl p-3.5 border border-lounge-border/60 text-xs text-stone-300 font-mono">
-          <span className="text-stone-400 font-bold">Empirical Basis: </span>
+          <span className="text-stone-400 font-bold">Suggested Comparison (Check Source): </span>
           {selectedScenario.historicalOrScientificBasis}
         </div>
       </div>
 
+      {error && <p role="alert" className="text-rose-300 text-sm mb-3">{error}</p>}
       {/* Ask Your Own "What If..." Box */}
       <form onSubmit={handleCustomSimulate} className="bg-[#10131b] rounded-2xl p-4 border border-lounge-border flex flex-col sm:flex-row gap-3">
         <input
@@ -139,12 +144,12 @@ export const WhatIfPlayground: React.FC<WhatIfPlaygroundProps> = ({
           {isSimulating ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin text-stone-950" />
-              <span>Simulating...</span>
+              <span>Exploring...</span>
             </>
           ) : (
             <>
               <Sparkles className="w-4 h-4 text-stone-950" />
-              <span>Simulate What-If</span>
+              <span>Explore What-If</span>
               <Send className="w-3.5 h-3.5 text-stone-950" />
             </>
           )}
