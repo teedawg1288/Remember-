@@ -849,6 +849,99 @@ Return STRICT, VALID JSON ONLY conforming to:
   });
 });
 
+// Optional, on-demand life-stage × historical-era translator.
+// Separate from the main analysis request so it never silently spends additional model credits.
+app.post('/api/same-story/era-translate', async (req: Request, res: Response) => {
+  const { currentDilemma, eraId, lifeStage } = req.body || {};
+  const allowedStages = ['starting_out', 'heavy_lifting', 'looking_back'];
+  if (typeof currentDilemma !== 'string' || !currentDilemma.trim() ||
+      typeof eraId !== 'string' || !allowedStages.includes(lifeStage)) {
+    res.status(400).json({ error: 'Select a situation, historical period and life stage.' });
+    return;
+  }
+
+  const dilemma = currentDilemma.trim().slice(0, 2000);
+  const era = buildErasForDilemma(dilemma, dilemma).find((item) => item.id === eraId);
+  if (!era) {
+    res.status(400).json({ error: 'Unknown era selection.' });
+    return;
+  }
+  if (!geminiApiKey) {
+    res.status(503).json({ error: 'Live era translation needs the AI connection. Existing scenes are only fictional illustrations.' });
+    return;
+  }
+
+  const stageName = {
+    starting_out: 'Starting Out (early experience, not tied to a fixed age)',
+    heavy_lifting: 'Carrying Responsibilities (more lived consequences)',
+    looking_back: 'Looking Back (hindsight with updated knowledge)',
+  }[lifeStage as 'starting_out' | 'heavy_lifting' | 'looking_back'];
+
+  const prompt = `You are REMEMBER's careful cross-era meaning translator.
+Situation NOW: ${JSON.stringify(dilemma)}
+Historical/simulated setting: ${JSON.stringify({ id: era.id, year: era.year, label: era.label, setting: era.setting, tools: era.technology })}
+Perspective at LIFE STAGE: ${stageName}
+
+Compare how a person at that life stage MIGHT understand the same kind of problem within that period,
+versus how it can be understood with today's available knowledge and tools.
+Be historically careful. The app's era scene is FICTION, not proof an event occurred.
+All historical reconstructions are UNVERIFIED unless corroborated by actual cited sources.
+Do not invent firsthand testimony, primary-source quotes, laws, universal cultural norms, or an authentic
+ancient phrase if not known. "Era-appropriate paraphrase" in modern English is fine; label it as such.
+Accepted norms depend on place, gender, status, class and community; don't say everyone in an era believed the same thing.
+A title or role is not proof of worth, competence, benevolence or misuse of power.
+Human learning and abilities vary; don't assign personality or maturity from age alone.
+Similar outcomes across eras are not evidence of an identical cause. Mark shared functions as possible,
+and state where changed constraints make an inherited lesson outdated.
+People in authority can share lessons learned from mistakes, but may not have today's situation solved
+by forcing someone else to repair their past. Distinguish teaching, repair and present-day control.
+Past harm can still require repair; learning does not automatically erase consequences.
+Be practical and readable, not academic. Use 1-2 short sentences per field.
+Output a STRICT JSON object only with each value a string:
+{
+  "charactersAndRoleMasks": "Which roles occupied comparable functions, without claiming identical people",
+  "termOrPhraseThen": "Likely era-appropriate paraphrase in modern English, labelled speculative",
+  "meaningThen": "How that word/concept might have been understood at this life stage",
+  "whatTheWordMeansToday": "How a present-day use could differ",
+  "toolsAndOptions": "Relevant accessible tools and constraints then; don't overclaim",
+  "reasonablyKnownThen": "Knowledge potentially accessible then",
+  "uncertainOrUnknowableThen": "What wasn't available, or what we cannot establish",
+  "socialNormsAndExceptions": "Possible accepted practices and important differences between communities",
+  "interpretationAtThatLifeStage": "Tentative understanding based on experienced consequences so far",
+  "inheritedRule": "An older rule/solution passed down to address a previous constraint",
+  "whatStillTransfers": "The causal insight that might still apply today",
+  "whatMayBeOutdated": "Which prescribed solution may not fit today's conditions",
+  "presentDayChoice": "Current evidence-led action that preserves everyone's agency",
+  "evidenceNote": "Explicitly state the example is a reconstruction, not verified historical testimony"
+}`;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-lite',
+      contents: prompt,
+      config: { responseMimeType: 'application/json', temperature: 0.35 },
+    });
+    const clean = (response.text || '').trim().replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+    const parsed = JSON.parse(clean);
+    const fields = [
+      'charactersAndRoleMasks', 'termOrPhraseThen', 'meaningThen', 'whatTheWordMeansToday',
+      'toolsAndOptions', 'reasonablyKnownThen', 'uncertainOrUnknowableThen',
+      'socialNormsAndExceptions', 'interpretationAtThatLifeStage', 'inheritedRule',
+      'whatStillTransfers', 'whatMayBeOutdated', 'presentDayChoice', 'evidenceNote',
+    ];
+    if (!parsed || !fields.every((field) => typeof parsed[field] === 'string' && parsed[field].trim())) {
+      res.status(502).json({ error: 'The era translation was incomplete. Try again.' });
+      return;
+    }
+    const understanding = Object.fromEntries(fields.map((field) => [field, parsed[field].trim().slice(0, 600)]));
+    res.json({ success: true, translation: { ...understanding, eraId: era.id, lifeStage } });
+  } catch (err: any) {
+    console.warn('[Server] Era translation failed:', err?.message || err);
+    res.status(502).json({ error: 'Could not generate this era translation right now.' });
+  }
+});
+
 // Dedicated Interactive What-If Simulator (Requirement 8)
 app.post('/api/same-story/simulate-what-if', async (req: Request, res: Response) => {
   const { currentDilemma, whatIfQuestion } = req.body;
