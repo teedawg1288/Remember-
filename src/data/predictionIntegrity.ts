@@ -32,7 +32,7 @@ export function assessPredictionIntegrity(
   if (supports === challenges) {
     issues.push('The proposed supporting and challenging observations are identical.');
   }
-  if (/(?:\d+(?:\.\d+)?\s*%|\d+\s+out of\s+\d+)/.test(normalized[0]) &&
+  if ((/\d+(?:\.\d+)?\s*%/.test(prediction.falsifiablePrediction) || /\d+\s+out of\s+\d+/.test(normalized[0])) &&
       !prediction.sourceUrl?.startsWith('https://')) {
     issues.push('A numerical success claim has no checkable source attached.');
   }
