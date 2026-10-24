@@ -18,14 +18,14 @@ export const MechanismBridgeView: React.FC<MechanismBridgeViewProps> = ({ bridge
   };
 
   return (
-    <section className="rounded-3xl border border-cyan-500/35 bg-gradient-to-br from-[#121c2b] to-[#0d111a] p-5 sm:p-8 space-y-5 shadow-xl" aria-label="Same Mechanism, Different System">
+    <section className="rounded-3xl border border-cyan-500/35 bg-gradient-to-br from-[#121c2b] to-[#0d111a] p-5 sm:p-8 space-y-5 shadow-xl" aria-label="Possible Mechanism, Different System">
       <div className="flex items-start gap-3">
         <div className="rounded-xl bg-cyan-500/15 border border-cyan-500/30 p-2.5 text-cyan-300">
           <GitCompareArrows className="w-6 h-6" />
         </div>
         <div>
           <p className="text-xs uppercase tracking-widest font-mono text-cyan-300">The Mechanism Bridge</p>
-          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white">Same Mechanism, Different System</h3>
+          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white">Possible Mechanism, Different System</h3>
           <p className="text-sm text-stone-300 mt-1">
             Look at what each system does, stage by stage. Similar structure does not mean identical causes.
           </p>
