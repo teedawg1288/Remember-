@@ -149,6 +149,7 @@ export interface RoundTablePerspective {
   keyPoint: string;
   whatCouldChangeMyMind?: string;
   questionForOtherSeats?: string;
+  sourceUrl?: string; // Candidate reference, not independently verified
 }
 
 export interface WhatIfScenario {

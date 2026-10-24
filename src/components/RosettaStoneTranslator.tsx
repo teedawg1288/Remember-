@@ -44,7 +44,7 @@ export const RosettaStoneTranslator: React.FC<RosettaStoneTranslatorProps> = ({ 
             Translate Experiences, Not Just Words
           </h3>
           <p className="text-xs sm:text-sm text-stone-300 mt-1 max-w-2xl leading-relaxed">
-            What one person means, what they say, and what the other person hears are often three completely different languages. Here is where the emotional translation broke down:
+            What one person means, what they say, and what the other person hears are often three completely different languages. Here is one possible interpretation of where the translation broke down; the speakers would have to confirm what they meant:
           </p>
         </div>
 
@@ -104,13 +104,13 @@ export const RosettaStoneTranslator: React.FC<RosettaStoneTranslatorProps> = ({ 
 
           <div className="bg-cyan-950/20 border border-cyan-500/30 p-3.5 rounded-xl">
             <span className="text-[10px] font-mono uppercase text-cyan-300 font-bold block mb-1">
-              What they actually meant:
+              What they might have meant:
             </span>
             <p className="text-cyan-100 text-sm font-medium leading-relaxed">
               "{current.speakerA.meant}"
             </p>
             <span className="text-[11px] text-cyan-300/80 mt-2 block italic">
-              Hidden emotion: {current.speakerA.hiddenNeedOrEmotion}
+              Possible emotion: {current.speakerA.hiddenNeedOrEmotion}
             </span>
           </div>
         </div>
@@ -161,7 +161,7 @@ export const RosettaStoneTranslator: React.FC<RosettaStoneTranslatorProps> = ({ 
 
           <div>
             <span className="text-[10px] font-mono uppercase text-stone-400 block mb-1">
-              What they actually heard:
+              What they may have heard:
             </span>
             <p className="text-stone-100 font-serif italic text-base bg-[#0e1118] p-3 rounded-xl border border-stone-800">
               "{current.speakerB.heard}"
@@ -190,13 +190,13 @@ export const RosettaStoneTranslator: React.FC<RosettaStoneTranslatorProps> = ({ 
           </div>
           <div className="space-y-2">
             <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold block">
-              The Translation Bridge &bull; How to Say It in Their Shared Language:
+              A Possible Translation Bridge:
             </span>
             <p className="text-white text-base sm:text-lg font-serif italic leading-relaxed">
               "{current.theBridge}"
             </p>
             <p className="text-xs text-stone-300 leading-relaxed pt-1">
-              When you translate from defensive words to underlying human needs, the friction dissolves because neither person has to defend their dignity.
+              A clearer translation may reduce friction. It does not guarantee that both people agree or have the same intentions.
             </p>
           </div>
         </div>
