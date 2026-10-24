@@ -54,6 +54,7 @@ interface StoryComparisonViewProps {
   appName: string;
   isSaved?: boolean;
   onToggleSave?: () => void;
+  onAnalysisUpdated?: (analysis: SameStoryResult) => void;
 }
 
 export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
@@ -64,6 +65,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
   appName,
   isSaved = false,
   onToggleSave,
+  onAnalysisUpdated,
 }) => {
   const [selectedStory, setSelectedStory] = useState<StoryParallel | null>(null);
   const [copied, setCopied] = useState(false);
@@ -440,7 +442,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 
           {/* Round Table of 4 Disciplines */}
           {analysis.roundTable && (
-            <RoundTableView perspectives={analysis.roundTable} synthesis={analysis.roundTableSynthesis} />
+            <RoundTableView analysis={analysis} onUpdated={(perspectives, synthesis) => onAnalysisUpdated?.({ ...analysis, roundTable: perspectives, roundTableSynthesis: synthesis })} />
           )}
 
           {/* Mirror Effect */}
