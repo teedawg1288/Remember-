@@ -72,6 +72,24 @@ export const MeaningSynchronizationView: React.FC<Props> = ({ comparison }) => {
         </p>
       </div>
 
+      {comparison.authorityAccountabilityCheck && (
+        <div className="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-4 space-y-2">
+          <p className="flex items-center gap-2 text-sm font-semibold text-indigo-200">
+            <ShieldCheck className="h-4 w-4" /> Authority is a responsibility, not ownership
+          </p>
+          <p className="text-sm text-stone-200"><span className="text-indigo-300 font-semibold">Power granted: </span>{comparison.authorityAccountabilityCheck.authorityGranted}</p>
+          <p className="text-sm text-stone-200"><span className="text-indigo-300 font-semibold">Duty owed: </span>{comparison.authorityAccountabilityCheck.responsibilityOwed}</p>
+          <p className="text-sm text-stone-200"><span className="text-indigo-300 font-semibold">Actions observed: </span>{comparison.authorityAccountabilityCheck.conductObserved}</p>
+          <p className="text-sm text-stone-200"><span className="text-amber-300 font-semibold">Who benefits, and what is uncertain: </span>{comparison.authorityAccountabilityCheck.whoBenefits}</p>
+          <p className="text-sm text-stone-200"><span className="text-amber-300 font-semibold">Unverified concern: </span>{comparison.authorityAccountabilityCheck.unverifiedConcern}</p>
+          <p className="text-sm text-stone-200"><span className="text-emerald-300 font-semibold">Accountability check: </span>{comparison.authorityAccountabilityCheck.checkForAccountability}</p>
+        </div>
+      )}
+
+      <p className="text-xs text-stone-400">
+        A repeated outcome may have a new cause. Compare today's facts with the earlier event before assigning responsibility.
+      </p>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-stone-700 p-4 space-y-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-stone-200">
