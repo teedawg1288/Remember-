@@ -28,9 +28,6 @@ import confetti from 'canvas-confetti';
 import {
   SameStoryResult,
   StoryParallel,
-  InteractiveStoryChainData,
-  ScaleConnection,
-  LivingRosettaStone,
 } from '../types/sameStory';
 import { StoryCard } from './StoryCard';
 import { StoryHistoryModal } from './StoryHistoryModal';
@@ -111,127 +108,6 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
 
   const plausibilityBadge = getPlausibilityBadge(analysis.plausibility.category);
 
-  // Fallback interactive story chain
-  const storyChainData: InteractiveStoryChainData = analysis.storyChain || {
-    defaultChain: {
-      whatHappened: analysis.userWordsSummary || 'A stressful situation began developing.',
-      whatYouThought: '"This is unfair and they are doing this intentionally."',
-      whatYouDid: 'Reacted defensively, escalating the tension.',
-      whatHappenedNext: 'The misunderstanding compounded and both sides pulled away.',
-    },
-    alternativeChain: {
-      tapPrompt: 'What if there was a simple, harmless explanation?',
-      whatActuallyHappened: 'A common misunderstanding or unseen situational stress.',
-      whatYouThought: '"They are probably just tied up right now. Let me check."',
-      whatYouDid: 'Asked a calm, curious question without an accusatory tone.',
-      whatHappenedNext: 'The tension evaporated and mutual understanding was reached.',
-      lesson: 'Curiosity de-escalates conflicts that pride escalates.',
-    },
-  };
-
-  // Fallback scale connections
-  const scaleConnectionsData: ScaleConnection[] = analysis.scaleConnections || [
-    {
-      level: 'personal',
-      levelLabel: 'Between Two People',
-      title: 'The Interpersonal Friction',
-      setting: 'One-on-one personal relationship or texting',
-      howItAppearsHere: analysis.userWordsSummary,
-      whatIsTheSame: 'Assumptions and missing information drive defensive reactions.',
-      whatIsDifferent: 'Informal emotional context with immediate feedback loops.',
-      whyTheDifferenceMatters: 'A single clarifying conversation can dissolve the dispute.',
-    },
-    {
-      level: 'group',
-      levelLabel: 'In a Workplace or Family',
-      title: 'The Group Dynamic Trap',
-      setting: 'Department team or household group',
-      howItAppearsHere: 'Multiple people experience the same friction and wait for leadership to fix it.',
-      whatIsTheSame: 'Diffusion of responsibility and unexpressed expectations.',
-      whatIsDifferent: 'Hierarchies and organizational stakes make direct speaking harder.',
-      whyTheDifferenceMatters: 'Clear written agreements prevent collective burnout.',
-    },
-    {
-      level: 'world',
-      levelLabel: 'In Nature, Cities or History',
-      title: 'The Systemic Historical Dynamic',
-      setting: 'Geopolitical treaties or biological systems',
-      howItAppearsHere: analysis.underneathMechanism,
-      whatIsTheSame: 'Underlying systemic feedback loop operates independently of the actors.',
-      whatIsDifferent: 'Scale involves thousands or millions of entities.',
-      whyTheDifferenceMatters: 'Structural governors and feedback dampers are required at scale.',
-    },
-  ];
-
-  // Living Rosetta Stone data
-  const rosettaStoneData: LivingRosettaStone = analysis.rosettaStone || {
-    primaryChord: 'Belonging',
-    secondaryChords: ['Fear', 'Responsibility', 'Conflict'],
-    oneQuestionThatChangesEverything: {
-      question: 'If they were silently dealing with something painful right now, how would you speak to them?',
-      whyItShiftsTheLens: "This question strips away wounded ego and reconnects you to the person's humanity.",
-    },
-    translations: [
-      {
-        speakerA: {
-          role: 'Speaker A (You / The Reacher)',
-          said: analysis.userWordsSummary,
-          meant: 'I want to feel connected and know that our relationship is safe and valued.',
-          hiddenNeedOrEmotion: 'Vulnerability and fear of being quietly discarded.',
-        },
-        speakerB: {
-          role: 'Speaker B (The Other Person)',
-          heard: 'You are demanding attention or compliance when my resources are already at zero.',
-          felt: 'Overwhelmed, defensive, and judged before being understood.',
-          reactionTriggered: 'Defensive silence or cold avoidance.',
-        },
-        whereTranslationFailed:
-          'A call for reassurance was expressed as silence/withdrawal, and received as an accusation.',
-        theBridge:
-          'Hey, I noticed things felt distant between us. I care about you and just wanted to check in with zero pressure.',
-        crossFieldTranslation: {
-          scientificConcept: 'Signal Attenuation vs Signal Rejection',
-          everydayExperience: 'Assuming that static on a radio line means the radio station hates you.',
-        },
-      },
-    ],
-    lifeLenses: [
-      {
-        stageId: 'starting_out',
-        stageTitle: 'Starting Out (Pride)',
-        tagline: 'When every silence feels like an insult to your dignity',
-        howItAppearsHere:
-          "You keep score. You think: 'If they don't reach out, I won't reach out either. I have my pride.'",
-        whatYouCouldNotSeeThen: 'That keeping score in human relationships guarantees both people lose.',
-        theSongMetaphor: 'Listening to furious breakup anthems feeling completely justified in burning the bridge.',
-      },
-      {
-        stageId: 'heavy_lifting',
-        stageTitle: 'Carrying The Load (Responsibility)',
-        tagline: 'When life is heavy enough that you understand why people collapse',
-        howItAppearsHere:
-          'You look at your own unanswered texts and unwashed dishes. You realize people rarely hurt you on purpose; they are just drowning in their own exhaustion.',
-        whatYouCouldNotSeeThen: 'That human bandwidth is fragile, and silence is usually fatigue, not malice.',
-        theSongMetaphor: 'Hearing a quiet folk song about aging parents or tired workers and tearing up on the highway.',
-      },
-      {
-        stageId: 'looking_back',
-        stageTitle: 'Looking Back (Grace)',
-        tagline: 'When pride seems completely meaningless compared to connection',
-        howItAppearsHere:
-          'You pick up the phone and laugh. Life is too short, friends are too rare, and holding a grudge over a missing text seems absurd.',
-        whatYouCouldNotSeeThen: 'That being "right" is cold and empty compared to staying close.',
-        theSongMetaphor: 'Smiling at old songs you once cried to, because you understand every character in the story now.',
-      },
-    ],
-    vignetteCreation: {
-      title: 'The Train Window',
-      type: 'micro_story',
-      text: 'Two friends sat on opposite ends of the same platform, each staring at their own phone, each waiting for the other to say the first word. The train pulled in, parted them, and carried them in opposite directions.',
-      sensoryImage: 'The sudden blast of air as a silver train rumbles between two people.',
-    },
-  };
-
   const navTabs = [
     {
       id: 'map' as const,
@@ -286,8 +162,8 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               )}
               <span>
                 {persona === 'barber'
-                  ? 'The Barber Chair · Street-Smart Diagnosis'
-                  : 'Late Night Counter · Deep Reflection'}
+                  ? 'The Barber Chair · Pattern Exploration'
+                  : 'Late Night Counter · Pattern Exploration'}
               </span>
             </div>
 
@@ -320,7 +196,11 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
               Your Situation in Plain Words:
             </span>
             "{analysis.userWordsSummary}"
+            {analysis.familiarStartingPoint && <p className="mt-2 text-cyan-200 text-sm"><strong>Starting with what you know:</strong> {analysis.familiarStartingPoint}</p>}
           </div>
+          {analysis.evidenceNotice && (
+            <p className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-200" role="note">{analysis.evidenceNotice}</p>
+          )}
 
           {/* The Underneath Mechanism (Clean all-around border) */}
           <div className="bg-amber-950/20 border border-amber-500/30 rounded-2xl p-5 sm:p-6 space-y-2">
@@ -394,10 +274,10 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
       {activeTab === 'story' && (
         <section className="space-y-8 animate-fade-in">
           {/* Cause and Effect Flow with Branching Decisions */}
-          <InteractiveStoryChain chainData={storyChainData} />
+          {analysis.storyChain && <InteractiveStoryChain chainData={analysis.storyChain} />}
 
           {/* Scale Ladder: Two People -> Workplace/Family -> History/Nature */}
-          <BiggerConnectionsLadder connections={scaleConnectionsData} />
+          {!!analysis.scaleConnections?.length && <BiggerConnectionsLadder connections={analysis.scaleConnections} />}
 
           {/* Side-by-Side Story Parallels */}
           <div className="space-y-4">
@@ -553,14 +433,14 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
       {activeTab === 'rosetta' && (
         <section className="space-y-8 animate-fade-in">
           {/* Life Lenses (Starting Out, Carrying the Load, Looking Back) */}
-          <LifeLensViewer lenses={rosettaStoneData.lifeLenses} />
+          {analysis.rosettaStone && <LifeLensViewer lenses={analysis.rosettaStone.lifeLenses || []} />}
 
           {/* Perspective Translation (Said vs Meant vs Heard vs Felt) */}
-          <RosettaStoneTranslator rosettaStone={rosettaStoneData} />
+          {analysis.rosettaStone && !!analysis.rosettaStone.translations?.length && <RosettaStoneTranslator rosettaStone={analysis.rosettaStone} />}
 
           {/* Round Table of 4 Disciplines */}
           {analysis.roundTable && (
-            <RoundTableView perspectives={analysis.roundTable} />
+            <RoundTableView perspectives={analysis.roundTable} synthesis={analysis.roundTableSynthesis} />
           )}
 
           {/* Mirror Effect */}
@@ -569,7 +449,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
           )}
 
           {/* What-If Simulator */}
-          {analysis.whatIfScenarios && (
+          {!!analysis.whatIfScenarios?.length && (
             <WhatIfPlayground
               scenarios={analysis.whatIfScenarios}
               currentDilemma={analysis.userWordsSummary}
