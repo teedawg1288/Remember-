@@ -131,7 +131,7 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
         domain: 'science',
         fieldLabel: analysis.borrowedInsight?.donorField || 'Other Field',
         nodeTitle: analysis.borrowedInsight?.donorField || 'Candidate Cross-Field Insight',
-        tagline: 'Borrowed mechanism — inspect limits',
+        tagline: 'Proposed connection — inspect limits',
         evidenceType: 'Cross-Field Comparison',
         evidenceRating: 'Needs Independent Check',
         isomorphismSummary: analysis.borrowedInsight?.whatWasLearnedThere || 'Candidate comparison; donor finding needs a source.',
@@ -278,9 +278,8 @@ export const InteractiveDiscoveryMap: React.FC<InteractiveDiscoveryMapProps> = (
 
     // A missing comparison should not appear as a discovered connection.
     return list.filter((node) => {
-      if (node.id === 'node-science' && analysis.isCustomGenerated) {
-        return Boolean(analysis.mechanismBridges?.length);
-      }
+      // Candidate cross-domain leads can be explored before a complete stage map exists.
+      // They remain labelled as unverified, never as a demonstrated mechanism.
       if (node.id === 'node-history') return Boolean(primaryParallel);
       if (node.id === 'node-rosetta') return Boolean(analysis.meaningSynchronization);
       if (node.id === 'node-prediction') return Boolean(prediction?.falsifiablePrediction);

@@ -136,6 +136,22 @@ test('cross-examination is an optional, evidence-oriented route, not a forced in
   expect(divergence).toContain('hypothetical paths, not documented cases');
 });
 
+test('functional cross-domain candidates are shown even without a historical story', () => {
+  const server = readFileSync('server.ts', 'utf-8');
+  const comparison = readFileSync('src/components/StoryComparisonView.tsx', 'utf-8');
+  const map = readFileSync('src/components/InteractiveDiscoveryMap.tsx', 'utf-8');
+  expect(server).toContain('mechanismBridges: PRIMARY DISCOVERY OUTPUT');
+  expect(server).toContain('historical stories');
+  expect(server).toContain('input, capacity/constraint and outcome');
+  expect(comparison).toContain('Cross-system connection · Candidate');
+  expect(comparison).toContain('Historical Examples to Examine');
+  expect(comparison).toContain('firstMechanismBridge.sharedMechanism');
+  expect(comparison).toContain('<MechanismBridgeView');
+  expect(comparison).not.toContain('{analysis.stories.length} Parallels');
+  expect(map).toContain('Candidate cross-domain leads can be explored');
+  expect(map).not.toContain("if (node.id === 'node-science' && analysis.isCustomGenerated)");
+});
+
 test('visual bridge cannot ship the old text-message fallback again', () => {
   const source = readFileSync('src/components/CrossDomainVisualBridge.tsx', 'utf-8');
   expect(source).not.toContain('Waiting, watching, and wondering why they went quiet');
