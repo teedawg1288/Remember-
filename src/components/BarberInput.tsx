@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sparkles,
   ArrowRight,
@@ -34,6 +34,19 @@ export const BarberInput: React.FC<BarberInputProps> = ({
 }) => {
   const [text, setText] = useState('');
   const [isRevealed, setIsRevealed] = useState(false);
+  const [aiKeyStatus, setAiKeyStatus] = useState<'checking' | 'present' | 'missing' | 'unknown'>('checking');
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/health', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Health check unavailable');
+        const status = await response.json();
+        if (active) setAiKeyStatus(status.geminiConfigured === true ? 'present' : 'missing');
+      })
+      .catch(() => { if (active) setAiKeyStatus('unknown'); });
+    return () => { active = false; };
+  }, []);
 
   const everydayScenarios = [
     {
@@ -132,7 +145,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
           </h1>
 
           <p className="text-sm sm:text-base text-stone-300 max-w-xl mx-auto leading-relaxed">
-            Touch the dilemma below to see how our minds invent an enemy out of silence:
+            This opening example is fictional. Tap to compare two possible interpretations:
           </p>
         </div>
 
@@ -151,7 +164,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>{isRevealed ? 'Showing Reality' : 'Touch to Reveal What Was Unseen'}</span>
+              <span>{isRevealed ? 'Showing Another Possibility' : 'See Another Possible Explanation'}</span>
             </button>
           </div>
 
@@ -165,7 +178,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
           >
             <div className="flex items-center justify-between text-[11px] font-mono mb-2">
               <span className={isRevealed ? 'text-amber-400 font-bold' : 'text-indigo-400 font-bold'}>
-                {isRevealed ? 'Perspective 2 · What Was Actually Happening' : 'Perspective 1 · What You Felt In The Moment'}
+                {isRevealed ? 'Perspective 2 · An Unverified Alternative' : 'Perspective 1 · One Interpretation'}
               </span>
               <span className="text-stone-400 italic">Tap card to flip</span>
             </div>
@@ -257,6 +270,16 @@ export const BarberInput: React.FC<BarberInputProps> = ({
               Or describe what happened to you in your own words:
             </span>
             <span className="text-[11px] text-stone-500 font-mono">No corporate jargon</span>
+          </div>
+
+          <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-950/15 px-3.5 py-3 text-xs text-stone-200 leading-relaxed">
+            {aiKeyStatus === 'present'
+              ? 'Gemini key detected on the server. Credits and connection have not been tested — try your own question to verify.'
+              : aiKeyStatus === 'missing'
+                ? 'Prepared examples work, but live AI questions need GEMINI_API_KEY. In Google AI Studio, open Settings → Secrets and check the server-side key.'
+                : aiKeyStatus === 'checking'
+                  ? 'Checking whether the AI key is available…'
+                  : 'Could not read the AI status. Try a question; any live AI error will explain what failed.'}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
