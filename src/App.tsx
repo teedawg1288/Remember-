@@ -105,6 +105,17 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleUpdateAnalysis = (updated: SameStoryResult) => {
+    setActiveAnalysis(updated);
+    setHistoryList(prev => prev.map(story => story.id === updated.id ? updated : story));
+    setSavedStories(prev => {
+      if (!prev.some(story => story.id === updated.id)) return prev;
+      const next = prev.map(story => story.id === updated.id ? updated : story);
+      try { localStorage.setItem('remember_saved_discoveries', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
   const isCurrentStorySaved = activeAnalysis
     ? savedStories.some((s) => s.id === activeAnalysis.id)
     : false;
@@ -191,6 +202,7 @@ export const App: React.FC = () => {
               appName={appName}
               isSaved={isCurrentStorySaved}
               onToggleSave={() => handleToggleSaveStory(activeAnalysis)}
+              onAnalysisUpdated={handleUpdateAnalysis}
             />
           ) : (
             <div className="max-w-2xl mx-auto mt-16 rounded-3xl border border-stone-700 bg-[#141822] p-8 text-center space-y-4">
