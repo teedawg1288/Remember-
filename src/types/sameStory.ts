@@ -316,6 +316,14 @@ export interface MeaningSynchronization {
   commonGround: string;
   unknowns: string;
   nextMutualCheck: string;
+  authorityAccountabilityCheck?: {
+    authorityGranted: string;
+    responsibilityOwed: string;
+    conductObserved: string;
+    whoBenefits: string;
+    unverifiedConcern: string;
+    checkForAccountability: string;
+  };
 }
 
 export interface SameStoryResult {
