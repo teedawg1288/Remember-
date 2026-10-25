@@ -100,7 +100,7 @@ export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreD
 /**
  * A separate, adversarial model pass reviews the proposed analogies. This is
  * still model screening, NOT independent scientific or historical verification.
- * Reject rather than promoting a comparison that has no testable transfer.
+ * Keep causally plausible comparisons visible without inventing a transfer.
  */
 export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): CoreDiscovery {
   const item = record(response);
@@ -114,7 +114,7 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     screening: { status: 'rejected', reason: why, causalMatch: '', crucialDifference: '' },
   });
   if (item.decision === 'reject') return rejected(reason);
-  if (item.decision !== 'accept' || !Number.isInteger(item.selectedIndex)) {
+  if ((item.decision !== 'accept' && item.decision !== 'compare_only') || !Number.isInteger(item.selectedIndex)) {
     throw new Error('INVALID_AI_RESPONSE');
   }
   const selectedIndex = Number(item.selectedIndex);
@@ -125,6 +125,14 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
   if (causalMatch.length < 15 || crucialDifference.length < 12) {
     return rejected('The comparison did not survive the causal review.');
   }
+  const compareOnly = (why: string): CoreDiscovery => ({
+    ...core,
+    bridges: [core.bridges[selectedIndex]],
+    prediction: null,
+    screening: { status: 'partial', reason: why, causalMatch, crucialDifference },
+  });
+  // A useful parallel is not automatically a transferable prediction.
+  if (item.decision === 'compare_only') return compareOnly(reason);
   const proposed = record(item.prediction);
   const prediction: DiscoveryPrediction | null = proposed ? {
     // The visible labels already say "If:" / "Then we might see:". Models
@@ -138,7 +146,7 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     safeNextCheck: words(proposed.safeNextCheck, 350),
   } : null;
   if (!prediction || Object.values(prediction).some(value => value.length < 12)) {
-    return rejected('No clear, testable transfer survived the review.');
+    return compareOnly('The causal parallel remains possible, but no clear, testable prediction survived.');
   }
   return {
     ...core,
