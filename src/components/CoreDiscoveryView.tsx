@@ -147,7 +147,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           </>
         ) : (
           <div className="rounded-xl border border-amber-500/25 bg-[#211c17] p-5 space-y-2">
-            <h3 className="font-semibold text-amber-200">No convincing different-system match yet</h3>
+            <h3 className="font-semibold text-amber-200">No cross-system prediction strong enough yet</h3>
             <p className="text-sm text-stone-300">{core.screening?.reason || 'No complete causal comparison was found. That does not prove a match is impossible.'}</p>
           </div>
         )}
@@ -160,10 +160,10 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           <p><strong className="text-emerald-300">If:</strong> {core.prediction.ifCondition}</p>
           <p><strong className="text-emerald-300">Then we might see:</strong> {core.prediction.expectedOutcome}</p>
           <details className="rounded-lg border border-stone-700 p-3 text-sm">
-            <summary className="cursor-pointer font-semibold">Why this prediction—and what could disprove it</summary>
+            <summary className="cursor-pointer font-semibold">Why this prediction—and what would count against it</summary>
             <p className="mt-3"><strong>Borrowed insight:</strong> {core.prediction.borrowedFromOtherSystem}</p>
             <p className="mt-2"><strong>Where it might fail:</strong> {core.prediction.whyItMayFail}</p>
-            <p className="mt-2"><strong>Evidence against it:</strong> {core.prediction.whatWouldDisproveIt}</p>
+            <p className="mt-2"><strong>What would count against it:</strong> {core.prediction.whatWouldDisproveIt}</p>
           </details>
           <p className="text-sm"><strong className="text-emerald-300">Next safe check:</strong> {core.prediction.safeNextCheck}</p>
         </section>
