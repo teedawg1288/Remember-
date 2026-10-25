@@ -46,7 +46,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
   };
 
   return (
-    <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-7 space-y-6 text-stone-100">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-7 space-y-6 text-stone-100">
       <header className="rounded-3xl border border-amber-500/25 bg-[#151b27] p-5 sm:p-7 space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <span className="text-xs uppercase tracking-widest text-amber-300 font-semibold">REMEMBER · Discovery</span>
@@ -182,6 +182,6 @@ export const CoreDiscoveryView: React.FC<Props> = ({
         <p className="flex gap-2 items-center text-xs text-stone-400"><CheckCircle2 className="w-4 h-4" /> Your conclusions remain yours.</p>
         <button onClick={onNewQuestion} className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-bold text-[#111827]">Ask another question</button>
       </div>
-    </main>
+    </div>
   );
 };
