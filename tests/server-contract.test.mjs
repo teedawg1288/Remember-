@@ -48,6 +48,7 @@ for (const entry of [
       ];
       if (entry.name.includes('TypeScript')) {
         calls.push(['/api/same-story/cross-examine', { question: 'Why does my bicycle skip under torque?', proposedMechanism: 'Possibly worn chain engagement' }]);
+        calls.push(['/api/discovery/analyze', { userInput: 'Why does my bicycle skip under torque?' }]);
       }
       for (const [route, body] of calls) {
         const response = await fetch(origin + route, {
