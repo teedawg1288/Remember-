@@ -42,6 +42,19 @@ shared-risk prediction; compare the same conditions and record competing causes.
 The user sees plain-language uncertainty; the app must never turn an AI review
 into a claim of independent verification. No third automatic AI call is added.
 
+**Prediction counterpart gate:** Causal resemblance alone does not authorize a
+prediction. The donor-specific process behind the prediction must have a real,
+checkable counterpart in the original system. Do not import healing, learning,
+intent or automatic recovery into a system without those functions. If the
+shared damage pattern survives but the donor's repair feature does not, the
+repair-based prediction must be rejected. The screen may then reject the whole
+candidate if it cannot form another justified transfer. A model-screened
+comparison remains an unverified hypothesis.
+
+When a prediction is accepted, show its reviewed IF/THEN result instead of also
+showing the first pass's unreviewed "what this suggests" sentence. That avoids
+two contradictory claims on the same page and reduces explanation clutter.
+
 The second pass adds one Gemini request per question with a viable candidate,
 and therefore more latency and potential API usage. No second pass is spent
 when the first response has no valid candidates. The system does not claim

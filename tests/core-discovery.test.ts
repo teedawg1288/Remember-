@@ -179,6 +179,9 @@ describe('REMEMBER core discovery contract', () => {
     expect(prompt).toContain('COUNTEREVIDENCE TEST');
     expect(prompt).toContain('A single exception');
     expect(prompt).toContain('SAME condition and comparison');
+    expect(prompt).toContain('TRANSFER GATE');
+    expect(prompt).toContain('donor-only feature');
+    expect(prompt).toContain('SCOPE GATE');
     expect(prompt).toContain('must NOT begin with "If"');
     const firstPass = buildCoreDiscoveryPrompt(question, [], []);
     expect(firstPass).toContain('shared sub-mechanism');
@@ -206,6 +209,8 @@ describe('REMEMBER core discovery contract', () => {
     expect(result.prediction?.whatWouldDisproveIt).toContain('comparable conditions');
     const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf-8');
     expect(view).toContain('What would count against it');
+    expect(view).toContain('{!core.prediction && (');
+    expect(view).toContain('unreviewed transfer');
     expect(view).not.toContain('No convincing different-system match yet');
   });
 
