@@ -143,7 +143,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                 <p className="mt-2"><strong>Matching causes:</strong> {core.screening.causalMatch}</p>
                 <p className="mt-2"><strong>What could make it wrong:</strong> {core.screening.crucialDifference}</p>
               </details>
-            )
+            )}
           </>
         ) : (
           <div className="rounded-xl border border-amber-500/25 bg-[#211c17] p-5 space-y-2">
