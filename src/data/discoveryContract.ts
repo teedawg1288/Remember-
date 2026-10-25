@@ -127,8 +127,11 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
   }
   const proposed = record(item.prediction);
   const prediction: DiscoveryPrediction | null = proposed ? {
-    ifCondition: words(proposed.ifCondition, 350),
-    expectedOutcome: words(proposed.expectedOutcome, 350),
+    // The visible labels already say "If:" / "Then we might see:". Models
+    // sometimes repeat those words; strip only the label, not the condition.
+    ifCondition: words(proposed.ifCondition, 350).replace(/^if\b\s*:?[ \t]*/i, '').trim(),
+    expectedOutcome: words(proposed.expectedOutcome, 350)
+      .replace(/^then\b(?:\s+we\s+(?:might|may|could|would)\s+see)?\s*:?[ \t]*/i, '').trim(),
     borrowedFromOtherSystem: words(proposed.borrowedFromOtherSystem, 450),
     whyItMayFail: words(proposed.whyItMayFail, 350),
     whatWouldDisproveIt: words(proposed.whatWouldDisproveIt, 350),

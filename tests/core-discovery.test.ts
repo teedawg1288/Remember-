@@ -165,10 +165,48 @@ describe('REMEMBER core discovery contract', () => {
 
   test('review prompt explicitly screens causal links and rejects word-only matches', () => {
     const reviewPrompt = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
-    expect(reviewPrompt).toContain('TWO distinct causal steps');
-    expect(reviewPrompt).toContain('Matching words');
+    expect(reviewPrompt).toContain('TWO distinct cause-and-effect steps');
+    expect(reviewPrompt).toContain('A shared word');
     expect(reviewPrompt).toContain('whatWouldDisproveIt');
     expect(reviewPrompt).toContain('selectedIndex');
+  });
+
+  test('review instructions separate shared causal roles from literal system identity', () => {
+    const prompt = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    expect(prompt).toContain('DIFFERENCE TEST');
+    expect(prompt).toContain('Never reject solely');
+    expect(prompt).toContain('ASSUMPTION TEST');
+    expect(prompt).toContain('COUNTEREVIDENCE TEST');
+    expect(prompt).toContain('A single exception');
+    expect(prompt).toContain('SAME condition and comparison');
+    expect(prompt).toContain('must NOT begin with "If"');
+    const firstPass = buildCoreDiscoveryPrompt(question, [], []);
+    expect(firstPass).toContain('shared sub-mechanism');
+    expect(firstPass).toContain('conditions not reported');
+  });
+
+  test('visible prediction labels do not repeat model-produced If and Then', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const result = applyDiscoveryReview(core, {
+      decision: 'accept', selectedIndex: 0,
+      reason: 'Both systems have a receiving limit; shorter inputs may be transmitted or understood more reliably.',
+      causalMatch: 'Incoming messages occupy capacity in both; beyond their available capacity, some content may be missed.',
+      crucialDifference: 'Human attention depends on purpose and context rather than a fixed packet buffer.',
+      prediction: {
+        ifCondition: 'If incoming information exceeds the attention available at that time',
+        expectedOutcome: 'Then we might see fewer main points recalled than after a comparable shorter explanation',
+        borrowedFromOtherSystem: 'A finite network buffer is more likely to drop data when it is saturated.',
+        whyItMayFail: 'The listener may disagree even when every word is understood.',
+        whatWouldDisproveIt: 'Under comparable conditions, repeated shorter explanations show no improvement in main-point recall.',
+        safeNextCheck: 'With consent, ask which points were understood after a brief explanation.',
+      },
+    });
+    expect(result.prediction?.ifCondition).toBe('incoming information exceeds the attention available at that time');
+    expect(result.prediction?.expectedOutcome).toBe('fewer main points recalled than after a comparable shorter explanation');
+    expect(result.prediction?.whatWouldDisproveIt).toContain('comparable conditions');
+    const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf-8');
+    expect(view).toContain('What would count against it');
+    expect(view).not.toContain('No convincing different-system match yet');
   });
 
   test('personal learned language is only a tentative hint, never a fixed profile', () => {
