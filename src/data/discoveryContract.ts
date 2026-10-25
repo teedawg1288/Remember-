@@ -53,7 +53,10 @@ function parseMeaning(value: unknown): MeaningCheck | null {
     whatRemainsUnknown: words(item.whatRemainsUnknown, 240),
     howToClarify: words(item.howToClarify, 240),
   };
-  return Object.values(result).every(Boolean) ? result : null;
+  if (!Object.values(result).every(Boolean)) return null;
+  // A generic communication question is not evidence of a reported exchange.
+  if (/^(not reported|none reported|not specified|no specific (words|statement))/i.test(result.whatWasSaidOrObserved)) return null;
+  return result;
 }
 
 export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreDiscovery {
