@@ -12,20 +12,45 @@ correspondence, and identifies missing information or a discriminating test.
 
 A shared label or dramatic story is not evidence of the same causal mechanism.
 
+## Quality gate (Version 2.1)
+
+The first Gemini call creates up to three cross-system causal candidates, not
+finished conclusions. A second, lower-temperature Gemini call must select one
+candidate with at least two matching causal steps, a decisive difference and a
+testable conditional prediction, or reject every candidate. Rejected proposals
+are not shown as cross-domain discoveries.
+
+This **model-to-model screen is NOT independent scientific verification**.
+It is a quality filter against superficial analogies and overconfident
+transfers. Reliable claims still require outside evidence. Never use shared
+words, an invented named principle, or metaphorical "stored energy" as proof.
+
+An accepted prediction must state: if-condition, expected observation, what
+specific knowledge was transferred, why it could fail, what would disprove
+it and a safe next check. Reject a candidate if no such prediction survives.
+The user sees a brief parallel and conditional prediction; the detailed
+comparison and caveats remain optional.
+
+The second pass adds one Gemini request per question with a viable candidate,
+and therefore more latency and potential API usage. No second pass is spent
+when the first response has no valid candidates. The system does not claim
+independent fact-checking.
+
 ## One new-question pipeline
 
 1. **Understand:** Preserve the exact question; separate reports, interpretations
    and unknown facts, including unreported thoughts of another person.
 2. **Recognize:** State one candidate causal structure in ordinary words.
-3. **Connect:** Seek one or two credible comparisons in genuinely different
+3. **Connect:** Seek up to three candidate comparisons in genuinely different
    systems, mapping input, constraint, response and outcome.
 4. **Translate:** Explain the correspondence and where it breaks. For
    communication distinguish what was said, heard and UNDERSTOOD; missing
    recipient meanings stay unknown.
-5. **Cross-examine:** Consider distinct alternatives and possible
-   disconfirming observations before presenting the output.
-6. **Discover:** Identify an unknown and a useful next check; do not promise
-   a new scientific fact or a predestined human outcome.
+5. **Cross-examine:** Use a separate adversarial model pass to select a
+   transferable causal match or reject all. Include falsifying observations.
+6. **Discover:** If a comparison survives, formulate a conditional prediction,
+   its disproof and safe next check. Otherwise expose the unresolved question.
+   Never promise a new scientific fact or a predestined human outcome.
 
 ## What the person sees
 
