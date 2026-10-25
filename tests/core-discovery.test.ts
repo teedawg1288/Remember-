@@ -229,6 +229,7 @@ describe('REMEMBER core discovery contract', () => {
     expect(result.prediction?.whatWouldDisproveIt).toContain('comparable conditions');
     const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf-8');
     expect(view).toContain('What would count against it');
+    expect(view).toContain("core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism");
     expect(view).toContain('{!core.screening && (');
     expect(view).toContain('unreviewed transfer');
     expect(view).not.toContain('No convincing different-system match yet');
