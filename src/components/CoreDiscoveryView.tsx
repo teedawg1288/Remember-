@@ -56,21 +56,24 @@ export const CoreDiscoveryView: React.FC<Props> = ({
         </div>
         <p className="text-xs uppercase tracking-wider text-stone-400">Your exact question</p>
         <h1 className="font-serif text-xl sm:text-2xl leading-snug">{core.question}</h1>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <section className="rounded-xl border border-stone-700 bg-[#101521] p-4">
-            <h2 className="text-xs font-bold text-amber-300 uppercase mb-2">What the question reports · Confirm</h2>
-            <p className="text-sm leading-relaxed">{core.whatIsReported}</p>
-          </section>
-          <section className="rounded-xl border border-cyan-500/30 bg-[#101b27] p-4">
-            <h2 className="text-xs font-bold text-cyan-300 uppercase mb-2">What might be happening underneath</h2>
-            <p className="text-sm leading-relaxed">{core.possibleMechanism}</p>
-          </section>
-        </div>
+        <details className="rounded-xl border border-stone-700 bg-[#101521] p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-stone-300">How REMEMBER read your question</summary>
+          <div className="grid sm:grid-cols-2 gap-3 mt-4">
+            <section className="rounded-xl border border-stone-700 p-3">
+              <h2 className="text-xs font-bold text-amber-300 uppercase mb-2">What you asked</h2>
+              <p className="text-sm leading-relaxed">{core.whatIsReported}</p>
+            </section>
+            <section className="rounded-xl border border-cyan-500/30 p-3">
+              <h2 className="text-xs font-bold text-cyan-300 uppercase mb-2">Possible pattern</h2>
+              <p className="text-sm leading-relaxed">{core.possibleMechanism}</p>
+            </section>
+          </div>
+        </details>
       </header>
 
       <section className="rounded-3xl border border-cyan-500/35 bg-[#0c1420] p-5 sm:p-7 space-y-5">
         <div className="flex items-center gap-2 text-cyan-300 text-xs font-bold uppercase tracking-widest">
-          <GitCompare className="w-4 h-4" /> Cross-system discovery · Candidate
+          <GitCompare className="w-4 h-4" /> Here's where else this happens
         </div>
         {bridge ? (
           <>
@@ -97,11 +100,11 @@ export const CoreDiscoveryView: React.FC<Props> = ({
               </div>
             </div>
             <div className="rounded-xl border border-cyan-500/20 bg-[#0b111b] p-4">
-              <p className="text-xs text-cyan-300 uppercase font-semibold mb-1">Possible shared mechanism</p>
+              <p className="text-xs text-cyan-300 uppercase font-semibold mb-1">What connects these systems</p>
               <p className="font-serif text-lg">{bridge.possibleSharedMechanism}</p>
             </div>
             <div>
-              <p className="text-xs text-stone-300 mb-3">Tap a stage to see what the systems do in common—and where they differ.</p>
+              <p className="text-xs text-stone-300 mb-3">Tap each step to see what matches—and what doesn't.</p>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {bridge.stages.map((item, index) => (
                   <button key={index} onClick={() => setStageIndex(index)}
@@ -124,11 +127,11 @@ export const CoreDiscoveryView: React.FC<Props> = ({
             )}
             <div className="grid sm:grid-cols-2 gap-3 text-sm">
               <div className="rounded-xl bg-[#10201c] border border-emerald-600/20 p-4">
-                <p className="text-emerald-300 font-bold text-xs uppercase mb-2">What one system might teach the other</p>
+                <p className="text-emerald-300 font-bold text-xs uppercase mb-2">What this comparison suggests</p>
                 {bridge.whatMightTransfer}
               </div>
               <div className="rounded-xl bg-[#231b18] border border-amber-600/20 p-4">
-                <p className="text-amber-300 font-bold text-xs uppercase mb-2">Where the comparison breaks</p>
+                <p className="text-amber-300 font-bold text-xs uppercase mb-2">Where they're different</p>
                 {bridge.whereItBreaks}
               </div>
             </div>
@@ -136,13 +139,13 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           </>
         ) : (
           <div className="rounded-xl border border-amber-500/25 bg-[#211c17] p-5 space-y-2">
-            <h3 className="font-semibold text-amber-200">No defensible different-system bridge yet</h3>
+            <h3 className="font-semibold text-amber-200">No useful parallel found yet</h3>
             <p className="text-sm text-stone-300">The current model response did not supply a complete causal comparison. That is an unresolved question, not proof no parallel exists.</p>
           </div>
         )}
       </section>
 
-      {core.meaningCheck && (
+      {core.meaningCheck && !/^(not reported|none reported|not specified|no specific (words|statement))/i.test(core.meaningCheck.whatWasSaidOrObserved.trim()) && (
         <section className="rounded-2xl border border-purple-500/25 bg-[#151625] p-5 space-y-3">
           <h2 className="font-serif text-lg">What was understood?</h2>
           <p className="text-xs text-stone-400">Hearing words and understanding their meaning are not the same step. Unreported meanings stay uncertain.</p>
