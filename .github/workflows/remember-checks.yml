@@ -17,3 +17,5 @@ jobs:
       - run: node --test tests/server-contract.test.mjs
       - run: bun test tests/situation-context.test.ts
       - run: bun test tests/prediction-integrity.test.ts
+
+      - run: bun test tests/core-discovery.test.ts
