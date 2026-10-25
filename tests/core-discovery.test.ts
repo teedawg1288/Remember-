@@ -63,10 +63,26 @@ describe('REMEMBER core discovery contract', () => {
     expect(discoveryToSavedResult(core).mirrorEffect).toBeUndefined();
   });
 
+  test('does not show a guessed listener meaning when no exchange was reported', () => {
+    const core = parseCoreDiscovery({
+      ...sample,
+      meaningCheck: {
+        whatWasSaidOrObserved: 'Not reported',
+        possibleIntendedMeaning: 'Maybe they wanted to explain',
+        possibleUnderstoodMeaning: 'Maybe the listener was defensive',
+        whatRemainsUnknown: 'Everything about that exchange',
+        howToClarify: 'Ask what they heard',
+      },
+    }, question);
+    expect(core.meaningCheck).toBeNull();
+  });
+
   test('single prompt prioritizes the mechanism bridge and separates optional features', () => {
     const prompt = buildCoreDiscoveryPrompt(question, [], []);
     expect(prompt).toContain('CORE PURPOSE');
     expect(prompt).toContain('CANDIDATE RULE');
+    expect(prompt).toContain('General questions about why people misunderstand');
+    expect(prompt).toContain('Lead with the OTHER SYSTEM');
     expect(prompt).toContain('NOT mandatory');
     expect(prompt).toContain(question);
     expect(prompt).not.toContain('secretly intended to punish');
