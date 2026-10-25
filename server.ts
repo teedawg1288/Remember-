@@ -8,7 +8,8 @@ import { CURATED_STORIES } from './src/data/curatedStories.ts';
 import { buildErasForDilemma } from './src/data/eraBuilder.ts';
 import { analyzeQuestionAndBuildRoundTable } from './src/data/questionRouting.ts';
 import { buildCoreDiscoveryPrompt } from './src/data/coreDiscoveryPrompt.ts';
-import { parseCoreDiscovery } from './src/data/discoveryContract.ts';
+import { buildDiscoveryReviewPrompt } from './src/data/discoveryReviewPrompt.ts';
+import { parseCoreDiscovery, applyDiscoveryReview } from './src/data/discoveryContract.ts';
 import { discoveryToSavedResult } from './src/data/discoveryAdapter.ts';
 import type { SameStoryResult, CrossFieldPrediction, WhatIfScenario, EraProjection } from './src/types/sameStory.ts';
 
@@ -174,7 +175,23 @@ app.post('/api/discovery/analyze', async (req: Request, res: Response) => {
     } catch {
       throw new Error('INVALID_AI_RESPONSE');
     }
-    const core = parseCoreDiscovery(raw, question);
+    let core = parseCoreDiscovery(raw, question);
+    // Only candidate comparisons trigger a second Gemini call. No canned
+    // analogy or prediction is substituted when screening rejects them.
+    if (core.bridges.length > 0) {
+      const reviewResponse = await ai.models.generateContent({
+        model: geminiModel,
+        contents: buildDiscoveryReviewPrompt(core),
+        config: { responseMimeType: 'application/json', temperature: 0.12 },
+      });
+      let reviewRaw: Record<string, unknown>;
+      try {
+        reviewRaw = JSON.parse((reviewResponse.text || '').trim());
+      } catch {
+        throw new Error('INVALID_AI_RESPONSE');
+      }
+      core = applyDiscoveryReview(core, reviewRaw);
+    }
     const result = discoveryToSavedResult(core);
     const corpus = (' ' + question.toLocaleLowerCase()
       .replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ');

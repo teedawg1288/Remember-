@@ -73,7 +73,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
 
       <section className="rounded-3xl border border-cyan-500/35 bg-[#0c1420] p-5 sm:p-7 space-y-5">
         <div className="flex items-center gap-2 text-cyan-300 text-xs font-bold uppercase tracking-widest">
-          <GitCompare className="w-4 h-4" /> Here's where else this happens
+          <GitCompare className="w-4 h-4" /> Here's where this might also happen
         </div>
         {bridge ? (
           <>
@@ -135,15 +135,39 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                 {bridge.whereItBreaks}
               </div>
             </div>
-            <p className="text-xs text-stone-400">Proposed structural similarity, not independent evidence that the causes are identical.</p>
+            <p className="text-xs text-stone-400">{core.screening?.status === 'accepted' ? 'Model-screened hypothesis; not independently verified evidence.' : 'Unscreened saved comparison; not independent evidence.'}</p>
+            {core.screening?.status === 'accepted' && (
+              <details className="rounded-lg border border-stone-700 p-3 text-sm text-stone-300">
+                <summary className="cursor-pointer font-semibold">Why REMEMBER chose this comparison</summary>
+                <p className="mt-3">{core.screening.reason}</p>
+                <p className="mt-2"><strong>Matching causes:</strong> {core.screening.causalMatch}</p>
+                <p className="mt-2"><strong>What could make it wrong:</strong> {core.screening.crucialDifference}</p>
+              </details>
+            )}
           </>
         ) : (
           <div className="rounded-xl border border-amber-500/25 bg-[#211c17] p-5 space-y-2">
-            <h3 className="font-semibold text-amber-200">No useful parallel found yet</h3>
-            <p className="text-sm text-stone-300">The current model response did not supply a complete causal comparison. That is an unresolved question, not proof no parallel exists.</p>
+            <h3 className="font-semibold text-amber-200">No convincing different-system match yet</h3>
+            <p className="text-sm text-stone-300">{core.screening?.reason || 'No complete causal comparison was found. That does not prove a match is impossible.'}</p>
           </div>
         )}
       </section>
+
+      {core.prediction && (
+        <section className="rounded-2xl border border-emerald-500/35 bg-[#101f1d] p-5 sm:p-7 space-y-3">
+          <h2 className="font-serif text-xl text-emerald-200">A prediction worth checking</h2>
+          <p className="text-sm text-stone-300">A proposed transfer from the other system. This is not an established result.</p>
+          <p><strong className="text-emerald-300">If:</strong> {core.prediction.ifCondition}</p>
+          <p><strong className="text-emerald-300">Then we might see:</strong> {core.prediction.expectedOutcome}</p>
+          <details className="rounded-lg border border-stone-700 p-3 text-sm">
+            <summary className="cursor-pointer font-semibold">Why this prediction—and what could disprove it</summary>
+            <p className="mt-3"><strong>Borrowed insight:</strong> {core.prediction.borrowedFromOtherSystem}</p>
+            <p className="mt-2"><strong>Where it might fail:</strong> {core.prediction.whyItMayFail}</p>
+            <p className="mt-2"><strong>Evidence against it:</strong> {core.prediction.whatWouldDisproveIt}</p>
+          </details>
+          <p className="text-sm"><strong className="text-emerald-300">Next safe check:</strong> {core.prediction.safeNextCheck}</p>
+        </section>
+      )}
 
       {core.meaningCheck && !/^(not reported|none reported|not specified|no specific (words|statement))/i.test(core.meaningCheck.whatWasSaidOrObserved.trim()) && (
         <section className="rounded-2xl border border-purple-500/25 bg-[#151625] p-5 space-y-3">
@@ -162,7 +186,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
       <section className="rounded-2xl border border-emerald-500/30 bg-[#11201d] p-5 sm:p-7 space-y-3">
         <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase"><Compass className="w-4 h-4" /> The missing piece</div>
         <h2 className="font-serif text-lg">{core.missingInformation}</h2>
-        <p className="text-sm"><strong className="text-emerald-300">What to check next:</strong> {core.nextCheck}</p>
+        {!core.prediction && <p className="text-sm"><strong className="text-emerald-300">What to check next:</strong> {core.nextCheck}</p>}
         {bridge && <p className="text-xs text-stone-300"><strong>What could challenge the connection:</strong> {bridge.howToChallenge}</p>}
       </section>
 

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { parseCoreDiscovery } from '../src/data/discoveryContract';
+import { parseCoreDiscovery, applyDiscoveryReview } from '../src/data/discoveryContract';
+import { buildDiscoveryReviewPrompt } from '../src/data/discoveryReviewPrompt';
 import { discoveryToSavedResult } from '../src/data/discoveryAdapter';
 import { buildCoreDiscoveryPrompt } from '../src/data/coreDiscoveryPrompt';
 
@@ -82,7 +83,7 @@ describe('REMEMBER core discovery contract', () => {
     expect(prompt).toContain('CORE PURPOSE');
     expect(prompt).toContain('CANDIDATE RULE');
     expect(prompt).toContain('General questions about why people misunderstand');
-    expect(prompt).toContain('Lead with the OTHER SYSTEM');
+    expect(prompt).toContain('Lead with the other system');
     expect(prompt).toContain('NOT mandatory');
     expect(prompt).toContain(question);
     expect(prompt).not.toContain('secretly intended to punish');
@@ -90,7 +91,84 @@ describe('REMEMBER core discovery contract', () => {
     const server = readFileSync('server.ts', 'utf-8');
     expect(app).toContain("fetch('/api/discovery/analyze'");
     expect(server).toContain("app.post('/api/discovery/analyze'");
+    expect(server).toContain('applyDiscoveryReview(core, reviewRaw)');
     expect(app).toContain('activeAnalysis.coreDiscovery');
+  });
+
+  test('non-referential questions do not leak earlier subjects into comparisons', () => {
+    const previous = 'Why did a couple argue over a text message?';
+    const prompt = buildCoreDiscoveryPrompt('Why does a bridge fatigue under cycles?', [], [previous]);
+    expect(prompt).not.toContain(previous);
+    const followup = buildCoreDiscoveryPrompt('What about that earlier question?', [], [previous]);
+    expect(followup).toContain(previous);
+  });
+
+  test('an adversarial review can accept one bridge with a falsifiable transfer', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const screened = applyDiscoveryReview(core, {
+      decision: 'accept',
+      selectedIndex: 0,
+      reason: 'Both systems have a limited receiving capacity and discard or misunderstand some input when overwhelmed.',
+      causalMatch: 'Extra input takes capacity; when input exceeds processing capacity, some messages are lost.',
+      crucialDifference: 'Human meanings and feelings are not fixed packet protocols.',
+      prediction: {
+        ifCondition: 'If attention is the limiting factor in this exchange',
+        expectedOutcome: 'The listener should reproduce more of a shorter explanation',
+        borrowedFromOtherSystem: 'A finite network buffer handles shorter bursts without dropping packets',
+        whyItMayFail: 'Human resistance may come from disagreement rather than capacity',
+        whatWouldDisproveIt: 'Shortening an otherwise equivalent explanation does not change the listener response',
+        safeNextCheck: 'Ask the listener what they understood, with their consent',
+      },
+    });
+    expect(screened.bridges).toHaveLength(1);
+    expect(screened.prediction?.expectedOutcome).toContain('shorter explanation');
+    expect(screened.prediction?.whatWouldDisproveIt).toContain('Shortening');
+    expect(screened.screening?.status).toBe('accepted');
+    expect(discoveryToSavedResult(screened).coreDiscovery?.prediction).toEqual(screened.prediction);
+  });
+
+  test('review rejects weak metaphors instead of promoting them as discovered facts', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const rejected = applyDiscoveryReview(core, {
+      decision: 'reject', selectedIndex: null, prediction: null,
+      reason: 'This is only a shared metaphor; causal constraints differ between the two systems.',
+    });
+    expect(rejected.bridges).toHaveLength(0);
+    expect(rejected.prediction).toBeNull();
+    expect(rejected.screening?.status).toBe('rejected');
+    expect(() => applyDiscoveryReview(core, {
+      decision: 'accept', selectedIndex: 99, reason: 'Select an unrelated system',
+    })).toThrow('INVALID_AI_RESPONSE');
+  });
+
+  test('no prediction is promoted when the review cannot supply a disproof', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const result = applyDiscoveryReview(core, {
+      decision: 'accept', selectedIndex: 0,
+      reason: 'Both systems have bounded input capacity.',
+      causalMatch: 'Input consumes a finite buffer and overload loses content.',
+      crucialDifference: 'Human attention is context dependent.',
+      prediction: { ifCondition: 'If attention runs out', expectedOutcome: 'Some input is missed' },
+    });
+    expect(result.bridges).toHaveLength(0);
+    expect(result.prediction).toBeNull();
+  });
+
+  test('long explanations are truncated at a word boundary, not in the middle of a word', () => {
+    const core = parseCoreDiscovery({
+      ...sample,
+      bridges: [{ ...bridge, possibleSharedMechanism: ('Forest systems and network systems may adapt differently. ').repeat(12) }],
+    }, question);
+    expect(core.bridges[0].possibleSharedMechanism.endsWith('…') || core.bridges[0].possibleSharedMechanism.endsWith('.')).toBe(true);
+    expect(core.bridges[0].possibleSharedMechanism).not.toMatch(/syste…$/);
+  });
+
+  test('review prompt explicitly screens causal links and rejects word-only matches', () => {
+    const reviewPrompt = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    expect(reviewPrompt).toContain('TWO distinct causal steps');
+    expect(reviewPrompt).toContain('Matching words');
+    expect(reviewPrompt).toContain('whatWouldDisproveIt');
+    expect(reviewPrompt).toContain('selectedIndex');
   });
 
   test('personal learned language is only a tentative hint, never a fixed profile', () => {

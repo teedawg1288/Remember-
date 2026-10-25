@@ -30,6 +30,22 @@ export interface MeaningCheck {
   howToClarify: string;
 }
 
+export interface DiscoveryPrediction {
+  ifCondition: string;
+  expectedOutcome: string;
+  borrowedFromOtherSystem: string;
+  whyItMayFail: string;
+  whatWouldDisproveIt: string;
+  safeNextCheck: string;
+}
+
+export interface DiscoveryScreening {
+  status: 'accepted' | 'rejected';
+  reason: string;
+  causalMatch: string;
+  crucialDifference: string;
+}
+
 export interface CoreDiscovery {
   version: 2;
   question: string;
@@ -40,4 +56,7 @@ export interface CoreDiscovery {
   missingInformation: string;
   nextCheck: string;
   meaningCheck: MeaningCheck | null;
+  // Optional for V2 saved discoveries written before screening was introduced.
+  prediction?: DiscoveryPrediction | null;
+  screening?: DiscoveryScreening | null;
 }

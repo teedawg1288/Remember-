@@ -1,7 +1,16 @@
-import type { CoreDiscovery, DiscoveryBridge, DiscoveryStage, MeaningCheck } from '../types/discovery';
+import type { CoreDiscovery, DiscoveryBridge, DiscoveryStage, MeaningCheck, DiscoveryPrediction } from '../types/discovery';
 
-const words = (value: unknown, max = 500): string =>
-  typeof value === 'string' ? value.trim().slice(0, max) : '';
+// Long model answers must never be sliced through a word without indicating truncation.
+const words = (value: unknown, max = 500): string => {
+  if (typeof value !== 'string') return '';
+  const cleaned = value.trim();
+  if (cleaned.length <= max) return cleaned;
+  const head = cleaned.slice(0, max);
+  const sentenceEnd = Math.max(head.lastIndexOf('. '), head.lastIndexOf('! '), head.lastIndexOf('? '));
+  if (sentenceEnd >= Math.floor(max * 0.6)) return head.slice(0, sentenceEnd + 1).trimEnd();
+  const wordEnd = head.lastIndexOf(' ');
+  return head.slice(0, wordEnd >= Math.floor(max * 0.6) ? wordEnd : max).trimEnd() + '…';
+};
 const record = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -29,7 +38,7 @@ function parseBridge(value: unknown): DiscoveryBridge | null {
     originalSystem: words(item.originalSystem, 90),
     comparisonDomain: words(item.comparisonDomain, 90),
     comparisonSystem: words(item.comparisonSystem, 90),
-    possibleSharedMechanism: words(item.possibleSharedMechanism, 200),
+    possibleSharedMechanism: words(item.possibleSharedMechanism, 420),
     stages,
     whatMightTransfer: words(item.whatMightTransfer, 240),
     whereItBreaks: words(item.whereItBreaks, 240),
@@ -70,7 +79,7 @@ export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreD
     throw new Error('INVALID_AI_RESPONSE');
   }
   const bridges = Array.isArray(item.bridges)
-    ? item.bridges.map(parseBridge).filter((b): b is DiscoveryBridge => !!b).slice(0, 2)
+    ? item.bridges.map(parseBridge).filter((b): b is DiscoveryBridge => !!b).slice(0, 3)
     : [];
   const alternativeExplanations = Array.isArray(item.alternativeExplanations)
     ? item.alternativeExplanations.map(v => words(v, 210)).filter(Boolean).slice(0, 3)
@@ -85,5 +94,53 @@ export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreD
     missingInformation,
     nextCheck,
     meaningCheck: parseMeaning(item.meaningCheck),
+  };
+}
+
+/**
+ * A separate, adversarial model pass reviews the proposed analogies. This is
+ * still model screening, NOT independent scientific or historical verification.
+ * Reject rather than promoting a comparison that has no testable transfer.
+ */
+export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): CoreDiscovery {
+  const item = record(response);
+  if (!item) throw new Error('INVALID_AI_RESPONSE');
+  const reason = words(item.reason, 450);
+  if (reason.length < 12) throw new Error('INVALID_AI_RESPONSE');
+  const rejected = (why: string): CoreDiscovery => ({
+    ...core,
+    bridges: [],
+    prediction: null,
+    screening: { status: 'rejected', reason: why, causalMatch: '', crucialDifference: '' },
+  });
+  if (item.decision === 'reject') return rejected(reason);
+  if (item.decision !== 'accept' || !Number.isInteger(item.selectedIndex)) {
+    throw new Error('INVALID_AI_RESPONSE');
+  }
+  const selectedIndex = Number(item.selectedIndex);
+  if (selectedIndex < 0 || selectedIndex >= core.bridges.length) throw new Error('INVALID_AI_RESPONSE');
+
+  const causalMatch = words(item.causalMatch, 450);
+  const crucialDifference = words(item.crucialDifference, 450);
+  if (causalMatch.length < 15 || crucialDifference.length < 12) {
+    return rejected('The comparison did not survive the causal review.');
+  }
+  const proposed = record(item.prediction);
+  const prediction: DiscoveryPrediction | null = proposed ? {
+    ifCondition: words(proposed.ifCondition, 350),
+    expectedOutcome: words(proposed.expectedOutcome, 350),
+    borrowedFromOtherSystem: words(proposed.borrowedFromOtherSystem, 450),
+    whyItMayFail: words(proposed.whyItMayFail, 350),
+    whatWouldDisproveIt: words(proposed.whatWouldDisproveIt, 350),
+    safeNextCheck: words(proposed.safeNextCheck, 350),
+  } : null;
+  if (!prediction || Object.values(prediction).some(value => value.length < 12)) {
+    return rejected('No clear, testable transfer survived the review.');
+  }
+  return {
+    ...core,
+    bridges: [core.bridges[selectedIndex]],
+    prediction,
+    screening: { status: 'accepted', reason, causalMatch, crucialDifference },
   };
 }
