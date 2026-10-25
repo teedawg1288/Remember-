@@ -12,13 +12,15 @@ correspondence, and identifies missing information or a discriminating test.
 
 A shared label or dramatic story is not evidence of the same causal mechanism.
 
-## Quality gate (Version 2.1)
+## Quality gates (Version 2.3)
 
 The first Gemini call creates up to three cross-system causal candidates, not
-finished conclusions. A second, lower-temperature Gemini call must select one
-candidate with at least two matching causal steps, a meaningful limitation and a
-testable conditional prediction, or reject every candidate. Rejected proposals
-are not shown as cross-domain discoveries.
+finished conclusions. A second, lower-temperature Gemini call makes TWO
+separate judgments: is there a causal parallel with at least two matching steps,
+and can a specific donor lesson be transferred into a testable prediction?
+The reviewer returns `accept` (parallel + prediction), `compare_only` (useful
+parallel but no justified prediction), or `reject` (no sufficiently mapped
+causal parallel). The comparison remains visible in `compare_only`.
 
 This **model-to-model screen is NOT independent scientific verification**.
 It is a quality filter against superficial analogies and overconfident
@@ -27,10 +29,11 @@ words, an invented named principle, or metaphorical "stored energy" as proof.
 
 An accepted prediction must state: if-condition, expected observation, what
 specific knowledge was transferred, why it could fail, what observations would
-count against it under comparable conditions and a safe next check. Reject a
-candidate if no such prediction survives.
-The user sees a brief parallel and conditional prediction; the detailed
-comparison and caveats remain optional.
+count against it under comparable conditions and a safe next check. If no
+such prediction survives but the shared causal pattern does, keep the
+comparison and label its prediction unavailable.
+The user sees a brief parallel, with a conditional prediction only if earned;
+detailed comparison and caveats remain optional.
 
 **Screening calibration (Version 2.2):** A shared causal *sub-mechanism* does
 not require identical materials or entire systems. Ask whether a difference
@@ -47,13 +50,15 @@ prediction. The donor-specific process behind the prediction must have a real,
 checkable counterpart in the original system. Do not import healing, learning,
 intent or automatic recovery into a system without those functions. If the
 shared damage pattern survives but the donor's repair feature does not, the
-repair-based prediction must be rejected. The screen may then reject the whole
-candidate if it cannot form another justified transfer. A model-screened
+repair-based prediction must be rejected, but the separate shared damage
+pattern can remain visible as `compare_only`. Do not erase a valid parallel
+just because a donor-only feature prevents prediction. A model-screened
 comparison remains an unverified hypothesis.
 
-When a prediction is accepted, show its reviewed IF/THEN result instead of also
-showing the first pass's unreviewed "what this suggests" sentence. That avoids
-two contradictory claims on the same page and reduces explanation clutter.
+For any reviewed comparison, hide the first pass's unreviewed "what this
+suggests" sentence. Show a reviewed IF/THEN only after the prediction gate;
+otherwise say the causal parallel may hold but no specific prediction earned.
+This avoids contradictory claims and reduces explanation clutter.
 
 The second pass adds one Gemini request per question with a viable candidate,
 and therefore more latency and potential API usage. No second pass is spent
@@ -70,10 +75,11 @@ independent fact-checking.
 4. **Translate:** Explain the correspondence and where it breaks. For
    communication distinguish what was said, heard and UNDERSTOOD; missing
    recipient meanings stay unknown.
-5. **Cross-examine:** Use a separate adversarial model pass to select a
-   transferable causal match or reject all. Include falsifying observations.
-6. **Discover:** If a comparison survives, formulate a conditional prediction,
-   its disproof and safe next check. Otherwise expose the unresolved question.
+5. **Cross-examine:** First decide if a genuine causal parallel exists. Reject
+   only when the mapped causal steps do not hold.
+6. **Discover:** Separately decide if knowledge from the other system supports a
+   bounded prediction and contrary evidence. If not, retain the qualified
+   parallel without fabricating an IF/THEN answer.
    Never promise a new scientific fact or a predestined human outcome.
 
 ## What the person sees
