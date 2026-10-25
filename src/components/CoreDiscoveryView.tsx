@@ -125,11 +125,14 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                 <p className="text-sm text-amber-200"><strong>Crucial difference:</strong> {stage.importantDifference}</p>
               </div>
             )}
-            <div className="grid sm:grid-cols-2 gap-3 text-sm">
-              <div className="rounded-xl bg-[#10201c] border border-emerald-600/20 p-4">
-                <p className="text-emerald-300 font-bold text-xs uppercase mb-2">What this comparison suggests</p>
-                {bridge.whatMightTransfer}
-              </div>
+            <div className={core.prediction ? 'text-sm' : 'grid sm:grid-cols-2 gap-3 text-sm'}>
+              {/* A screened prediction supersedes the first pass's unreviewed transfer. */}
+              {!core.prediction && (
+                <div className="rounded-xl bg-[#10201c] border border-emerald-600/20 p-4">
+                  <p className="text-emerald-300 font-bold text-xs uppercase mb-2">What this comparison suggests</p>
+                  {bridge.whatMightTransfer}
+                </div>
+              )}
               <div className="rounded-xl bg-[#231b18] border border-amber-600/20 p-4">
                 <p className="text-amber-300 font-bold text-xs uppercase mb-2">Where they're different</p>
                 {bridge.whereItBreaks}
