@@ -125,9 +125,9 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                 <p className="text-sm text-amber-200"><strong>Crucial difference:</strong> {stage.importantDifference}</p>
               </div>
             )}
-            <div className={core.prediction ? 'text-sm' : 'grid sm:grid-cols-2 gap-3 text-sm'}>
-              {/* A screened prediction supersedes the first pass's unreviewed transfer. */}
-              {!core.prediction && (
+            <div className={core.screening ? 'text-sm' : 'grid sm:grid-cols-2 gap-3 text-sm'}>
+              {/* Review replaces the first pass's unreviewed transfer, even without a prediction. */}
+              {!core.screening && (
                 <div className="rounded-xl bg-[#10201c] border border-emerald-600/20 p-4">
                   <p className="text-emerald-300 font-bold text-xs uppercase mb-2">What this comparison suggests</p>
                   {bridge.whatMightTransfer}
@@ -138,8 +138,18 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                 {bridge.whereItBreaks}
               </div>
             </div>
-            <p className="text-xs text-stone-400">{core.screening?.status === 'accepted' ? 'Model-screened hypothesis; not independently verified evidence.' : 'Unscreened saved comparison; not independent evidence.'}</p>
-            {core.screening?.status === 'accepted' && (
+            <p className="text-xs text-stone-400">{core.screening?.status === 'accepted'
+              ? 'Possible match and prediction, reviewed by AI—not independently verified.'
+              : core.screening?.status === 'partial'
+                ? 'Possible causal parallel; no reliable transferred prediction yet.'
+                : 'Unscreened saved comparison; not independent evidence.'}</p>
+            {core.screening?.status === 'partial' && (
+              <div className="rounded-lg border border-amber-500/25 bg-[#211c17] p-3 text-sm">
+                <p className="font-semibold text-amber-200 mb-1">The connection may hold, but the prediction doesn't yet.</p>
+                <p className="text-stone-300">{core.screening.reason}</p>
+              </div>
+            )}
+            {(core.screening?.status === 'accepted' || core.screening?.status === 'partial') && (
               <details className="rounded-lg border border-stone-700 p-3 text-sm text-stone-300">
                 <summary className="cursor-pointer font-semibold">Why REMEMBER chose this comparison</summary>
                 <p className="mt-3">{core.screening.reason}</p>
@@ -150,7 +160,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           </>
         ) : (
           <div className="rounded-xl border border-amber-500/25 bg-[#211c17] p-5 space-y-2">
-            <h3 className="font-semibold text-amber-200">No cross-system prediction strong enough yet</h3>
+            <h3 className="font-semibold text-amber-200">No convincing causal parallel found this time</h3>
             <p className="text-sm text-stone-300">{core.screening?.reason || 'No complete causal comparison was found. That does not prove a match is impossible.'}</p>
           </div>
         )}

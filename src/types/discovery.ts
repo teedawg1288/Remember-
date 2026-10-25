@@ -40,7 +40,7 @@ export interface DiscoveryPrediction {
 }
 
 export interface DiscoveryScreening {
-  status: 'accepted' | 'rejected';
+  status: 'accepted' | 'partial' | 'rejected';
   reason: string;
   causalMatch: string;
   crucialDifference: string;
