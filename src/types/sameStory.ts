@@ -1,3 +1,5 @@
+import type { CoreDiscovery } from './discovery';
+
 export type StoryDomain =
   | 'everyday_life'
   | 'history'
@@ -415,6 +417,7 @@ export interface SameStoryResult {
   prediction?: CrossFieldPrediction;
   eras?: EraProjection[];
   isCustomGenerated?: boolean;
+  coreDiscovery?: CoreDiscovery; // V2 compact response; V1 saved discoveries remain readable.
 }
 
 export interface UserMemoryProfile {
