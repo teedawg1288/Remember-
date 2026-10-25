@@ -16,7 +16,7 @@ A shared label or dramatic story is not evidence of the same causal mechanism.
 
 The first Gemini call creates up to three cross-system causal candidates, not
 finished conclusions. A second, lower-temperature Gemini call must select one
-candidate with at least two matching causal steps, a decisive difference and a
+candidate with at least two matching causal steps, a meaningful limitation and a
 testable conditional prediction, or reject every candidate. Rejected proposals
 are not shown as cross-domain discoveries.
 
@@ -26,10 +26,21 @@ transfers. Reliable claims still require outside evidence. Never use shared
 words, an invented named principle, or metaphorical "stored energy" as proof.
 
 An accepted prediction must state: if-condition, expected observation, what
-specific knowledge was transferred, why it could fail, what would disprove
-it and a safe next check. Reject a candidate if no such prediction survives.
+specific knowledge was transferred, why it could fail, what observations would
+count against it under comparable conditions and a safe next check. Reject a
+candidate if no such prediction survives.
 The user sees a brief parallel and conditional prediction; the detailed
 comparison and caveats remain optional.
+
+**Screening calibration (Version 2.2):** A shared causal *sub-mechanism* does
+not require identical materials or entire systems. Ask whether a difference
+actually breaks a necessary causal link, merely limits the effect, or explains
+where the transfer stops. A shared label or a metaphor is still insufficient.
+Unobserved target conditions belong in the prediction's IF clause. A single
+uncontrolled outcome or one surviving unit rarely disproves a probabilistic
+shared-risk prediction; compare the same conditions and record competing causes.
+The user sees plain-language uncertainty; the app must never turn an AI review
+into a claim of independent verification. No third automatic AI call is added.
 
 The second pass adds one Gemini request per question with a viable candidate,
 and therefore more latency and potential API usage. No second pass is spent
