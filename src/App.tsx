@@ -3,6 +3,7 @@ import { Header, BrandNameOption, MainTabOption } from './components/Header';
 import { BarberInput } from './components/BarberInput';
 import { PersonalLanguagePanel, PersonalPhrase } from './components/PersonalLanguagePanel';
 import { StoryComparisonView } from './components/StoryComparisonView';
+import { CoreDiscoveryView } from './components/CoreDiscoveryView';
 import { DeepResearchLabDrawer } from './components/DeepResearchLabDrawer';
 import { MyDiscoveriesScreen } from './components/screens/MyDiscoveriesScreen';
 import { SameStoryResult } from './types/sameStory';
@@ -111,7 +112,7 @@ export const App: React.FC = () => {
             return needle.trim().length > 0 && normalize(userInput).includes(needle);
           }).slice(0, 10).map(({ phrase, meaning }) => ({ phrase, meaning }))
         : [];
-      const res = await fetch('/api/same-story/analyze', {
+      const res = await fetch('/api/discovery/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -233,7 +234,7 @@ export const App: React.FC = () => {
         onReset={handleReset}
         showResearchLab={showResearchLab}
         onToggleResearchLab={() => setShowResearchLab((prev) => !prev)}
-        hasActiveStory={!!activeAnalysis}
+        hasActiveStory={!!activeAnalysis && !activeAnalysis.coreDiscovery}
       />
 
       {/* Persistent Context Banner if exploring tabs while a story is loaded */}
@@ -296,6 +297,14 @@ export const App: React.FC = () => {
         {/* PILLAR 2: SHOW ME */}
         {activeMainTab === 'show' && (
           activeAnalysis ? (
+            activeAnalysis.coreDiscovery ? (
+              <CoreDiscoveryView
+                analysis={activeAnalysis}
+                isSaved={isCurrentStorySaved}
+                onToggleSave={() => handleToggleSaveStory(activeAnalysis)}
+                onNewQuestion={handleReset}
+              />
+            ) : (
             <StoryComparisonView
               key={`${activeAnalysis.id}:${activeAnalysis.userOriginalInput}`}
               analysis={activeAnalysis}
@@ -306,6 +315,7 @@ export const App: React.FC = () => {
               isSaved={isCurrentStorySaved}
               onToggleSave={() => handleToggleSaveStory(activeAnalysis)}
             />
+            )
           ) : (
             <div className="max-w-2xl mx-auto mt-16 rounded-3xl border border-stone-700 bg-[#141822] p-8 text-center space-y-4">
               <h2 className="font-serif text-3xl text-white">Your discovery starts with a question.</h2>
@@ -358,7 +368,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* Deep Research Lab Drawer (Hidden unless triggered) */}
-      {activeAnalysis && (
+      {activeAnalysis && !activeAnalysis.coreDiscovery && (
         <DeepResearchLabDrawer
           isOpen={showResearchLab}
           onClose={() => setShowResearchLab(false)}
