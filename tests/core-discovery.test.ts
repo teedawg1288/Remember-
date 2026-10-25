@@ -141,6 +141,23 @@ describe('REMEMBER core discovery contract', () => {
     })).toThrow('INVALID_AI_RESPONSE');
   });
 
+  test('keeps a sound causal parallel visible even when a prediction cannot transfer', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const result = applyDiscoveryReview(core, {
+      decision: 'compare_only',
+      selectedIndex: 0,
+      reason: 'Both systems can lose information under excess input, but the device-level buffer rule cannot predict a particular human response.',
+      causalMatch: 'New input consumes capacity in both systems; excess input may mean some of it is missed.',
+      crucialDifference: 'Human understanding depends on context and intention, not only a fixed buffer size.',
+      prediction: null,
+    });
+    expect(result.bridges).toHaveLength(1);
+    expect(result.bridges[0].comparisonSystem).toBe('A receiving buffer');
+    expect(result.prediction).toBeNull();
+    expect(result.screening?.status).toBe('partial');
+    expect(discoveryToSavedResult(result).coreDiscovery?.screening?.status).toBe('partial');
+  });
+
   test('no prediction is promoted when the review cannot supply a disproof', () => {
     const core = parseCoreDiscovery(sample, question);
     const result = applyDiscoveryReview(core, {
@@ -150,8 +167,9 @@ describe('REMEMBER core discovery contract', () => {
       crucialDifference: 'Human attention is context dependent.',
       prediction: { ifCondition: 'If attention runs out', expectedOutcome: 'Some input is missed' },
     });
-    expect(result.bridges).toHaveLength(0);
+    expect(result.bridges).toHaveLength(1);
     expect(result.prediction).toBeNull();
+    expect(result.screening?.status).toBe('partial');
   });
 
   test('long explanations are truncated at a word boundary, not in the middle of a word', () => {
@@ -180,6 +198,8 @@ describe('REMEMBER core discovery contract', () => {
     expect(prompt).toContain('A single exception');
     expect(prompt).toContain('SAME condition and comparison');
     expect(prompt).toContain('TRANSFER GATE');
+    expect(prompt).toContain('compare_only');
+    expect(prompt).toContain('TWO distinct gates');
     expect(prompt).toContain('donor-only feature');
     expect(prompt).toContain('SCOPE GATE');
     expect(prompt).toContain('must NOT begin with "If"');
@@ -209,7 +229,7 @@ describe('REMEMBER core discovery contract', () => {
     expect(result.prediction?.whatWouldDisproveIt).toContain('comparable conditions');
     const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf-8');
     expect(view).toContain('What would count against it');
-    expect(view).toContain('{!core.prediction && (');
+    expect(view).toContain('{!core.screening && (');
     expect(view).toContain('unreviewed transfer');
     expect(view).not.toContain('No convincing different-system match yet');
   });
