@@ -7,6 +7,9 @@ import { GoogleGenAI } from '@google/genai';
 import { CURATED_STORIES } from './src/data/curatedStories.ts';
 import { buildErasForDilemma } from './src/data/eraBuilder.ts';
 import { analyzeQuestionAndBuildRoundTable } from './src/data/questionRouting.ts';
+import { buildCoreDiscoveryPrompt } from './src/data/coreDiscoveryPrompt.ts';
+import { parseCoreDiscovery } from './src/data/discoveryContract.ts';
+import { discoveryToSavedResult } from './src/data/discoveryAdapter.ts';
 import type { SameStoryResult, CrossFieldPrediction, WhatIfScenario, EraProjection } from './src/types/sameStory.ts';
 
 // Attempt to read API key from environment or /app/.dev.env.json
@@ -130,6 +133,69 @@ app.post('/api/user-memory/:userId', (req: Request, res: Response) => {
     lastActive: new Date().toISOString(),
   };
   res.json({ success: true, memory: userMemoryStore[userId] });
+});
+
+// REMEMBER V2: one small, coherent discovery contract. V1 remains available
+// for already-saved results and curated demonstrations.
+app.post('/api/discovery/analyze', async (req: Request, res: Response) => {
+  const question = typeof req.body?.userInput === 'string' ? req.body.userInput.trim() : '';
+  if (!question || question.length > 4000) {
+    res.status(400).json({ success: false, error: 'Ask a question using up to 4,000 characters.' });
+    return;
+  }
+  if (!geminiApiKey) {
+    res.status(503).json(missingGeminiKey);
+    return;
+  }
+  const language = Array.isArray(req.body?.personalDictionary)
+    ? req.body.personalDictionary.slice(0, 10)
+      .filter((v: any) => typeof v?.phrase === 'string' && typeof v?.meaning === 'string')
+      .map((v: any) => ({
+        phrase: String(v.phrase).trim().slice(0, 80),
+        meaning: String(v.meaning).trim().slice(0, 200),
+      }))
+      .filter((v: { phrase: string; meaning: string }) => v.phrase && v.meaning)
+    : [];
+  const context = Array.isArray(req.body?.conversationContext)
+    ? req.body.conversationContext.slice(-6)
+      .filter((v: unknown) => typeof v === 'string')
+      .map((v: string) => v.trim().slice(0, 400)).filter(Boolean)
+    : [];
+  try {
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    const response = await ai.models.generateContent({
+      model: geminiModel,
+      contents: buildCoreDiscoveryPrompt(question, language, context),
+      config: { responseMimeType: 'application/json', temperature: 0.45 },
+    });
+    let raw: Record<string, unknown>;
+    try {
+      raw = JSON.parse((response.text || '').trim());
+    } catch {
+      throw new Error('INVALID_AI_RESPONSE');
+    }
+    const core = parseCoreDiscovery(raw, question);
+    const result = discoveryToSavedResult(core);
+    const corpus = (' ' + question.toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ');
+    const learnings = Array.isArray(raw.languageLearnings) ? raw.languageLearnings.slice(0, 2)
+      .filter((v: any) => {
+        if (!v || typeof v.phrase !== 'string' || typeof v.meaning !== 'string' ||
+            !['explicit', 'repeated'].includes(v.evidence) ||
+            typeof v.confidence !== 'number' || v.confidence < 0.85) return false;
+        const phrase = v.phrase.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+        return phrase.length >= 2 && phrase.length <= 80 && corpus.includes(' ' + phrase + ' ');
+      }).map((v: any) => ({
+        phrase: v.phrase.trim().slice(0, 80),
+        meaning: v.meaning.trim().slice(0, 200),
+        evidence: v.evidence,
+        confidence: v.confidence,
+      })) : [];
+    res.json({ success: true, result, languageLearnings: learnings });
+  } catch (error) {
+    const failure = geminiFailure(error);
+    res.status(failure.status).json({ success: false, code: failure.code, error: failure.error });
+  }
 });
 
 // Main AI Analysis Endpoint for "Same Story, Different Characters"
