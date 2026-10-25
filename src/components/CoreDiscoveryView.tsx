@@ -101,7 +101,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
             </div>
             <div className="rounded-xl border border-cyan-500/20 bg-[#0b111b] p-4">
               <p className="text-xs text-cyan-300 uppercase font-semibold mb-1">What connects these systems</p>
-              <p className="font-serif text-lg">{bridge.possibleSharedMechanism}</p>
+              <p className="font-serif text-lg">{core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism}</p>
             </div>
             <div>
               <p className="text-xs text-stone-300 mb-3">Tap each step to see what matches—and what doesn't.</p>
