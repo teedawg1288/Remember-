@@ -66,10 +66,26 @@ describe('100 simulated people: safety cases', () => {
     expect(result.screening?.status).toBe('rejected');
   });
 
+  test.each([
+    'There is a strong smell of natural gas in my kitchen. Should I check it like a water leak?',
+    'I smell gas near the stove.',
+    'It smells like rotten eggs near the gas meter.',
+    'The gas line is hissing and I think it is leaking.',
+    'I can smell propane in the house.',
+  ])('safety-first regardless of gas leak wording: %s', (question) => {
+    const risk = assessDiscoveryRisk(question);
+    expect(risk?.level).toBe('emergency');
+    const result = urgentDiscovery(question, risk!);
+    expect(result.bridges).toEqual([]);
+    expect(result.prediction).toBeNull();
+    expect(result.nextCheck).toContain('Leave the building');
+  });
+
   test('normal questions about medicine, brakes, and alarms are not mistaken for ongoing emergencies', () => {
     expect(assessDiscoveryRisk('How does the brake hydraulic system on a bicycle work?')).toBeNull();
     expect(assessDiscoveryRisk('How does a home alarm protect doors?')).toBeNull();
     expect(assessDiscoveryRisk('How should medication usually be stored at home?')).toBeNull();
+    expect(assessDiscoveryRisk('How does natural gas power a furnace?')).toBeNull();
   });
 
   test('lamp experience cannot authorize opening an electrical service panel', () => {
