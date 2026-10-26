@@ -358,6 +358,28 @@ export interface CrossExaminationResult {
     whatWouldChallenge: string;
   }>;
   nextCheck: string;
+  /** What the user actually reported versus general knowledge (not retrieved evidence). */
+  causalFacts?: Array<{
+    statement: string;
+    basis: 'reported' | 'general';
+    whyItMatters: string;
+  }>;
+  causalExplanation?: string;
+  /** One donor-derived conditional hypothesis, or null if transfer cannot be justified. */
+  prediction?: {
+    donorLesson: string;
+    missingTargetCondition: string;
+    ifCondition: string;
+    expectedOutcome: string;
+    comparedWith: string;
+    whatWouldChallengeIt: string;
+  } | null;
+  noPredictionReason?: string;
+  nextPredictionQuestion?: {
+    question: string;
+    whyThisQuestion: string;
+    howAnswerChangesPrediction: string;
+  };
   crossDomainCandidates: Array<{
     system: string;
     sharedMechanism: string;
