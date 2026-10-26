@@ -376,7 +376,10 @@ export interface CrossExaminationResult {
   } | null;
   noPredictionReason?: string;
   nextPredictionQuestion?: {
+    /** Primary proposed prediction phrased as a question, not a proven outcome. */
     question: string;
+    /** Concrete donor fact or reported fact that prompted this prediction question. */
+    factBehindQuestion: string;
     whyThisQuestion: string;
     howAnswerChangesPrediction: string;
   };
