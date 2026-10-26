@@ -96,14 +96,17 @@ Present, in plain language:
    independently source-checked; any inferred explanation stays tentative.
 2. **Why it could happen:** Map the specific causal stages and name where
    the original situation has not been observed or confirmed.
-3. **What the other system helps predict:** Borrow one real donor lesson,
-   state the missing target condition, observable IF/THEN result, comparison
-   and same-condition counterevidence. If the donor's unique capability has
-   no target counterpart, return no prediction and explain the gap.
-4. **The next question—and why that one:** Ask one answerable question
-   that would distinguish rival causes or verify the missing counterpart.
-   Explain why its answer matters and how different answers could alter
-   the prediction. Do not ask a generic filler question.
+3. **Prediction as a question:** Ask whether a real donor lesson may produce
+   a specific, conditional, previously unknown outcome in the target. It must
+   be genuinely open, not a statement hiding behind a question mark. Explain
+   the concrete donor or reported fact that led to THIS question, distinguishing
+   established general knowledge from facts of the person's situation.
+4. **What would answer it:** Name the decisive missing condition and how
+   differing observations could change the answer. Internally retain the
+   IF/THEN, comparison and same-condition counterevidence so the question
+   remains testable; keep those details behind an optional reveal. If no
+   valid transfer exists, ask only what information is needed before a
+   prediction is possible. Do not invent a predictive conclusion.
 
 The historical era exploration remains optional. A model-generated
 general mechanism is not a cited scientific or historical fact. Neither
