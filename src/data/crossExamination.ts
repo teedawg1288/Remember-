@@ -99,7 +99,11 @@ export function parseCrossExaminationResult(raw: unknown): CrossExaminationResul
       !meaningful(data.nextCheck) || !meaningful(data.evidenceBoundary)) {
     throw new Error('INVALID_AI_RESPONSE');
   }
-  const facts = verifiedItems(data.causalFacts, ['statement', 'whyItMatters'], 3).map((item, index) => ({ ...item, basis: clean((data.causalFacts as Array<Record<string, unknown>>)[index]?.basis) }));
+  const facts = verifiedItems(data.causalFacts, ['statement', 'whyItMatters'], 3).map((item, index) => ({
+    statement: item.statement,
+    whyItMatters: item.whyItMatters,
+    basis: clean((data.causalFacts as Array<Record<string, unknown>>)[index]?.basis),
+  }));
   if (facts.some(fact => !['reported', 'general'].includes(fact.basis))) {
     throw new Error('INVALID_AI_RESPONSE');
   }
