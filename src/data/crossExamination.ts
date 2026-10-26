@@ -39,8 +39,9 @@ export function buildCrossExaminationPrompt(input: CrossExaminationInput): strin
     'CAUSE RULE: causalExplanation shows an actual sequence (input -> constraint -> change -> outcome) using only supported principles, with a plain-language qualification for what has NOT been established in this particular case. A single matching word, broad "pressure" slogan, or identical outcome does not establish a causal parallel.',
     'COMPETING EXPLANATIONS: Provide 2-3 distinct possibilities, naming the observable finding that supports and challenges each, including at least one alternative to the proposed mechanism. No claims about a real person\'s hidden intentions.',
     'CROSS-SYSTEM RULE: If the screened comparison contains two defensible mapped cause-effect steps, use that specific donor rather than switching to a more convenient unrelated field. Its differences may make a transferred prediction invalid even when part of the analogy is sound. CrossDomainCandidates may list up to two possibilities, or []. Do not fabricate historical events or sources.',
+    'ERA GATE: Never place a modern invention in antiquity. Era candidates are optional hypothetical reconstructions, not recorded history. Do not invent real historical quotes or citations.',
     'PREDICTION RULE: A prediction must borrow a SPECIFIC already-understood donor lesson to propose a NEW, conditional outcome in the original target; it must NOT merely reword the observation or claim that everything is similar. State the missing target condition, exactly what change is predicted, the explicit comparison condition, and what SAME-CONDITION contrary observations would weaken it. Keep magnitude, thresholds, time, safety and uncontrolled causes in mind. Do not copy healing, learning, intent or regulation into a target that lacks it. Output prediction:null and a plain noPredictionReason if no real transfer survives. A previous accepted prediction is still only a hypothesis; an earlier compare_only status does not license invented proof.',
-    'NEXT QUESTION RULE: Ask ONE concrete, answerable nextPredictionQuestion targeted to the biggest missing condition or difference that could CHANGE the proposed prediction. Explicitly explain WHY that question was chosen instead of a generic follow-up, and HOW differing answers would strengthen, weaken, redirect or block the prediction. When prediction is null, this question must say what would need to be established before a prediction is justified.',
+    'PREDICTION QUESTION RULE: The visible prediction IS a QUESTION, not an asserted outcome. If prediction exists, nextPredictionQuestion.question asks specifically whether the donor-known mechanism may cause a NEW target outcome under a named condition. Never disguise an unsupported premise as a rhetorical question. factBehindQuestion must state the actual reported fact or well-established GENERAL donor mechanism that made the question worth asking; this source principle is not proof about the target. whyThisQuestion explains why that fact and the missing target counterpart led to THIS particular question. howAnswerChangesPrediction identifies the observation or discriminating test that would change the answer. The IF/THEN prediction fields are private test structure, not asserted facts. If prediction is null, the visible question instead asks what missing fact must be resolved before predicting.',
     'SAFETY: Suggest only practical, safe, voluntary observation or clarification. No unsafe engineering tests, coercion, diagnosis, invented percentages, publications or externally verified claims. Not a real-time fact-check.',
     'PLAIN LANGUAGE: Short complete sentences. Explain for a curious reader, not a specialist. Avoid certainty. Return strict JSON with all keys below:',
     JSON.stringify({
@@ -64,8 +65,9 @@ export function buildCrossExaminationPrompt(input: CrossExaminationInput): strin
       },
       noPredictionReason: '',
       nextPredictionQuestion: {
-        question: 'One specific question whose answer changes the prediction',
-        whyThisQuestion: 'Which rival explanation or missing causal link this discriminates',
+        question: 'Could a specific known donor mechanism predict a NEW conditional effect in the target?',
+        factBehindQuestion: 'A concrete reported fact or well-understood donor mechanism that prompted the question',
+        whyThisQuestion: 'Why this particular donor fact suggests the question, without proving it in the target',
         howAnswerChangesPrediction: 'How contrasting answers would strengthen, weaken or redirect the prediction',
       },
       nextCheck: 'One practical, safe and voluntary way to check without treating one result as proof',
@@ -114,7 +116,7 @@ export function parseCrossExaminationResult(raw: unknown): CrossExaminationResul
   const eraCandidates = verifiedItems(data.eraCandidates,
     ['period', 'comparableFunction', 'toolsAndLimits', 'wordsAndKnowledge', 'whatChanged'], 4);
   const question = obj(data.nextPredictionQuestion);
-  const questionFields = ['question', 'whyThisQuestion', 'howAnswerChangesPrediction'] as const;
+  const questionFields = ['question', 'factBehindQuestion', 'whyThisQuestion', 'howAnswerChangesPrediction'] as const;
   if (!question || !questionFields.every(key => meaningful(question[key]))) {
     throw new Error('INVALID_AI_RESPONSE');
   }
@@ -152,6 +154,7 @@ export function parseCrossExaminationResult(raw: unknown): CrossExaminationResul
     noPredictionReason: proposed ? '' : clean(data.noPredictionReason),
     nextPredictionQuestion: {
       question: clean(question.question),
+      factBehindQuestion: clean(question.factBehindQuestion),
       whyThisQuestion: clean(question.whyThisQuestion),
       howAnswerChangesPrediction: clean(question.howAnswerChangesPrediction),
     },
