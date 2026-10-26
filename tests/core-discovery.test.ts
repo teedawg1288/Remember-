@@ -302,3 +302,24 @@ describe('experience-grounded output integrity', () => {
     expect(invented.screening?.status).toBe('rejected');
   });
 });
+
+describe('simple system first', () => {
+  test('works upward from the unfamiliar task before proposing familiar systems', () => {
+    const prompt = buildCoreDiscoveryPrompt('How do I restore a rusty car door?', [], []);
+    expect(prompt).toContain('UPSTREAM SIMPLIFICATION FIRST');
+    expect(prompt.indexOf('UPSTREAM SIMPLIFICATION FIRST')).toBeLessThan(prompt.indexOf('CANDIDATE RULE'));
+    expect(prompt).toContain('BEFORE searching for comparisons');
+    expect(prompt).toContain('Above means a broader explanation');
+    expect(prompt).toContain('Only AFTER finding a causal match');
+    expect(prompt).toContain('A simple donor that matches only one word loses');
+    expect(prompt).not.toContain('You already know how to repair stairs');
+  });
+
+  test('review selects the simplest *valid* explanatory process, not just an easy metaphor', () => {
+    const prompt = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    expect(prompt).toContain('SIMPLICITY ORDER TEST');
+    expect(prompt).toContain('fewest extra assumptions');
+    expect(prompt).toContain('do not trade away genuine causal correspondence');
+    expect(prompt).toContain('no analogy is better than a misleading simple one');
+  });
+});

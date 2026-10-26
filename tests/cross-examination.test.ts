@@ -171,3 +171,9 @@ describe('cross-examination output cannot invent a user story', () => {
     }, spoken)).toThrow('INVALID_AI_RESPONSE');
   });
 });
+
+test('cross-examination prefers simpler everyday explanations only where causal links survive', () => {
+  const prompt = buildCrossExaminationPrompt({ question: 'Why is my laptop slow?', selectedBridge: bridge });
+  expect(prompt).toContain('SIMPLICITY FIRST');
+  expect(prompt).toContain('Simplicity is a tie-breaker only after causal validity');
+});
