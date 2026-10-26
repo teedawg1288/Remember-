@@ -55,7 +55,7 @@ export function buildCrossExaminationPrompt(input: CrossExaminationInput): strin
     JSON.stringify({
       observed: 'Only what was actually reported, or that no event is reported',
       causalFacts: [
-        { statement: 'Precisely reported observation from the user's words', basis: 'reported', sourceQuote: 'Verbatim excerpt that occurs in the question', whyItMatters: 'What causal step this grounds' },
+        { statement: "Precisely reported observation from the user\u0027s words", basis: 'reported', sourceQuote: 'Verbatim excerpt that occurs in the question', whyItMatters: 'What causal step this grounds' },
         { statement: 'Accurate general principle, not source-checked in this request', basis: 'general', sourceQuote: '', whyItMatters: 'What causal step this grounds' },
       ],
       causalExplanation: 'Plain cause-and-effect chain, including what remains unconfirmed in this case',
