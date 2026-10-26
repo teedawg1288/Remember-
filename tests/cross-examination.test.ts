@@ -34,9 +34,10 @@ const output = {
   },
   noPredictionReason: '',
   nextPredictionQuestion: {
-    question: 'Can the listener repeat the main point before saying they disagree?',
-    whyThisQuestion: 'It separates difficulty processing the message from disagreement with a message they understood.',
-    howAnswerChangesPrediction: 'Accurate repetition weakens the overload explanation; inability to repeat leaves it plausible.',
+    question: 'Could giving a shorter explanation improve accurate recall when someone is overloaded with information?',
+    factBehindQuestion: 'A saturated receiving buffer may lose some incoming data when input exceeds available capacity.',
+    whyThisQuestion: 'Capacity limits in the donor system suggest testing whether limited attention plays a comparable role.',
+    howAnswerChangesPrediction: 'Ask what the listener recalled under comparable short and long explanations; disagreement despite accurate recall weakens overload.',
   },
   nextCheck: 'With consent, invite the listener to paraphrase the main point after a brief explanation.',
   crossDomainCandidates: [{ system: 'Network buffer', sharedMechanism: 'Input consumes capacity.', criticalDifference: 'People interpret meaning.', howToChallenge: 'Check recall separately from agreement.' }],
@@ -60,9 +61,9 @@ describe('cross-examination prediction and question contract', () => {
     expect(prompt).toContain('PREVIOUSLY SCREENED CROSS-SYSTEM COMPARISON');
     expect(prompt).toContain('EARLIER PREDICTION');
     expect(prompt).toContain('FACT RULE');
-    expect(prompt).toContain('NEXT QUESTION RULE');
+    expect(prompt).toContain('PREDICTION QUESTION RULE');
     expect(prompt).toContain('prediction:null');
-    expect(prompt).toContain('WHY that question');
+    expect(prompt).toContain('factBehindQuestion');
   });
 
   test('keeps reported facts and general mechanisms visibly distinct', () => {
@@ -70,7 +71,9 @@ describe('cross-examination prediction and question contract', () => {
     expect(result.causalFacts?.[0].basis).toBe('general');
     expect(result.causalFacts?.[0].whyItMatters).toContain('Processing');
     expect(result.causalExplanation).toContain('unknown');
-    expect(result.nextPredictionQuestion?.whyThisQuestion).toContain('separates');
+    expect(result.nextPredictionQuestion?.question).toMatch(/^Could /);
+    expect(result.nextPredictionQuestion?.factBehindQuestion).toContain('buffer');
+    expect(result.nextPredictionQuestion?.whyThisQuestion).toContain('Capacity');
     expect(result.prediction?.expectedOutcome).toContain('recall');
   });
 
@@ -81,6 +84,7 @@ describe('cross-examination prediction and question contract', () => {
       noPredictionReason: 'The comparison does not provide a justified donor-to-target inference.',
       nextPredictionQuestion: {
         question: 'Does the original system have the same limiting stage?',
+        factBehindQuestion: 'The original question has not established whether this stage exists.',
         whyThisQuestion: 'Without that causal counterpart the donor lesson cannot be transferred.',
         howAnswerChangesPrediction: 'A verified counterpart opens a test; its absence blocks this prediction.',
       },
@@ -116,6 +120,7 @@ describe('cross-examination prediction and question contract', () => {
     expect(view).toContain('reviewedPrediction: core.prediction ?');
     expect(panel).toContain('What we know—and why it could happen');
     expect(panel).toContain('Why this question in particular');
+    expect(panel).toContain('The fact behind this question');
     expect(panel).toContain('How the answer changes things');
     expect(panel).toContain('General principle · not source-checked');
     expect(server.match(/app\.post\('\/api\/same-story\/cross-examine'/g)).toHaveLength(1);
