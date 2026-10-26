@@ -1,6 +1,6 @@
 import type { CoreDiscovery, DiscoveryBridge, DiscoveryStage, MeaningCheck, DiscoveryPrediction } from '../types/discovery';
 import { hasUnexplainedAcronym, quoteAppearsInQuestion, unsupportedPersonalAttribution, unsupportedCompletedActionAttribution } from './grounding';
-import { clearSourceTargetReversal } from './questionAnchors';
+import { clearSourceTargetReversal, ignoresRequestedDonor } from './questionAnchors';
 
 // Long model answers must never be sliced through a word without indicating truncation.
 const words = (value: unknown, max = 500): string => {
@@ -84,6 +84,8 @@ export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreD
   }
   const bridges = Array.isArray(item.bridges)
     ? item.bridges.map(parseBridge).filter((b): b is DiscoveryBridge => !!b).slice(0, 3)
+      .map(b => unsafeSuggestedCheck(exactQuestion, b.howToChallenge)
+        ? { ...b, howToChallenge: safeSuggestedAlternative(exactQuestion) } : b)
     : [];
   const alternativeExplanations = Array.isArray(item.alternativeExplanations)
     ? item.alternativeExplanations.map(v => words(v, 210)).filter(Boolean).slice(0, 3)
@@ -97,9 +99,33 @@ export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreD
     alternativeExplanations,
     bridges,
     missingInformation,
-    nextCheck,
+    nextCheck: unsafeSuggestedCheck(exactQuestion, nextCheck) ? safeSuggestedAlternative(exactQuestion) : nextCheck,
     meaningCheck: parseMeaning(item.meaningCheck),
   };
+}
+
+/**
+ * A model-produced experiment is advice a user may act on. Never encourage
+ * destructive tests on original files or running visibly faulty machinery.
+ * This guard checks proposed ACTIONS, not generic discussion of those topics.
+ */
+function unsafeSuggestedCheck(question: string, suggestedCheck: string): boolean {
+  const check = suggestedCheck.toLowerCase();
+  const destructiveFiles =
+    /\b(?:delete|erase|remove|overwrite|wipe|format)\b.{0,100}\b(?:original|source|only|existing|personal|real|main)\b.{0,35}\b(?:file|folder|data|photo|image|document)s?\b/.test(check) ||
+    /\b(?:original|source|only|existing|personal|real|main)\b.{0,35}\b(?:file|folder|data|photo|image|document)s?\b.{0,100}\b(?:delete|erase|remove|overwrite|wipe|format)\b/.test(check);
+  const unsafeSpinTest =
+    /\b(?:washing machine|washer)\b/.test(question.toLowerCase()) &&
+    /\b(?:shak\w*|wobbl\w*|unstable|violent\w* vibrat\w*)\b/.test(question.toLowerCase()) &&
+    /\b(?:run|start|spin|cycle|turn on|power on|operate)\b/.test(check);
+  return destructiveFiles || unsafeSpinTest;
+}
+
+function safeSuggestedAlternative(question: string): string {
+  if (/\b(?:washing machine|washer)\b/i.test(question)) {
+    return 'Do not start another spin test until it is safe. Check the appliance guidance or ask a qualified repairer to assess the shaking.';
+  }
+  return 'Use disposable copies or a reversible simulation, and compare outcomes without deleting or changing original files or data.';
 }
 
 /** Keep a lived-experience chain ONLY when the user's exact words support it. */
@@ -149,6 +175,9 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
   const selectedBridge = core.bridges[selectedIndex];
   if (clearSourceTargetReversal(core.question, selectedBridge)) {
     return rejected('The proposed comparison reversed the user\'s known experience and the new subject they asked about.');
+  }
+  if (ignoresRequestedDonor(core.question, selectedBridge.comparisonSystem)) {
+    return rejected('The proposed comparison ignored the specific experience the person expressly asked to use.');
   }
   if (selectedBridge.stages.some(stage => unsupportedCompletedActionAttribution(core.question, stage.inComparison))) {
     return rejected('The comparison described a donor action as something the person did without evidence they reported doing it.');
@@ -246,7 +275,9 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
   } : null;
   if (!prediction || Object.values(prediction).some(value => value.length < 12) ||
       unsupportedPersonalAttribution(core.question, Object.values(prediction).join(' ')) ||
-      unsupportedCompletedActionAttribution(core.question, Object.values(prediction).join(' '))) {
+      unsupportedCompletedActionAttribution(core.question, Object.values(prediction).join(' ')) ||
+      unsafeSuggestedCheck(core.question, prediction.safeNextCheck) ||
+      /\b(?:guaranteed|certain to|inevitable|always|definitely|highly probable|100%)\b/i.test(prediction.expectedOutcome)) {
     return compareOnly('The causal parallel remains possible, but no clear, testable prediction survived.');
   }
   if (conflicts.length) {

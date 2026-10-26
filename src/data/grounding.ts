@@ -11,15 +11,26 @@ export function quoteAppearsInQuestion(question: string, excerpt: string): boole
 }
 
 export function confirmedExperienceExcerpt(question: string, donor: string): string | null {
-  const excluded = new Set(['system', 'machine', 'management', 'process', 'cleaner', 'airflow', 'repair', 'restoration', 'experience']);
-  const base = (word: string) => word.replace(/(?:ations|ation|ments|ment|ities|ity|ing|ed|es|s)$/i, '');
+  // Do not claim an experience is confirmed just because the user and the
+  // example share a generic action verb (washed a car != washed windows).
+  const excluded = new Set([
+    'system', 'machine', 'management', 'process', 'cleaner', 'airflow', 'repair',
+    'restoration', 'experience', 'wash', 'clean', 'fix', 'check', 'test', 'plan',
+    'organize', 'work', 'build', 'maintain', 'learn', 'do', 'make', 'run',
+    'activity', 'task', 'method', 'approach', 'methodology',
+  ]);
+  const base = (word: string): string => {
+    if (/ies$/i.test(word) && word.length > 4) return word.slice(0, -3) + 'y';
+    if (/s$/i.test(word) && !/ss$/i.test(word)) return word.slice(0, -1);
+    return word.replace(/(?:ations|ation|ments|ment|ities|ity|ing|ed)$/i, '');
+  };
   const terms = normalized(donor).split(' ').map(base).filter(word => word.length >= 4 && !excluded.has(word));
   if (!terms.length) return null;
   const sentences = question.split(/(?<=[.!?])\s+/);
   for (const sentence of sentences) {
     const lower = normalized(sentence);
-    if (!terms.some(term => lower.split(' ').some(word => base(word).startsWith(term)))) continue;
-    if (!/\b(?:i|we)\s+(?:(?:have|had)\s+|know\s+how\s+to\s+|can\s+)?(?:know|understand|fix(?:ed)?|repair(?:ed)?|restor(?:e|ed)|refinish(?:ed)?|detail(?:ed)?|plan(?:ned)?|organize(?:d)?|learn(?:ed|t)?|manage(?:d)?|used?|build|built|worked?|did|do|make|made|run|ran|sweep|swept|grease(?:d)?|paint(?:ed)?)\b/i.test(lower)) continue;
+    if (!terms.some(term => lower.split(' ').some(word => base(word) === term))) continue;
+    if (!/\b(?:i|we)\s+(?:(?:have|had)\s+|know\s+how\s+to\s+|can\s+)?(?:know|understand|fix(?:ed)?|repair(?:ed)?|restor(?:e|ed)|refinish(?:ed)?|detail(?:ed)?|plan(?:ned)?|organize(?:d)?|learn(?:ed|t)?|manage(?:d)?|used?|build|built|worked?|did|do|make|made|run|ran|sweep|swept|grease(?:d)?|paint(?:ed)?|check(?:ed)?|wash(?:ed)?|test(?:ed)?|maintain(?:ed)?|cook(?:ed)?|drive|drove)\b/i.test(lower)) continue;
     if (/\b(?:never|not|no|don t|didn t|haven t|have not|do not|cannot|can t)\b/i.test(lower)) continue;
     return sentence.trim().slice(0, 350);
   }
