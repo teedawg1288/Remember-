@@ -4,6 +4,12 @@ import type { SameStoryResult, CrossExaminationResult } from '../types/sameStory
 import { CrossExaminationPanel } from './CrossExaminationPanel';
 import { confirmedExperienceExcerpt } from '../data/grounding';
 
+const asDependentClause = (value: string) => {
+  const clause = value.trim().replace(/[.!?]+$/, '');
+  return /^(The|A|An|This|That|These|Those)\s/.test(clause)
+    ? clause[0].toLowerCase() + clause.slice(1) : clause;
+};
+
 interface Props {
   analysis: SameStoryResult;
   isSaved: boolean;
@@ -204,7 +210,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
         <section className="rounded-2xl border border-emerald-500/35 bg-[#101f1d] p-5 sm:p-7 space-y-3">
           <h2 className="font-serif text-xl text-emerald-200">A question worth investigating</h2>
           <p className="text-sm text-stone-300">A proposed transfer from the other system. This is not an established result.</p>
-          <p className="font-serif text-lg">If {core.prediction.ifCondition}, might it follow that {core.prediction.expectedOutcome.replace(/[.!?]+$/, '')}?</p>
+          <p className="font-serif text-lg">If {asDependentClause(core.prediction.ifCondition)}, might it follow that {asDependentClause(core.prediction.expectedOutcome)}?</p>
           <p className="text-sm text-stone-300"><strong>Why this question:</strong> {core.prediction.borrowedFromOtherSystem}</p>
           <details className="rounded-lg border border-stone-700 p-3 text-sm">
             <summary className="cursor-pointer font-semibold">Why this prediction—and what would count against it</summary>

@@ -146,6 +146,44 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     return rejected('The comparison did not survive the causal review.');
   }
   const selectedBridge = core.bridges[selectedIndex];
+  // A model saying two stages are "the same" is not enough: check the
+  // intended effect of each action in BOTH systems. Fail closed if the reviewer
+  // did not inspect every stage or cannot account for opposing purposes.
+  const rawStageAudit = Array.isArray(item.stagePurposeAudit) ? item.stagePurposeAudit : [];
+  if (rawStageAudit.length !== selectedBridge.stages.length) {
+    return rejected('A complete check of what each step is meant to accomplish was missing.');
+  }
+  const checkedIndices = new Set<number>();
+  const alignedIndices = new Set<number>();
+  const conflicts: string[] = [];
+  for (const value of rawStageAudit) {
+    const audit = record(value);
+    const index = audit?.stageIndex;
+    const verdict = audit?.verdict;
+    if (!Number.isInteger(index) || Number(index) < 0 ||
+        Number(index) >= selectedBridge.stages.length || checkedIndices.has(Number(index)) ||
+        !['aligned', 'opposite', 'unverified'].includes(String(verdict)) ||
+        words(audit?.donorGoal, 180).length < 8 ||
+        words(audit?.targetGoal, 180).length < 8 ||
+        words(audit?.reason, 180).length < 8) {
+      return rejected('The step-by-step purpose check was incomplete or inconsistent.');
+    }
+    checkedIndices.add(Number(index));
+    if (verdict === 'aligned') alignedIndices.add(Number(index));
+    else conflicts.push(selectedBridge.stages[Number(index)].label + ': ' + words(audit?.reason, 180));
+  }
+  if (alignedIndices.size < 2) {
+    return rejected('Fewer than two steps had matching intended effects. The apparent similarity is not a safe learning path.');
+  }
+  const checkedBridge = conflicts.length
+    ? { ...selectedBridge, stages: selectedBridge.stages.filter((_, index) => alignedIndices.has(index)) }
+    : selectedBridge;
+  const checkedCausalMatch = conflicts.length
+    ? 'Only these steps may carry over: ' + checkedBridge.stages.map(stage => stage.sharedFunction).join('; ') + '.'
+    : causalMatch;
+  const checkedDifference = conflicts.length
+    ? 'Nonmatching steps were excluded: ' + conflicts.join('; ') + '. ' + crucialDifference
+    : crucialDifference;
   // The reviewer must not promote an invented action or intention as a user fact.
   if (unsupportedPersonalAttribution(core.question, [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' '))) {
     return rejected('The comparison assigned the person an action or intention they did not report.');
@@ -157,11 +195,16 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
       ? rawExperienceTranslation : undefined;
   const compareOnly = (why: string): CoreDiscovery => ({
     ...core,
-    bridges: [core.bridges[selectedIndex]],
+    bridges: [checkedBridge],
     prediction: null,
-    screening: { status: 'partial', reason: why, causalMatch, crucialDifference, experienceTranslation },
+    screening: {
+      status: 'partial', reason: why, causalMatch: checkedCausalMatch,
+      crucialDifference: checkedDifference,
+      experienceTranslation: conflicts.length ? undefined : experienceTranslation,
+    },
   });
   // A useful parallel is not automatically a transferable prediction.
+  if (conflicts.length) return compareOnly('A matching sub-process remains, but some steps have opposing or unverified purposes. ' + checkedDifference);
   if (item.decision === 'compare_only') return compareOnly(reason);
   const proposed = record(item.prediction);
   const prediction: DiscoveryPrediction | null = proposed ? {

@@ -30,6 +30,13 @@ const sample = {
   nextCheck: 'Ask them to explain the point in their own words.',
   meaningCheck: null,
 };
+const alignedAudit = bridge.stages.map((stage, stageIndex) => ({
+  stageIndex,
+  donorGoal: 'The donor carries out ' + stage.inComparison.toLowerCase(),
+  targetGoal: 'The target carries out ' + stage.inOriginal.toLowerCase(),
+  verdict: 'aligned',
+  reason: 'Both steps have the same causal direction within the bounded comparison.',
+}));
 
 describe('REMEMBER core discovery contract', () => {
   test('preserves exact submitted wording, validates functional stages and never invents history', () => {
@@ -121,6 +128,7 @@ describe('REMEMBER core discovery contract', () => {
     const screened = applyDiscoveryReview(core, {
       decision: 'accept',
       selectedIndex: 0,
+      stagePurposeAudit: alignedAudit,
       reason: 'Both systems have a limited receiving capacity and discard or misunderstand some input when overwhelmed.',
       causalMatch: 'Extra input takes capacity; when input exceeds processing capacity, some messages are lost.',
       crucialDifference: 'Human meanings and feelings are not fixed packet protocols.',
@@ -159,6 +167,7 @@ describe('REMEMBER core discovery contract', () => {
     const result = applyDiscoveryReview(core, {
       decision: 'compare_only',
       selectedIndex: 0,
+      stagePurposeAudit: alignedAudit,
       reason: 'Both systems can lose information under excess input, but the device-level buffer rule cannot predict a particular human response.',
       causalMatch: 'New input consumes capacity in both systems; excess input may mean some of it is missed.',
       crucialDifference: 'Human understanding depends on context and intention, not only a fixed buffer size.',
@@ -175,6 +184,7 @@ describe('REMEMBER core discovery contract', () => {
     const core = parseCoreDiscovery(sample, question);
     const result = applyDiscoveryReview(core, {
       decision: 'accept', selectedIndex: 0,
+      stagePurposeAudit: alignedAudit,
       reason: 'Both systems have bounded input capacity.',
       causalMatch: 'Input consumes a finite buffer and overload loses content.',
       crucialDifference: 'Human attention is context dependent.',
@@ -225,6 +235,7 @@ describe('REMEMBER core discovery contract', () => {
     const core = parseCoreDiscovery(sample, question);
     const result = applyDiscoveryReview(core, {
       decision: 'accept', selectedIndex: 0,
+      stagePurposeAudit: alignedAudit,
       reason: 'Both systems have a receiving limit; shorter inputs may be transmitted or understood more reliably.',
       causalMatch: 'Incoming messages occupy capacity in both; beyond their available capacity, some content may be missed.',
       crucialDifference: 'Human attention depends on purpose and context rather than a fixed packet buffer.',
@@ -284,7 +295,8 @@ describe('experience-grounded output integrity', () => {
   test('reviewer translation survives only in plain language and no invented person facts', () => {
     const core = parseCoreDiscovery(sample, question);
     const review = {
-      decision: 'compare_only', selectedIndex: 0, prediction: null,
+      decision: 'compare_only', selectedIndex: 0,
+      stagePurposeAudit: alignedAudit, prediction: null,
       reason: 'Two causal stages match but no transfer survives the differences.',
       causalMatch: 'In both systems extra input increases load and some parts may be lost.',
       crucialDifference: 'A person can change how they interpret a message.',
@@ -436,5 +448,71 @@ describe('observation, interpretation, reaction, consequence', () => {
     expect(review).toContain('INTERPRETATION BOUNDARY');
     const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf8');
     expect(view).toContain('Your interpretation:');
+  });
+});
+
+describe('stage purpose and evidence safety regressions', () => {
+  test('keeps only truly aligned sub-steps when a donor step has the opposite goal', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const audit = alignedAudit.map(item => item.stageIndex === 0 ? {
+      ...item, verdict: 'opposite',
+      donorGoal: 'Stop a surface from holding onto something',
+      targetGoal: 'Make a surface hold onto something',
+      reason: 'One preparation is meant to prevent attachment; the other is meant to create attachment.',
+    } : item);
+    const result = applyDiscoveryReview(core, {
+      decision: 'accept', selectedIndex: 0, stagePurposeAudit: audit,
+      reason: 'Some process steps align but the surface preparation goals are opposite.',
+      causalMatch: 'Preparing, applying and checking an object can share useful order.',
+      crucialDifference: 'One preparation prevents sticking and another promotes sticking.',
+      experienceTranslation: 'Preparing the surface is the same function in both jobs.',
+      prediction: {
+        ifCondition: 'The target surface has been prepared for the intended attachment',
+        expectedOutcome: 'The covering stays in place more reliably',
+        borrowedFromOtherSystem: 'Surface preparations change how materials attach',
+        whyItMayFail: 'Some preparations are intentionally non-stick rather than adhesive',
+        whatWouldDisproveIt: 'A similar prepared surface repeatedly fails to hold the covering',
+        safeNextCheck: 'Use the appropriate product instructions to identify the required surface properties',
+      },
+    });
+    expect(result.screening?.status).toBe('partial');
+    expect(result.prediction).toBeNull();
+    expect(result.bridges[0].stages).toHaveLength(2);
+    expect(result.bridges[0].stages.map(stage => stage.label)).not.toContain('Input');
+    expect(result.screening?.crucialDifference).toContain('attachment');
+    expect(result.screening?.experienceTranslation).toBeUndefined();
+  });
+
+  test('rejects a donor when fewer than two stage goals align or the audit is missing', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const base = {
+      decision: 'compare_only', selectedIndex: 0,
+      reason: 'Only the wording and task order sound alike here.',
+      causalMatch: 'There is a superficial comparison of stages.',
+      crucialDifference: 'The actual actions have different goals.',
+      prediction: null,
+    };
+    expect(applyDiscoveryReview(core, base).screening?.status).toBe('rejected');
+    const rejected = applyDiscoveryReview(core, {
+      ...base,
+      stagePurposeAudit: alignedAudit.map(item => ({
+        ...item, verdict: item.stageIndex === 0 ? 'aligned' : 'opposite',
+        reason: 'The intended outcome conflicts at this stage.',
+      })),
+    });
+    expect(rejected.bridges).toHaveLength(0);
+    expect(rejected.screening?.status).toBe('rejected');
+  });
+
+  test('prompts explicitly forbid invented completion failures and unexplained specialist words', () => {
+    const firstPass = buildCoreDiscoveryPrompt(question, [], []);
+    const review = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    const cross = readFileSync('src/data/crossExamination.ts', 'utf8');
+    expect(firstPass).toContain('FUNCTIONAL PURPOSE CHECK');
+    expect(review).toContain('STAGE-PURPOSE AUDIT');
+    expect(review).toContain('stagePurposeAudit');
+    expect(review).toContain('opposite');
+    expect(cross).toContain('SOURCE EVENT BOUNDARY');
+    expect(cross).toContain('Never invent an attempted task');
   });
 });
