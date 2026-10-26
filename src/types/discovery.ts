@@ -51,10 +51,19 @@ export interface DiscoveryScreening {
   experienceTranslation?: string;
 }
 
+export interface ReportedExperienceChain {
+  // Direct excerpts from the submitted question, never model-created events.
+  interpretation?: string;
+  reaction?: string;
+  consequence?: string;
+}
+
 export interface CoreDiscovery {
   version: 2;
   question: string;
   whatIsReported: string;
+  // Optional for older saved discoveries.
+  reportedChain?: ReportedExperienceChain | null;
   possibleMechanism: string;
   alternativeExplanations: string[];
   bridges: DiscoveryBridge[];
