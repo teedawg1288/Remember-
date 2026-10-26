@@ -12,6 +12,8 @@ export function buildDiscoveryReviewPrompt(core: CoreDiscovery): string {
     'DIFFERENCE TEST: Distinguish differences that CHANGE THE PREDICTION from differences that merely change its strength, speed, repair or context. Never reject solely because one system is living, digital, social or mechanical. Reject if a necessary causal link is genuinely absent, not merely because the systems are not identical. Explain exactly which link breaks.',
     'ASSUMPTION TEST: Do not pretend the person already understands their question\'s target. Separate facts actually supplied by the user, possible donor familiarity (do not assert it if unconfirmed), established general knowledge about the donor, and unobserved conditions in the target. Put unobserved target conditions in ifCondition rather than treating them as facts. Do not invent a hidden feedback loop, a known cognitive limit, motive, shared bug or external trigger to make a comparison work.',
     "PERSON-FIRST REVIEW: Strip assumptions about the user before judging a bridge. Profanity, humour, dialect, race, religion, housing, income, substance use, sex work, credentials and job title are not evidence of understanding or character. A model interpretation of the person's intention must never be presented as their intention. Do not impose the feelings a reader might imagine onto someone else's reported experience. Judge the actual causal correspondence and user-confirmed experience, not a stereotyped profile.",
+    "DONOR GROUNDING REVIEW: Read the user's original question literally. If they report damage and a repair, do not transform that damage into a specific cause like decay or prior negligence unless they said so. Inspect stage labels, mapped actions, key difference, explanation and prediction for invented details or allegations. Reject any personal causal story not grounded in the question. An interesting real difference between materials can still be described conditionally without claiming the user experienced it.",
+    "EXPERIENCE TRANSLATION REVIEW: Return a single short experienceTranslation sentence as a user-facing bridge from the familiar donor process into the unknown target. Use everyday words and define any technical term in place; avoid unexplained capitalized abbreviations, technical jargon and repeated summary slogans. State the essential shared steps and the main limit without teaching familiar donor skills back to the user.",
 
     'TRANSFER GATE: A structural comparison and a usable prediction are DIFFERENT decisions. For the exact donor-system feature behind the prediction, identify a real or explicitly unverified counterpart in the original system. If a donor-only feature (such as biological self-repair, intent, learning or self-regulation) has no working counterpart in the original system, DO NOT import its benefit or invent a substitute. Resting a non-healing material does not make it regenerate. If the causal pattern still matches but this feature blocks a prediction, choose compare_only, not reject.',
     'SCOPE GATE: Reject inevitability, universal guarantees and claims that ignore magnitude, thresholds, time or context. A plausible transfer predicts a bounded tendency or observable difference, not certain failure or recovery regardless of conditions.',
@@ -32,6 +34,7 @@ export function buildDiscoveryReviewPrompt(core: CoreDiscovery): string {
       reason: 'Why these particular causal links are useful despite different systems',
       causalMatch: 'Two concrete paired causes and effects, plus what is still unverified in the original system',
       crucialDifference: 'A particular difference, explaining which predicted link it may weaken or break',
+      experienceTranslation: 'One accurate, jargon-free experience-to-target explanation based on the donor steps the user may know, without inventing donor damage or personal action',
       prediction: {
         ifCondition: 'A checkable missing condition holds in the original system',
         expectedOutcome: 'A specific observable outcome becomes more likely than in the stated comparison condition',
@@ -41,7 +44,7 @@ export function buildDiscoveryReviewPrompt(core: CoreDiscovery): string {
         safeNextCheck: 'A practical, safe and voluntary way to check while accounting for competing explanations',
       },
     }),
-    'OR return decision:"compare_only" with a valid selectedIndex, reason, causalMatch and crucialDifference, and prediction:null. Use this when a causal parallel survives but no safe, specific prediction transfers.',
+    'OR return decision:"compare_only" with a valid selectedIndex, reason, causalMatch, crucialDifference, experienceTranslation, and prediction:null. Use this when a causal parallel survives but no safe, specific prediction transfers.',
     'OR return decision:"reject" with selectedIndex:null, prediction:null and reason when no candidate shares the required causal links.',
     'ORIGINAL QUESTION: ' + JSON.stringify(core.question),
     'CANDIDATES: ' + JSON.stringify({

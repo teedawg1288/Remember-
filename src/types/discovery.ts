@@ -44,6 +44,8 @@ export interface DiscoveryScreening {
   reason: string;
   causalMatch: string;
   crucialDifference: string;
+  // A short reviewer-written translation using the person's confirmed or possible donor experience.
+  experienceTranslation?: string;
 }
 
 export interface CoreDiscovery {

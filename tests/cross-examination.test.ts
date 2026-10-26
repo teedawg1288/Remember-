@@ -120,7 +120,7 @@ describe('cross-examination prediction and question contract', () => {
     expect(view).toContain('reviewedPrediction: core.prediction ?');
     expect(panel).toContain('What we know—and why it could happen');
     expect(panel).toContain('Why this question in particular');
-    expect(panel).toContain('The fact behind this question');
+    expect(panel).toContain('The known principle behind this question');
     expect(panel).toContain('How the answer changes things');
     expect(panel).toContain('General principle · not source-checked');
     expect(server.match(/app\.post\('\/api\/same-story\/cross-examine'/g)).toHaveLength(1);
@@ -137,4 +137,37 @@ describe('cross-examination prediction and question contract', () => {
     expect(prompt).toContain('A correction by the person overrides a guessed interpretation');
   });
 
+});
+
+describe('cross-examination output cannot invent a user story', () => {
+  test('only direct user words may be labelled as reported facts', () => {
+    const spoken = 'I repaired my wooden staircase. How could that help with a car door?';
+    const examined = parseCrossExaminationResult({
+      ...output,
+      causalFacts: [
+        { statement: 'The user repaired a rusty car door', basis: 'reported',
+          sourceQuote: 'I repaired my wooden staircase', whyItMatters: 'A person has repair experience.' },
+        { statement: 'The door was painted because the wood was rotten', basis: 'reported',
+          sourceQuote: 'I said that the wood was rotten', whyItMatters: 'This was not reported.' },
+      ],
+    }, spoken);
+    expect(examined.observed).toBe(spoken);
+    expect(examined.causalFacts).toHaveLength(1);
+    expect(examined.causalFacts[0].statement).toBe('I repaired my wooden staircase');
+  });
+
+  test('blocks a leading prediction question or invented action by the user', () => {
+    const spoken = 'I repaired a staircase. What can I learn about a rusty car door?';
+    expect(() => parseCrossExaminationResult({
+      ...output,
+      nextPredictionQuestion: { ...output.nextPredictionQuestion, question: "Don't you agree the door will fail?" },
+    }, spoken)).toThrow('INVALID_AI_RESPONSE');
+    expect(() => parseCrossExaminationResult({
+      ...output,
+      hypotheses: [
+        { ...output.hypotheses[0], explanation: 'The user treats rust like wood rot and creates the problem.' },
+        output.hypotheses[1],
+      ],
+    }, spoken)).toThrow('INVALID_AI_RESPONSE');
+  });
 });

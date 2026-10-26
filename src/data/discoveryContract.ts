@@ -1,4 +1,5 @@
 import type { CoreDiscovery, DiscoveryBridge, DiscoveryStage, MeaningCheck, DiscoveryPrediction } from '../types/discovery';
+import { hasUnexplainedAcronym, unsupportedPersonalAttribution } from './grounding';
 
 // Long model answers must never be sliced through a word without indicating truncation.
 const words = (value: unknown, max = 500): string => {
@@ -125,11 +126,21 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
   if (causalMatch.length < 15 || crucialDifference.length < 12) {
     return rejected('The comparison did not survive the causal review.');
   }
+  const selectedBridge = core.bridges[selectedIndex];
+  // The reviewer must not promote an invented action or intention as a user fact.
+  if (unsupportedPersonalAttribution(core.question, [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' '))) {
+    return rejected('The comparison assigned the person an action or intention they did not report.');
+  }
+  const rawExperienceTranslation = words(item.experienceTranslation, 350);
+  const experienceTranslation = rawExperienceTranslation.length >= 25 &&
+    !hasUnexplainedAcronym(rawExperienceTranslation) &&
+    !unsupportedPersonalAttribution(core.question, rawExperienceTranslation)
+      ? rawExperienceTranslation : undefined;
   const compareOnly = (why: string): CoreDiscovery => ({
     ...core,
     bridges: [core.bridges[selectedIndex]],
     prediction: null,
-    screening: { status: 'partial', reason: why, causalMatch, crucialDifference },
+    screening: { status: 'partial', reason: why, causalMatch, crucialDifference, experienceTranslation },
   });
   // A useful parallel is not automatically a transferable prediction.
   if (item.decision === 'compare_only') return compareOnly(reason);
@@ -145,13 +156,14 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     whatWouldDisproveIt: words(proposed.whatWouldDisproveIt, 350),
     safeNextCheck: words(proposed.safeNextCheck, 350),
   } : null;
-  if (!prediction || Object.values(prediction).some(value => value.length < 12)) {
+  if (!prediction || Object.values(prediction).some(value => value.length < 12) ||
+      unsupportedPersonalAttribution(core.question, Object.values(prediction).join(' '))) {
     return compareOnly('The causal parallel remains possible, but no clear, testable prediction survived.');
   }
   return {
     ...core,
     bridges: [core.bridges[selectedIndex]],
     prediction,
-    screening: { status: 'accepted', reason, causalMatch, crucialDifference },
+    screening: { status: 'accepted', reason, causalMatch, crucialDifference, experienceTranslation },
   };
 }

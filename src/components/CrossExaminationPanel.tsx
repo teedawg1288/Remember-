@@ -48,7 +48,7 @@ export const CrossExaminationPanel: React.FC<CrossExaminationPanelProps> = ({
         <div className="space-y-4">
           {(focus !== 'mechanism' || !result.nextPredictionQuestion) && (
             <div className="rounded-xl border border-emerald-500/25 bg-[#11221d] p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300">Best safe check</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300">Suggested next check</p>
               <p className="text-sm text-stone-100 mt-1">{result.nextCheck}</p>
             </div>
           )}
@@ -59,7 +59,7 @@ export const CrossExaminationPanel: React.FC<CrossExaminationPanelProps> = ({
                   {result.prediction ? 'The prediction, asked as a question' : 'What must be answered before predicting'}
                 </p>
                 <h4 className="font-serif text-lg text-white">{result.nextPredictionQuestion.question}</h4>
-                <p className="text-sm text-stone-100"><strong>The fact behind this question:</strong> {result.nextPredictionQuestion.factBehindQuestion}</p>
+                <p className="text-sm text-stone-100"><strong>The known principle behind this question (not independently source-checked):</strong> {result.nextPredictionQuestion.factBehindQuestion}</p>
                 <p className="text-sm text-stone-200"><strong>Why this question in particular:</strong> {result.nextPredictionQuestion.whyThisQuestion}</p>
                 <p className="text-sm text-stone-300"><strong>How the answer changes things:</strong> {result.nextPredictionQuestion.howAnswerChangesPrediction}</p>
               </section>
@@ -94,7 +94,7 @@ export const CrossExaminationPanel: React.FC<CrossExaminationPanelProps> = ({
               ) : (
                 <p className="rounded-xl border border-amber-500/25 bg-[#211b16] p-3 text-sm text-amber-200">No defensible prediction yet. {result.noPredictionReason}</p>
               )}
-              <p className="text-xs text-emerald-200"><strong>Safe next check:</strong> {result.nextCheck}</p>
+              <p className="text-xs text-emerald-200"><strong>Suggested next check (check safety first):</strong> {result.nextCheck}</p>
             </div>
           )}
           {focus === 'mechanism' && (

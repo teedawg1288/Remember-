@@ -825,7 +825,9 @@ app.post('/api/same-story/cross-examine', async (req: Request, res: Response) =>
       }),
       config: { responseMimeType: 'application/json', temperature: 0.3 },
     });
-    const examination = parseCrossExaminationResult(JSON.parse((response.text || '').trim()));
+    // Enforce quote provenance and reject invented personal facts against the original input.
+    // A failed guard returns an error; we do not silently spend on extra model requests.
+    const examination = parseCrossExaminationResult(JSON.parse((response.text || '').trim()), suppliedQuestion.trim());
     res.json({ success: true, examination });
   } catch (err: any) {
     const failure = geminiFailure(err);
