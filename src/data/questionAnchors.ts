@@ -5,7 +5,7 @@ export function extractQuestionAnchors(question: string): { known: string; unkno
   const clauses = question.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
   if (clauses.length < 2) return null;
   const first = clauses[0].replace(/[.!?]+$/, '').trim();
-  const reportedActivity = /\b(?:i|we)\s+(?:(?:have|had)\s+|(?:have|had)\s+been\s+|know\s+how\s+to\s+|can\s+)?(?:fix(?:ed)?|repair(?:ed)?|restore(?:d)?|refinish(?:ed)?|detail(?:ed)?|plan(?:ned)?|organize(?:d)?|learn(?:ed|t)?|manage(?:d)?|build|built|clean(?:ed)?|do|did|use(?:d)?|make|made|work(?:ed)?|run|ran|sweep|swept|grease(?:d)?|paint(?:ed)?|teach|taught)\b/i;
+  const reportedActivity = /\b(?:i|we)\s+(?:(?:have|had)\s+|(?:have|had)\s+been\s+|know\s+how\s+to\s+|can\s+)?(?:fix(?:ed)?|repair(?:ed)?|restore(?:d)?|refinish(?:ed)?|detail(?:ed)?|plan(?:ned)?|organize(?:d)?|learn(?:ed|t)?|manage(?:d)?|build|built|clean(?:ed)?|do|did|use(?:d)?|make|made|work(?:ed)?|run|ran|sweep|swept|grease(?:d)?|paint(?:ed)?|teach|taught|check(?:ed)?|wash(?:ed)?|test(?:ed)?|maintain(?:ed)?|cook(?:ed)?|drive|drove|budget(?:ed)?)\b/i;
   if (!reportedActivity.test(first)) return null;
   const unknown = clauses.slice(1).join(' ').trim();
   if (!unknown.includes('?')) return null;
@@ -22,6 +22,15 @@ function terms(text: string): Set<string> {
 }
 function overlap(a: Set<string>, b: Set<string>): number {
   return [...a].filter(token => b.has(token)).length;
+}
+
+/** When a person explicitly says "through that", do not silently switch donor. */
+export function ignoresRequestedDonor(question: string, comparisonSystem: string): boolean {
+  const anchors = extractQuestionAnchors(question);
+  if (!anchors || !/\b(?:through that|using that|from that|based on that|through my|using my|from my)\b/i.test(question)) return false;
+  const donorWords = terms(comparisonSystem);
+  const knownWords = terms(anchors.known);
+  return overlap(donorWords, knownWords) === 0;
 }
 
 /** Only reject a *clear* reversal. Borderline or implicit requests stay with the reviewer. */
