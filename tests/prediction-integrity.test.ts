@@ -143,7 +143,8 @@ test('functional cross-domain candidates are shown even without a historical sto
   const map = readFileSync('src/components/InteractiveDiscoveryMap.tsx', 'utf-8');
   expect(server).toContain('mechanismBridges: PRIMARY DISCOVERY OUTPUT');
   expect(server).toContain('historical stories');
-  expect(server).toContain('input, capacity/constraint and outcome');
+  const crossExamPrompt = readFileSync('src/data/crossExamination.ts', 'utf-8');
+  expect(crossExamPrompt).toContain('input, capacity/constraint and outcome');
   expect(comparison).toContain('Cross-system connection · Candidate');
   expect(comparison).toContain('Historical Examples to Examine');
   expect(comparison).toContain('firstMechanismBridge.sharedMechanism');
