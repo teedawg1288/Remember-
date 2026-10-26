@@ -82,6 +82,36 @@ independent fact-checking.
    parallel without fabricating an IF/THEN answer.
    Never promise a new scientific fact or a predestined human outcome.
 
+## On-demand cross-examination
+
+When the person taps Cross-Examination, reuse the **selected, reviewed
+cross-system comparison** and any already-screened prediction. Do not start
+again from only the raw question or silently substitute a more convenient donor.
+This remains one **user-triggered** Gemini request; no extra automatic spend.
+
+Present, in plain language:
+
+1. **What is known:** Separate the question's actually reported facts from
+   established general mechanisms recalled by the model. The latter are NOT
+   independently source-checked; any inferred explanation stays tentative.
+2. **Why it could happen:** Map the specific causal stages and name where
+   the original situation has not been observed or confirmed.
+3. **Prediction as a question:** Ask whether a real donor lesson may produce
+   a specific, conditional, previously unknown outcome in the target. It must
+   be genuinely open, not a statement hiding behind a question mark. Explain
+   the concrete donor or reported fact that led to THIS question, distinguishing
+   established general knowledge from facts of the person's situation.
+4. **What would answer it:** Name the decisive missing condition and how
+   differing observations could change the answer. Internally retain the
+   IF/THEN, comparison and same-condition counterevidence so the question
+   remains testable; keep those details behind an optional reveal. If no
+   valid transfer exists, ask only what information is needed before a
+   prediction is possible. Do not invent a predictive conclusion.
+
+The historical era exploration remains optional. A model-generated
+general mechanism is not a cited scientific or historical fact. Neither
+the initial reviewer nor cross-examination is independent verification.
+
 ## What the person sees
 
 - Exact question and what it reports.

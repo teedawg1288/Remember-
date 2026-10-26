@@ -19,3 +19,4 @@ jobs:
       - run: bun test tests/prediction-integrity.test.ts
 
       - run: bun test tests/core-discovery.test.ts
+      - run: bun test tests/cross-examination.test.ts

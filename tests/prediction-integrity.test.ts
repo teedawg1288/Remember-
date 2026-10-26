@@ -126,7 +126,8 @@ test('cross-examination is an optional, evidence-oriented route, not a forced in
   const divergence = readFileSync('src/components/DifferenceThatChangesEverythingView.tsx', 'utf-8');
   expect(server).toContain("app.post('/api/same-story/cross-examine'");
   expect(server).toContain('SILENT CROSS-EXAMINATION');
-  expect(server).toContain('Never place a modern invention in antiquity');
+  const crossExamPrompt = readFileSync('src/data/crossExamination.ts', 'utf-8');
+  expect(crossExamPrompt).toContain('Never place a modern invention in antiquity');
   expect(panel).toContain('Uses one additional live Gemini request');
   expect(story).toContain('runCrossExamination');
   expect(story).toContain('focus="eras"');
@@ -142,7 +143,8 @@ test('functional cross-domain candidates are shown even without a historical sto
   const map = readFileSync('src/components/InteractiveDiscoveryMap.tsx', 'utf-8');
   expect(server).toContain('mechanismBridges: PRIMARY DISCOVERY OUTPUT');
   expect(server).toContain('historical stories');
-  expect(server).toContain('input, capacity/constraint and outcome');
+  const crossExamPrompt = readFileSync('src/data/crossExamination.ts', 'utf-8');
+  expect(crossExamPrompt).toContain('input, capacity/constraint and outcome');
   expect(comparison).toContain('Cross-system connection · Candidate');
   expect(comparison).toContain('Historical Examples to Examine');
   expect(comparison).toContain('firstMechanismBridge.sharedMechanism');
