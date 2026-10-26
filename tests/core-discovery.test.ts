@@ -386,7 +386,7 @@ describe('experience-to-completion transfer', () => {
     const review = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
     expect(review).toContain('COMPLETION TRANSFER TEST');
     expect(review).toContain('LANGUAGE TRANSLATION TEST');
-    expect(review).toContain('qualification');
+    expect(review).toContain('credentials');
     const visible = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf8');
     expect(visible).toContain('What you still need to learn here');
     const cross = readFileSync('src/data/crossExamination.ts', 'utf8');
