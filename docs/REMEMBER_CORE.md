@@ -5,12 +5,40 @@ curated sample stories and view-specific prompts are not competing specification
 
 ## Purpose
 
-REMEMBER takes a person's question, proposes a specific underlying mechanism,
-finds where a functionally comparable mechanism may operate in a different
-system, translates that relationship into plain language, challenges the
-correspondence, and identifies missing information or a discriminating test.
+REMEMBER starts with the system the person does NOT understand: the target of
+their question. It finds one or more other systems whose workings the person
+may already understand from experience (potential donors). It maps real
+cause-and-effect steps, translates known donor knowledge into an explanation
+or OPEN prediction question about the unknown target, challenges the match,
+and identifies missing information or a discriminating check.
 
 A shared label or dramatic story is not evidence of the same causal mechanism.
+
+## Source-to-target direction (Version 2.4)
+
+A question about a Slurpee machine does NOT establish familiarity with Slurpee
+machines. It establishes the topic the person wants to learn. The outside
+example is a *candidate donor*, and the app must never claim personal familiarity
+unless the person has said so. Invite recognition, e.g. "If you have ever
+unclogged a vacuum…" A vacuum blockage may suggest a performance bottleneck
+in an unfamiliar computer, but never a literal blockage inside its software.
+Repairing a misunderstanding may be a useful comparison for debugging message
+exchange, not for all computer faults. Different familiar experiences can
+explain different sub-processes of one unknown system. Trace an experience's
+relevant sequence and limits before borrowing an insight; matching names,
+materials or final products does not establish matching processes.
+
+Prediction flows **from possible familiar donor knowledge to the unfamiliar
+target**, in question form; the known donor fact is the reason for asking.
+What the user sees is the concrete experience, correspondence, next question,
+and why—not the internal selection method or a claimed universal formula.
+Where one bridge fails, another outside system may be explored without
+pretending the rejected bridge proved anything.
+
+**Secrecy boundary:** Moving explanation logic off-screen does not hide it
+from readers of a public code repository or client bundle. Protect any real
+proprietary implementation in private server-side code; a prompt visible in
+a public repository is not secret.
 
 ## Quality gates (Version 2.3)
 
