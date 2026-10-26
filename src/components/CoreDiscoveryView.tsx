@@ -126,7 +126,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
             <div>
               <p className="text-xs text-stone-300 mb-3">{confirmedDonor
                 ? 'You already know this process. Explore what transfers to the new one—and what changes.'
-                : "If you recognize that outside experience, explore which steps help explain your question—and which don't."}</p>
+                : "If you recognize that outside experience, follow its steps into the new subject—and see what you still need to learn."}</p>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {bridge.stages.map((item, index) => (
                   <button key={index} onClick={() => setStageIndex(index)}
@@ -144,7 +144,10 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                   <p><span className="text-stone-400 text-xs block mb-1">{bridge.originalSystem}</span>{stage.inOriginal}</p>
                 </div>
                 <p className="text-sm text-cyan-200"><strong>Same function:</strong> {stage.sharedFunction}</p>
-                <p className="text-sm text-amber-200"><strong>Crucial difference:</strong> {stage.importantDifference}</p>
+                <p className="text-sm text-amber-200"><strong>What is different:</strong> {stage.importantDifference}</p>
+                {stage.newKnowledgeNeeded && (
+                  <p className="text-sm rounded-lg border border-emerald-500/25 bg-emerald-950/20 p-3"><strong className="text-emerald-200">What you still need to learn here:</strong> {stage.newKnowledgeNeeded}</p>
+                )}
               </div>
             )}
             <div className={core.screening ? 'text-sm' : 'grid sm:grid-cols-2 gap-3 text-sm'}>
