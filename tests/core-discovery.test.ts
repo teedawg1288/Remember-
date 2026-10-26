@@ -253,4 +253,29 @@ describe('REMEMBER core discovery contract', () => {
     expect(prompt).toContain('tentative');
     expect(prompt).toContain('Never ask the person to teach a glossary');
   });
+  test('treats the speaker intent and delivery as distinct from model interpretation', () => {
+    const prompt = buildCoreDiscoveryPrompt('That is a fucking good analogy', [], []);
+    expect(prompt).toContain('INTENTION VERSUS INTERPRETATION');
+    expect(prompt).toContain('DELIVERY AND IDENTITY NEUTRALITY');
+    expect(prompt).toContain('Never label a metaphor or wording crude');
+    expect(prompt).toContain('CURRENT context');
+  });
+
+  test('translates from demonstrated experience and asks genuinely open discovery questions', () => {
+    const prompt = buildCoreDiscoveryPrompt('How can I use my stair repair experience to understand rust repair?', [], []);
+    expect(prompt).toContain('EXPERIENCE-FIRST MEANING');
+    expect(prompt).toContain('Do not lecture the user on a familiar skill');
+    expect(prompt).toContain('OPEN DISCOVERY QUESTION');
+    expect(prompt).toContain('strengthen OR weaken');
+    expect(prompt).toContain('the user rejects the bridge');
+  });
+
+  test('reviewer challenges identity assumptions and question-shaped assertions', () => {
+    const reviewer = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    expect(reviewer).toContain('PERSON-FIRST REVIEW');
+    expect(reviewer).toContain('QUESTION INTEGRITY TEST');
+    expect(reviewer).toContain('A question mark does not excuse an unsupported premise');
+    expect(reviewer).toContain('allow compare_only');
+  });
+
 });
