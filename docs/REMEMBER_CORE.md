@@ -280,3 +280,27 @@ The UI shows it only when at least one of its stages is actually stated.
 Older saved discoveries without the field continue to render.
 This sits alongside—not instead of—the cross-domain experience translation,
 target-only skill gaps, causal screening and question-led prediction.
+
+
+## Version 2.11 — Matching purpose before matching steps
+
+A visually similar action or the same workflow label is **not** necessarily
+the same function. Every candidate donor stage is checked for the goal its
+action is intended to cause or prevent, separately from the target stage.
+Preparation for release or non-stick behavior cannot be described as equivalent
+to preparation for bonding, even if both begin with surface treatment.
+
+The independent model reviewer now supplies a stage-by-stage intended-purpose
+audit: `aligned`, `opposite`, or `unverified`. The server fails closed when
+the audit is missing or malformed. Opposite and unverified stages are removed
+from visible "same function" mappings. If fewer than two genuinely aligned
+stages remain, the whole bridge is rejected. When a bounded sub-process remains,
+it is shown only as a tentative comparison, and the former prediction is
+withheld pending a fresh review. This is still AI screening, not proof of
+scientific equivalence.
+
+Cross-examination must also avoid quietly manufacturing an outcome: hearing
+that instructions are confusing does not establish that anyone attempted or
+failed the task. Any consequence not reported belongs in a conditional
+hypothesis, never a description of reality. Questions and translations must
+use plain language and avoid unnecessary specialized words.
