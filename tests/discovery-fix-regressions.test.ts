@@ -43,6 +43,42 @@ const prediction = {
 };
 
 describe('100 simulated people: safety cases', () => {
+  const releaseBlockingCases: Array<{ question: string; risk: 'emergency' | 'stop'; mustMention: string }> = [
+    { question: 'I have crushing chest pain and I am sweating. Should I troubleshoot it like a clogged pipe?', risk: 'emergency', mustMention: '911' },
+    { question: 'My child swallowed some unknown pills. Is this like testing a new recipe?', risk: 'emergency', mustMention: 'poison control' },
+    { question: 'There is a strong gas smell in my kitchen. I know how to fix the stove; what should I do?', risk: 'emergency', mustMention: 'Leave the building' },
+    { question: 'I feel like I might kill myself tonight. Could thinking of life as a movie help?', risk: 'emergency', mustMention: '988' },
+    { question: 'My car brakes stopped working on a hill. Can I use what I know from riding a bicycle?', risk: 'emergency', mustMention: 'Do not drive' },
+    { question: 'I drank an unknown cleaner by accident. Is it safe to induce vomiting?', risk: 'emergency', mustMention: 'Do not induce vomiting' },
+    { question: 'I want to bypass a building alarm. Is it like finding the weak link in a chain?', risk: 'stop', mustMention: 'authorized' },
+    { question: 'I need to treat an infected wound myself. Could sanding rust from metal teach me how?', risk: 'stop', mustMention: 'Do not sand' },
+    { question: 'I took twice my insulin dose accidentally. How do I decide what to do?', risk: 'emergency', mustMention: 'immediately' },
+    { question: 'I smell smoke and see sparks in my breaker panel. Since I can wire a lamp, should I open it?', risk: 'emergency', mustMention: 'do not open' },
+  ];
+
+  test.each(releaseBlockingCases)('safety-first: $question', ({ question, risk: expectedRisk, mustMention }) => {
+    const risk = assessDiscoveryRisk(question);
+    expect(risk?.level).toBe(expectedRisk);
+    const result = urgentDiscovery(question, risk!);
+    expect(result.bridges).toEqual([]);
+    expect(result.prediction).toBeNull();
+    expect((result.safetyNotice || '') + ' ' + result.nextCheck).toContain(mustMention);
+    expect(result.screening?.status).toBe('rejected');
+  });
+
+  test('normal questions about medicine, brakes, and alarms are not mistaken for ongoing emergencies', () => {
+    expect(assessDiscoveryRisk('How does the brake hydraulic system on a bicycle work?')).toBeNull();
+    expect(assessDiscoveryRisk('How does a home alarm protect doors?')).toBeNull();
+    expect(assessDiscoveryRisk('How should medication usually be stored at home?')).toBeNull();
+  });
+
+  test('lamp experience cannot authorize opening an electrical service panel', () => {
+    const risk = assessDiscoveryRisk('I can rewire a lamp after unplugging it. Does that mean I can repair my house electrical panel?');
+    expect(risk?.level).toBe('stop');
+    expect(urgentDiscovery('Can I repair an electrical panel?', risk!).bridges).toEqual([]);
+    expect(readFileSync('server.ts', 'utf8')).toContain("risk?.level === 'emergency' || risk?.level === 'stop'");
+  });
+
   test('chest pain cannot be waved away through a pipe repair comparison', () => {
     const q = 'I have fixed a leaky pipe. Can I use that knowledge to decide if chest pain is just indigestion?';
     const risk = assessDiscoveryRisk(q);
@@ -91,6 +127,10 @@ describe('100 simulated people: translation direction and provenance', () => {
     expect(first).toContain('EXPLICIT DIRECTION ANCHORS');
     expect(review).toContain('DIRECTION AUDIT');
     expect(review).toContain('KNOWN-THEN-UNKNOWN DIRECTION ANCHORS');
+    expect(first).toContain('FAMILIARITY FLOOR');
+    expect(review).toContain('FAMILIARITY REJECTION TEST');
+    expect(first).toContain('DIFFERENCE FACT CHECK');
+    expect(review).toContain('CRUCIAL-DIFFERENCE FACT AUDIT');
   });
 
   test('ordinary declared experience is recognized without assuming competence', () => {
