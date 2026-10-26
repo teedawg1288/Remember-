@@ -11,13 +11,10 @@ import {
   Send,
   RefreshCw,
 } from 'lucide-react';
-import { CURATED_STORIES } from '../data/curatedStories';
-import { SameStoryResult } from '../types/sameStory';
 import { sound } from '../audio/soundEngine';
 
 interface BarberInputProps {
   onAnalyze: (input: string) => void;
-  onSelectCurated: (story: SameStoryResult) => void;
   isLoading: boolean;
   persona: 'barber' | 'bartender';
   appName: string;
@@ -25,7 +22,6 @@ interface BarberInputProps {
 
 export const BarberInput: React.FC<BarberInputProps> = ({
   onAnalyze,
-  onSelectCurated,
   isLoading,
   appName,
 }) => {
@@ -44,74 +40,55 @@ export const BarberInput: React.FC<BarberInputProps> = ({
     return () => { active = false; };
   }, []);
 
+  // These are neutral entry questions, not rehearsed stories or prescribed conclusions.
+  // Every example goes through the same live discovery route as a user-written question.
   const everydayScenarios = [
     {
-      id: 'bike-skipping',
-      label: 'Why does a bicycle chain skip under load?',
+      id: 'computer-slow',
+      label: 'Why does my computer slow down when I open several programs?',
+      icon: <Compass className="w-4 h-4 text-cyan-300" />,
+    },
+    {
+      id: 'car-rust',
+      label: 'How do I stop rust coming back on my car door?',
       icon: <Wrench className="w-4 h-4 text-emerald-300" />,
-      subtext: 'A direct mechanical problem to investigate without inventing a human story.',
-      prompt: 'Why does my bicycle chain skip only when I pedal hard?',
-      badge: 'Live AI',
     },
     {
-      id: 'unanswered-text',
-      label: 'Someone ignored your text or walked past you',
-      icon: <MessageSquare className="w-4 h-4 text-amber-400" />,
-      subtext: 'You sent a text or said hello, got dead silence, assumed they were blowing you off, and froze them out.',
-      prompt: "Someone didn't answer my text message. I felt ignored, so I stopped talking to them. Now things feel awkward, we haven't spoken in three weeks, and both of us seem upset.",
-      badge: 'Most Common',
-    },
-    {
-      id: 'housework-chore-trap',
-      label: 'Always doing all the housework & chores',
-      icon: <Home className="w-4 h-4 text-cyan-400" />,
-      subtext: 'You clean up because the mess bothers you, but doing it silently means nobody else ever helps.',
-      prompt: "Someone always ends up doing all the housework. I clean up because I can't stand the mess, but the more I do, the less anyone else notices, and now I'm furious and exhausted.",
-      badge: 'Scorekeeper Trap',
-    },
-    {
-      id: 'parent-giving-in',
-      label: 'Parent caving on candy to stop screaming',
-      icon: <Smile className="w-4 h-4 text-pink-400" />,
-      subtext: 'Giving in just to stop the scene in the grocery aisle, making the next tantrum twice as loud.',
-      prompt: "A child gets away with something because a parent keeps giving in. The parent caves on candy just to stop the screaming in the store, and now the kid screams louder and longer every single time.",
-      badge: 'Parenting Loop',
-    },
-    {
-      id: 'bystander-freeze',
-      label: 'Waiting for someone else to step up',
-      icon: <Users className="w-4 h-4 text-indigo-400" />,
-      subtext: 'A major problem was announced to 20 people, everybody saw it, but nobody stepped up to fix it.',
-      prompt: "Everybody waits for someone else to take responsibility. A major problem was announced to a group of 20 people, everybody saw it, but nobody stepped up to fix it because everyone assumed someone else would do it.",
-      badge: 'Group Freeze',
-    },
-    {
-      id: 'misunderstood-words',
-      label: 'Two people hear the same words differently',
-      icon: <AlertCircle className="w-4 h-4 text-emerald-400" />,
-      subtext: 'One person thought they offered constructive advice; the other heard a personal attack.',
-      prompt: "Two friends hear the same conversation completely differently. One person thought they were just giving casual advice, but the other person heard it as an insult and felt attacked.",
-      badge: 'Translation Gap',
-    },
-    {
-      id: 'fix-makes-it-worse',
-      label: 'Trying to fix it, but making it worse',
+      id: 'bike-skipping',
+      label: 'Why does my bicycle chain skip when I pedal hard?',
       icon: <Wrench className="w-4 h-4 text-amber-300" />,
-      subtext: 'Over-explaining yourself during a disagreement and digging the hole three times deeper.',
-      prompt: "Someone tries to fix a problem but accidentally makes it worse. I tried to over-explain myself to clear up a minor misunderstanding, but talking more just made the other person more defensive.",
-      badge: 'Over-Explaining',
+    },
+    {
+      id: 'frozen-drink',
+      label: 'How does a frozen drink machine keep the drink slushy?',
+      icon: <Smile className="w-4 h-4 text-pink-400" />,
+    },
+    {
+      id: 'legal-words',
+      label: 'Why is the wording in a law so hard to understand?',
+      icon: <AlertCircle className="w-4 h-4 text-indigo-300" />,
+    },
+    {
+      id: 'conversation-memory',
+      label: 'Why can two people remember the same conversation differently?',
+      icon: <MessageSquare className="w-4 h-4 text-amber-400" />,
+    },
+    {
+      id: 'sink-clog',
+      label: 'Why does my sink keep clogging?',
+      icon: <Home className="w-4 h-4 text-cyan-400" />,
+    },
+    {
+      id: 'stories-similar',
+      label: 'Why do stories from different places and times sound similar?',
+      icon: <Users className="w-4 h-4 text-emerald-300" />,
     },
   ];
 
   const handleScenarioClick = (item: (typeof everydayScenarios)[0]) => {
     sound.playDiscoveryChime();
-    const match = CURATED_STORIES.find((c) => c.id === item.id);
-    if (match) {
-      onSelectCurated(match);
-      return;
-    }
-    setText(item.prompt);
-    onAnalyze(item.prompt);
+    setText(item.label);
+    onAnalyze(item.label);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -133,7 +110,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
           {aiKeyStatus !== 'present' && (
             <p role="status" className="text-xs text-amber-200 bg-amber-950/20 border border-amber-500/30 p-3 rounded-xl">
               {aiKeyStatus === 'missing'
-                ? 'Live questions need the Gemini key in AI Studio Settings → Secrets. Prepared examples still work.'
+                ? 'Live questions and the example buttons need a Gemini key in AI Studio Settings → Secrets.'
                 : aiKeyStatus === 'checking'
                   ? 'Checking live AI availability…'
                   : 'AI status could not be checked; submitting a question will show any connection error.'}
@@ -146,7 +123,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
                 id="remember-question"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Why does my bike skip under load? / What did the other person understand? / Why does this keep happening?"
+                placeholder="Ask your question in your own words. No special wording needed."
                 rows={4}
                 disabled={isLoading}
                 className="w-full bg-transparent text-stone-100 placeholder-stone-500 text-sm focus:outline-none resize-none leading-relaxed"
@@ -172,7 +149,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
           <span>Try a sample question</span>
           <span className="text-xs text-amber-300">Examples <ArrowRight className="w-3 h-3 inline" /></span>
         </summary>
-        <p className="text-xs text-stone-400 mt-3 mb-3">Examples are starting points, not evidence of what actually happened to you.</p>
+        <p className="text-xs text-stone-400 mt-3 mb-3">Choose any question to watch REMEMBER find its own comparison. Every example runs live AI.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {everydayScenarios.map((item) => (
             <button
@@ -183,7 +160,7 @@ export const BarberInput: React.FC<BarberInputProps> = ({
               className="rounded-xl border border-stone-700 hover:border-amber-500/50 bg-[#141a25] p-4 text-left cursor-pointer disabled:opacity-50"
             >
               <span className="flex items-center gap-2 text-sm font-semibold text-white">{item.icon}{item.label}</span>
-              <span className="block text-[11px] text-stone-400 mt-2">{item.badge === 'Live AI' ? 'Live AI question' : 'Prepared example'}</span>
+              <span className="block text-[11px] text-stone-400 mt-2">Live AI question</span>
             </button>
           ))}
         </div>

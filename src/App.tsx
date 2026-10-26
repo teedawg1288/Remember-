@@ -182,13 +182,6 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSelectCurated = (story: SameStoryResult) => {
-    setActiveAnalysis(story);
-    setError(null);
-    setActiveMainTab('show');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const handleReset = () => {
     setActiveAnalysis(null);
     setShowResearchLab(false);
@@ -286,7 +279,6 @@ export const App: React.FC = () => {
           <>
             <BarberInput
               onAnalyze={handleAnalyze}
-              onSelectCurated={handleSelectCurated}
               isLoading={isLoading}
               persona={persona}
               appName={appName}

@@ -244,3 +244,7 @@ and disables learned language. Previous mistakes do not define present identity.
 ## Version 2.7 — Simplest matching system first
 
 Before selecting an analogy, privately reduce the unfamiliar target to its simplest accurate working process. "Above" means one step broader and easier to understand—not a higher social role, a grander subject or an automatically universal law. Search for the simplest everyday donor with **two genuinely matching ordered causal steps**. Familiarity learned from the user helps choose between equally sound comparisons; it does not override causality. Then translate from that donor into the unknown target and identify the new target-specific conditions. Do not make the user supply the analogy or display proprietary abstraction rules.
+
+## Version 2.8 — Neutral starter questions
+
+The "Try a sample question" buttons ask ordinary, unanswered questions across unrelated topics without supplying a cause, personal motive, comparison donor, or predicted result. **Every button uses the same live discovery request as typed questions**, not the legacy curated-story substitution. The interface explains that these examples invoke live AI and may require API availability. Prepared stories, where used elsewhere, must remain clearly separate. Avoid inserting hardcoded named showcase analogies into discovery/review prompts; evaluate the question actually submitted.
