@@ -31,7 +31,25 @@ export const CoreDiscoveryView: React.FC<Props> = ({
       const response = await fetch('/api/same-story/cross-examine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: core.question, proposedMechanism: core.possibleMechanism }),
+        body: JSON.stringify({
+          question: core.question,
+          proposedMechanism: core.possibleMechanism,
+          // Cross-examination must interrogate the bridge the user actually sees.
+          selectedBridge: bridge ? {
+            originalSystem: bridge.originalSystem,
+            comparisonSystem: bridge.comparisonSystem,
+            sharedMechanism: core.screening?.causalMatch || bridge.possibleSharedMechanism,
+            crucialDifference: core.screening?.crucialDifference || bridge.whereItBreaks,
+            screeningStatus: core.screening?.status || 'unscreened',
+            stages: bridge.stages,
+          } : null,
+          reviewedPrediction: core.prediction ? {
+            ifCondition: core.prediction.ifCondition,
+            expectedOutcome: core.prediction.expectedOutcome,
+            borrowedFromOtherSystem: core.prediction.borrowedFromOtherSystem,
+            whyItMayFail: core.prediction.whyItMayFail,
+          } : null,
+        }),
       });
       const data = await response.json();
       if (!response.ok || !data.success || !data.examination) {
