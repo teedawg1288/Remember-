@@ -8,6 +8,9 @@ export interface DiscoveryStage {
   inComparison: string;
   sharedFunction: string;
   importantDifference: string;
+  // Unfamiliar target-only skills, methods, terms or constraints for this stage.
+  // Optional for older saved discoveries.
+  newKnowledgeNeeded?: string;
 }
 
 export interface DiscoveryBridge {

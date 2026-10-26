@@ -353,3 +353,43 @@ describe('example questions do not coach the connection', () => {
     expect(review).toContain('without claiming that similar language makes');
   });
 });
+
+
+describe('experience-to-completion transfer', () => {
+  test('core prompt maps a confirmed donor process in order without granting expertise', () => {
+    const prompt = buildCoreDiscoveryPrompt('I have restored stairs. How do I fix a rusty door?', [], []);
+    expect(prompt).toContain('EXPERIENCE-TO-COMPLETION BRIDGE');
+    expect(prompt).toContain('SEQUENCE NOT SLOGAN');
+    expect(prompt).toContain('newKnowledgeNeeded');
+    expect(prompt).toContain('3 to 5 meaningful stages');
+    expect(prompt).toContain('not proof the person can already perform the new skill');
+    expect(prompt).not.toContain("label:'Input'");
+  });
+
+  test('preserves new target knowledge at each stage but keeps older saved stages valid', () => {
+    const withKnowledge = {
+      ...sample, bridges: [{
+        ...bridge, stages: bridge.stages.map((stage, index) => ({
+          ...stage, newKnowledgeNeeded: 'Target-only requirement ' + (index + 1),
+        })),
+      }],
+    };
+    const core = parseCoreDiscovery(withKnowledge, question);
+    expect(core.bridges[0].stages.map(stage => stage.newKnowledgeNeeded)).toEqual([
+      'Target-only requirement 1', 'Target-only requirement 2', 'Target-only requirement 3',
+    ]);
+    const old = parseCoreDiscovery(sample, question);
+    expect(old.bridges[0].stages[0].newKnowledgeNeeded).toBeUndefined();
+  });
+
+  test('review checks process order, domain gaps and translated target vocabulary', () => {
+    const review = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    expect(review).toContain('COMPLETION TRANSFER TEST');
+    expect(review).toContain('LANGUAGE TRANSLATION TEST');
+    expect(review).toContain('credentials');
+    const visible = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf8');
+    expect(visible).toContain('What you still need to learn here');
+    const cross = readFileSync('src/data/crossExamination.ts', 'utf8');
+    expect(cross).toContain('TRANSFERABLE KNOWLEDGE EXAM');
+  });
+});
