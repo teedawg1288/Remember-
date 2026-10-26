@@ -34,7 +34,8 @@ export function assessDiscoveryRisk(question: string): DiscoveryRisk | null {
       immediateAction: 'Contact a poison control centre right away, even if symptoms have not started. Call emergency services if the person is seriously unwell. Do not induce vomiting or try to neutralize the substance unless poison control or a clinician directs you.',
     };
   }
-  if (/\b(?:smell(?:ing)?\s+(?:a\s+)?(?:strong\s+)?gas|gas\s+smell|gas\s+leak|leaking\s+gas|rotten\s+egg\s+smell)\b/.test(q)) {
+  const suspectedGasRelease = /\b(?:smell(?:s|ed|ing)?|smelt|odou?r|scent)\b.{0,65}\b(?:natural\s+gas|propane|gas)\b|\b(?:natural\s+gas|propane|gas)\b.{0,65}\b(?:leak(?:s|ed|ing)?|smell(?:s|ed|ing)?|odou?r|scent|escaping|hissing)\b|\bleak(?:s|ed|ing)?\b.{0,50}\b(?:natural\s+gas|propane|gas)\b|\brotten\s+eggs?\s+smell\b/.test(q);
+  if (suspectedGasRelease) {
     return {
       level: 'emergency',
       notice: 'A possible gas leak is an immediate safety issue, not a repair-by-analogy problem.',
