@@ -100,22 +100,46 @@ export function assessDiscoveryRisk(question: string): DiscoveryRisk | null {
       immediateAction: 'Contact an emergency veterinarian immediately. If the animal is unresponsive and not breathing, use veterinary first-aid/CPR guidance while getting emergency help.',
     };
   }
-  if (/\b(?:perform|do|attempt|carry out)\b.*\b(?:surgery|operation)\b/.test(q) && /\b(?:can i|could i|i know|i can|safely|same steps|by comparing|mean i)\b/.test(q)) {
+  // Analogy can support learning, but never authorize a high-stakes personal
+  // decision, diagnosis, or safety-critical repair.
+  if (/\b(?:lump|mass|skin bump)\b/.test(q) &&
+      /\b(?:cancer|malignan|tumou?r)\b/.test(q) &&
+      /\b(?:tell|check|detect|diagnos|can i|is it|whether)\b/.test(q)) {
     return {
-      level: 'boundary',
-      notice: 'No. Familiar skills can explain parts of a surgical workflow; they do not qualify someone to perform surgery. Surgery requires professional training, facilities and clinical oversight.',
+      level: 'stop',
+      notice: 'No. Checking whether food has spoiled cannot determine whether a skin lump is cancer.',
+      immediateAction: 'Arrange a medical assessment for the lump. A comparison or home check cannot establish the diagnosis.',
+    };
+  }
+  if (/\b(?:perform|do|attempt|carry out)\b.*\b(?:surgery|operation)\b/.test(q) && /\b(?:can i|could i|i know|i can|safely|same steps|by comparing|mean i|qualif\w*|does that)\b/.test(q)) {
+    return {
+      level: 'stop',
+      notice: 'No. Familiar skills can explain parts of a surgical workflow; they do not qualify someone to perform surgery.',
+      immediateAction: 'Surgery requires professional training, clinical facilities and oversight. Do not attempt it based on a comparison.',
     };
   }
   if (/\b(?:household|home|mains|electrical)\s+(?:wiring|electricity)\b/.test(q) && /\b(?:repair|rewire|fix|wire|same steps|could i|can i)\b/.test(q)) {
     return {
-      level: 'boundary',
-      notice: 'A repair sequence may be familiar, but it does not establish electrical competence. Household wiring can cause shock or fire; use a qualified electrician for work beyond your competence.',
+      level: 'stop',
+      notice: 'No. Knowing a different repair sequence does not establish competence to work on household wiring.',
+      immediateAction: 'Household wiring can cause shock or fire. Use a qualified electrician for work beyond your training and authorization.',
     };
   }
-  if (/\b(?:insulin|medication|drug)\s+(?:dose|dosing|dosage)\b/.test(q) && /\b(?:calculate|decide|guess|test|same steps|use|adjust)\b/.test(q)) {
+  if (/\b(?:car|vehicle|truck)\b/.test(q) &&
+      /\b(?:brakes?|braking)\b/.test(q) &&
+      /\b(?:qualif\w*|replace|repair|fix|change)\b/.test(q) &&
+      /\b(?:can i|could i|does that|mean i|same steps|qualified|qualify|safe for me)\b/.test(q)) {
     return {
-      level: 'boundary',
-      notice: 'An analogy cannot determine a safe medication dose. Use your prescribed plan or ask a qualified healthcare professional.',
+      level: 'stop',
+      notice: 'No. Washing a car or knowing another repair process does not qualify someone to repair its brakes.',
+      immediateAction: 'Brake repairs require appropriate training, tools and verification. Do not rely on an analogy to attempt safety-critical work.',
+    };
+  }
+  if (/\b(?:insulin|medication|drug)\s+(?:dose|dosing|dosage)\b/.test(q) && /\b(?:calculate|decide|guess|test|same steps|use|adjust|tell|determine|whether|need|check)\b/.test(q)) {
+    return {
+      level: 'stop',
+      notice: 'No. Skills from another system cannot determine whether medication is needed or what dose is safe.',
+      immediateAction: 'Follow your individual prescribed medication plan and seek advice from your healthcare team when unsure. For severe or rapidly worsening symptoms, seek urgent medical help.',
     };
   }
   return null;
