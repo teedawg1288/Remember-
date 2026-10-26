@@ -248,3 +248,17 @@ Before selecting an analogy, privately reduce the unfamiliar target to its simpl
 ## Version 2.8 — Neutral starter questions
 
 The "Try a sample question" buttons ask ordinary, unanswered questions across unrelated topics without supplying a cause, personal motive, comparison donor, or predicted result. **Every button uses the same live discovery request as typed questions**, not the legacy curated-story substitution. The interface explains that these examples invoke live AI and may require API availability. Prepared stories, where used elsewhere, must remain clearly separate. Avoid inserting hardcoded named showcase analogies into discovery/review prompts; evaluate the question actually submitted.
+
+
+## Version 2.9 — Experience-to-completion bridge
+
+The user may know how to complete a process in one area without knowing the vocabulary, tools or specific technique in another. REMEMBER must first consider a genuinely **confirmed** lived experience if the person's question supplies one. Otherwise it proposes a possible donor conditionally. It then:
+
+1. Identifies the unfamiliar target outcome and its simplest correct functional process.
+2. Reconstructs the donor's relevant sequence without inventing the person's steps.
+3. Maps 3–5 real ordered stages from known experience to unfamiliar target action or understanding.
+4. Translates the new system's words into what each step *does*, while keeping correct technical meanings.
+5. Identifies at each stage exactly what additional target-only knowledge, tools, limits or qualifications are needed.
+6. Screens each transferred step and asks one open, evidence-grounded question about an unverified target condition.
+
+A familiar working order is a learning advantage, **not** automatic mastery, licensure, safety or proof that the target works identically. When only a sub-process transfers, present that bounded transfer and its remaining gaps. Do not turn any one donor into the canonical analogy for every future question. Keep the abstraction method private; keep the observed facts, steps, and caveats visible.
