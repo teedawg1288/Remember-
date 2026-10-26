@@ -12,17 +12,33 @@ export function quoteAppearsInQuestion(question: string, excerpt: string): boole
 
 export function confirmedExperienceExcerpt(question: string, donor: string): string | null {
   const excluded = new Set(['system', 'machine', 'management', 'process', 'cleaner', 'airflow', 'repair', 'restoration', 'experience']);
-  const terms = normalized(donor).split(' ').filter(word => word.length >= 4 && !excluded.has(word));
+  const base = (word: string) => word.replace(/(?:ations|ation|ments|ment|ities|ity|ing|ed|es|s)$/i, '');
+  const terms = normalized(donor).split(' ').map(base).filter(word => word.length >= 4 && !excluded.has(word));
   if (!terms.length) return null;
   const sentences = question.split(/(?<=[.!?])\s+/);
   for (const sentence of sentences) {
     const lower = normalized(sentence);
-    if (!terms.some(term => lower.includes(term))) continue;
-    if (!/\b(?:i|we)\s+(?:have\s+|had\s+)?(?:know|understand|fixed|repaired|restored|used|built|worked|did|can\s+(?:fix|repair|restore|build|use))\b/i.test(lower)) continue;
+    if (!terms.some(term => lower.split(' ').some(word => base(word).startsWith(term)))) continue;
+    if (!/\b(?:i|we)\s+(?:(?:have|had)\s+|know\s+how\s+to\s+|can\s+)?(?:know|understand|fix(?:ed)?|repair(?:ed)?|restor(?:e|ed)|refinish(?:ed)?|detail(?:ed)?|plan(?:ned)?|organize(?:d)?|learn(?:ed|t)?|manage(?:d)?|used?|build|built|worked?|did|do|make|made|run|ran|sweep|swept|grease(?:d)?|paint(?:ed)?)\b/i.test(lower)) continue;
     if (/\b(?:never|not|no|don t|didn t|haven t|have not|do not|cannot|can t)\b/i.test(lower)) continue;
     return sentence.trim().slice(0, 350);
   }
   return null;
+}
+
+/** Past-tense actions about the user must be present in their own report.
+ * Conditional examples ("if you sanded ...") are not claims of past action.
+ */
+export function unsupportedCompletedActionAttribution(question: string, output: string): boolean {
+  const claimed = /\b(?:you|the user|the person)\s+(?:(?:have|had|already)\s+)?(cleared|sanded|scraped|removed|cleaned|lubricated|greased|filled|painted|drilled|polished|replaced|tightened|welded|measured|tested|diagnosed)\b/gi;
+  const q = normalized(question);
+  for (const match of output.matchAll(claimed)) {
+    const prior = output.slice(Math.max(0, (match.index || 0) - 18), match.index || 0);
+    if (/\b(?:if|when|might|would|could|should|whether)\s*$/i.test(prior)) continue;
+    const verb = match[1].toLowerCase().replace(/(?:ed|d)$/,'');
+    if (!q.split(' ').some(token => token.startsWith(verb))) return true;
+  }
+  return false;
 }
 
 /** Flags unsupported attributions of the user's motives/actions.

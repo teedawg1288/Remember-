@@ -48,6 +48,7 @@ import { MeaningSynchronizationView } from './MeaningSynchronizationView';
 import { WhatIfPlayground } from './WhatIfPlayground';
 import { CrossDomainVisualBridge } from './CrossDomainVisualBridge';
 import { CrossExaminationPanel } from './CrossExaminationPanel';
+import { readApiResponse } from '../data/apiResponse';
 import type { CrossExaminationResult } from '../types/sameStory';
 import { InteractiveDiscoveryMap } from './InteractiveDiscoveryMap';
 import { sound } from '../audio/soundEngine';
@@ -105,7 +106,7 @@ export const StoryComparisonView: React.FC<StoryComparisonViewProps> = ({
           proposedMechanism: analysis.underneathMechanism,
         }),
       });
-      const payload = await response.json();
+      const payload = await readApiResponse(response);
       if (!response.ok || !payload.success || !payload.examination) {
         throw new Error(payload.error || 'Could not cross-examine this question.');
       }

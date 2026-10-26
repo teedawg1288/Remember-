@@ -3,6 +3,7 @@ import { ArrowRight, Bookmark, CheckCircle2, Compass, GitCompare, HelpCircle } f
 import type { SameStoryResult, CrossExaminationResult } from '../types/sameStory';
 import { CrossExaminationPanel } from './CrossExaminationPanel';
 import { confirmedExperienceExcerpt } from '../data/grounding';
+import { readApiResponse } from '../data/apiResponse';
 
 const asDependentClause = (value: string) => {
   const clause = value.trim().replace(/[.!?]+$/, '');
@@ -59,7 +60,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           } : null,
         }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok || !data.success || !data.examination) {
         throw new Error(data.error || 'Cross-examination is unavailable.');
       }
@@ -82,6 +83,11 @@ export const CoreDiscoveryView: React.FC<Props> = ({
         </div>
         <p className="text-xs uppercase tracking-wider text-stone-400">Your exact question</p>
         <h1 className="font-serif text-xl sm:text-2xl leading-snug">{core.question}</h1>
+        {core.safetyNotice && (
+          <div role="alert" className="rounded-xl border border-rose-400/70 bg-rose-950/50 p-4 text-sm font-semibold text-rose-100">
+            {core.safetyNotice}
+          </div>
+        )}
         <details className="rounded-xl border border-stone-700 bg-[#101521] p-4">
           <summary className="cursor-pointer text-sm font-semibold text-stone-300">How REMEMBER read your question</summary>
           <div className="grid sm:grid-cols-2 gap-3 mt-4">
@@ -138,10 +144,11 @@ export const CoreDiscoveryView: React.FC<Props> = ({
               <p className="text-xs text-cyan-300 uppercase font-semibold mb-1">What connects these systems</p>
               <p className="font-serif text-lg">{core.screening?.experienceTranslation || (core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism)}</p>
             </div>
-            <div>
-              <p className="text-xs text-stone-300 mb-3">{confirmedDonor
-                ? 'You already know this process. Explore what transfers to the new one—and what changes.'
-                : "If you recognize that outside experience, follow its steps into the new subject—and see what you still need to learn."}</p>
+            <details className="rounded-xl border border-stone-700 bg-[#111824] p-4 space-y-3">
+              <summary className="cursor-pointer text-sm text-cyan-200 font-semibold">Want to see how the steps connect?</summary>
+              <p className="text-xs text-stone-300 my-3">{confirmedDonor
+                ? 'This uses the experience you described. These steps show what carries over and where new knowledge is needed.'
+                : 'If this outside experience is familiar, use its steps to see where the new subject is similar and different.'}</p>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {bridge.stages.map((item, index) => (
                   <button key={index} onClick={() => setStageIndex(index)}
@@ -151,20 +158,20 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                   </button>
                 ))}
               </div>
-            </div>
-            {stage && (
-              <div className="rounded-xl border border-stone-700 bg-[#131925] p-4 space-y-3" aria-live="polite">
-                <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                  <p><span className="text-stone-400 text-xs block mb-1">{bridge.comparisonSystem}</span>{stage.inComparison}</p>
-                  <p><span className="text-stone-400 text-xs block mb-1">{bridge.originalSystem}</span>{stage.inOriginal}</p>
+              {stage && (
+                <div className="rounded-xl border border-stone-700 bg-[#131925] p-4 space-y-3 mt-3" aria-live="polite">
+                  <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                    <p><span className="text-stone-400 text-xs block mb-1">{bridge.comparisonSystem}</span>{stage.inComparison}</p>
+                    <p><span className="text-stone-400 text-xs block mb-1">{bridge.originalSystem}</span>{stage.inOriginal}</p>
+                  </div>
+                  <p className="text-sm text-cyan-200"><strong>Same function:</strong> {stage.sharedFunction}</p>
+                  <p className="text-sm text-amber-200"><strong>What is different:</strong> {stage.importantDifference}</p>
+                  {stage.newKnowledgeNeeded && (
+                    <p className="text-sm rounded-lg border border-emerald-500/25 bg-emerald-950/20 p-3"><strong className="text-emerald-200">What you still need to learn here:</strong> {stage.newKnowledgeNeeded}</p>
+                  )}
                 </div>
-                <p className="text-sm text-cyan-200"><strong>Same function:</strong> {stage.sharedFunction}</p>
-                <p className="text-sm text-amber-200"><strong>What is different:</strong> {stage.importantDifference}</p>
-                {stage.newKnowledgeNeeded && (
-                  <p className="text-sm rounded-lg border border-emerald-500/25 bg-emerald-950/20 p-3"><strong className="text-emerald-200">What you still need to learn here:</strong> {stage.newKnowledgeNeeded}</p>
-                )}
-              </div>
-            )}
+              )}
+            </details>
             <div className={core.screening ? 'text-sm' : 'grid sm:grid-cols-2 gap-3 text-sm'}>
               {/* Review replaces the first pass's unreviewed transfer, even without a prediction. */}
               {!core.screening && (
@@ -200,7 +207,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           </>
         ) : (
           <div className="rounded-xl border border-amber-500/25 bg-[#211c17] p-5 space-y-2">
-            <h3 className="font-semibold text-amber-200">No convincing causal parallel found this time</h3>
+            <h3 className="font-semibold text-amber-200">{core.safetyNotice ? 'A comparison cannot safely answer this question' : 'No convincing causal parallel found this time'}</h3>
             <p className="text-sm text-stone-300">{core.screening?.reason || 'No complete causal comparison was found. That does not prove a match is impossible.'}</p>
           </div>
         )}

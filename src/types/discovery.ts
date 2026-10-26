@@ -61,6 +61,8 @@ export interface ReportedExperienceChain {
 export interface CoreDiscovery {
   version: 2;
   question: string;
+  /** Deterministic risk warning: never a model diagnosis. */
+  safetyNotice?: string;
   whatIsReported: string;
   // Optional for older saved discoveries.
   reportedChain?: ReportedExperienceChain | null;
