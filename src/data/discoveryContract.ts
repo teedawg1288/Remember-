@@ -26,8 +26,10 @@ function parseStage(value: unknown): DiscoveryStage | null {
     inComparison: words(item.inComparison, 180),
     sharedFunction: words(item.sharedFunction, 180),
     importantDifference: words(item.importantDifference, 180),
+    // Old saved discoveries do not have this field; they remain readable.
+    newKnowledgeNeeded: words(item.newKnowledgeNeeded, 220) || undefined,
   };
-  return Object.values(stage).every(Boolean) ? stage : null;
+  return [stage.label, stage.inOriginal, stage.inComparison, stage.sharedFunction, stage.importantDifference].every(Boolean) ? stage : null;
 }
 
 function parseBridge(value: unknown): DiscoveryBridge | null {
