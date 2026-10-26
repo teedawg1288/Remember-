@@ -483,7 +483,7 @@ describe('stage purpose and evidence safety regressions', () => {
     expect(result.screening?.experienceTranslation).toBeUndefined();
   });
 
-  test('rejects a donor when fewer than two stage goals align or the audit is missing', () => {
+  test('rejects a donor with fewer than two aligned goals and labels a missing audit as tentative only', () => {
     const core = parseCoreDiscovery(sample, question);
     const base = {
       decision: 'compare_only', selectedIndex: 0,
@@ -492,7 +492,10 @@ describe('stage purpose and evidence safety regressions', () => {
       crucialDifference: 'The actual actions have different goals.',
       prediction: null,
     };
-    expect(applyDiscoveryReview(core, base).screening?.status).toBe('rejected');
+    const incomplete = applyDiscoveryReview(core, base);
+    expect(incomplete.screening?.status).toBe('partial');
+    expect(incomplete.prediction).toBeNull();
+    expect(incomplete.bridges[0].stages).toHaveLength(0);
     const rejected = applyDiscoveryReview(core, {
       ...base,
       stagePurposeAudit: alignedAudit.map(item => ({

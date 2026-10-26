@@ -153,12 +153,34 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
   if (selectedBridge.stages.some(stage => unsupportedCompletedActionAttribution(core.question, stage.inComparison))) {
     return rejected('The comparison described a donor action as something the person did without evidence they reported doing it.');
   }
+  // If the reviewer has a possible *high-level* correspondence but fails to
+  // audit every step, keep the idea visibly tentative. Never show the
+  // unaudited step-by-step map or promote a prediction.
+  const incompleteAudit = (): CoreDiscovery => ({
+    ...core,
+    bridges: [{
+      ...selectedBridge, stages: [], possibleSharedMechanism: causalMatch,
+      whereItBreaks: crucialDifference,
+      howToChallenge: 'Check the real steps in both systems before treating this comparison as a guide.',
+    }],
+    prediction: null,
+    screening: {
+      status: 'partial',
+      reason: 'This is a possible connection, not a checked step-by-step transfer. The detailed purpose audit was incomplete.',
+      causalMatch, crucialDifference,
+    },
+  });
+  const suppliedClaims = [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' ');
+  if (unsupportedPersonalAttribution(core.question, suppliedClaims) ||
+      unsupportedCompletedActionAttribution(core.question, suppliedClaims)) {
+    return rejected('The comparison assigned the person an action or intention they did not report.');
+  }
   // A model saying two stages are "the same" is not enough: check the
-  // intended effect of each action in BOTH systems. Fail closed if the reviewer
-  // did not inspect every stage or cannot account for opposing purposes.
+  // intended effect of each action in BOTH systems. Without a complete audit
+  // fail closed for step claims, while retaining the *labelled* possible link.
   const rawStageAudit = Array.isArray(item.stagePurposeAudit) ? item.stagePurposeAudit : [];
   if (rawStageAudit.length !== selectedBridge.stages.length) {
-    return rejected('A complete check of what each step is meant to accomplish was missing.');
+    return incompleteAudit();
   }
   const checkedIndices = new Set<number>();
   const alignedIndices = new Set<number>();
@@ -173,7 +195,7 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
         words(audit?.donorGoal, 180).length < 8 ||
         words(audit?.targetGoal, 180).length < 8 ||
         words(audit?.reason, 180).length < 8) {
-      return rejected('The step-by-step purpose check was incomplete or inconsistent.');
+      return incompleteAudit();
     }
     checkedIndices.add(Number(index));
     if (verdict === 'aligned') alignedIndices.add(Number(index));
@@ -192,10 +214,6 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     ? 'Nonmatching steps were excluded: ' + conflicts.join('; ') + '. ' + crucialDifference
     : crucialDifference;
   // The reviewer must not promote an invented action or intention as a user fact.
-  if (unsupportedPersonalAttribution(core.question, [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' ')) ||
-      unsupportedCompletedActionAttribution(core.question, [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' '))) {
-    return rejected('The comparison assigned the person an action or intention they did not report.');
-  }
   const rawExperienceTranslation = words(item.experienceTranslation, 350);
   const experienceTranslation = rawExperienceTranslation.length >= 25 &&
     !hasUnexplainedAcronym(rawExperienceTranslation) &&

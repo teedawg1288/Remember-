@@ -144,7 +144,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
               <p className="text-xs text-cyan-300 uppercase font-semibold mb-1">What connects these systems</p>
               <p className="font-serif text-lg">{core.screening?.experienceTranslation || (core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism)}</p>
             </div>
-            <details className="rounded-xl border border-stone-700 bg-[#111824] p-4 space-y-3">
+            {bridge.stages.length > 0 && <details className="rounded-xl border border-stone-700 bg-[#111824] p-4 space-y-3">
               <summary className="cursor-pointer text-sm text-cyan-200 font-semibold">Want to see how the steps connect?</summary>
               <p className="text-xs text-stone-300 my-3">{confirmedDonor
                 ? 'This uses the experience you described. These steps show what carries over and where new knowledge is needed.'
@@ -171,7 +171,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
                   )}
                 </div>
               )}
-            </details>
+            </details>}
             <div className={core.screening ? 'text-sm' : 'grid sm:grid-cols-2 gap-3 text-sm'}>
               {/* Review replaces the first pass's unreviewed transfer, even without a prediction. */}
               {!core.screening && (

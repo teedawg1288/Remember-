@@ -107,6 +107,21 @@ describe('100 simulated people: translation direction and provenance', () => {
 });
 
 describe('100 simulated people: prediction scope and clean memory', () => {
+  test('missing step audit never erases a possible parallel or invents checked steps', () => {
+    const q = 'I refinished the wooden stairs in my house. Could that help me learn to fix rust on a car door?';
+    const core = parseCoreDiscovery(base, q);
+    const result = applyDiscoveryReview(core, {
+      decision: 'accept', selectedIndex: 0, stagePurposeAudit: [audit[0]],
+      reason: 'Similar preparation might teach something but the step comparison is incomplete.',
+      causalMatch: 'Both tasks may involve checking a damaged surface before choosing a repair.',
+      crucialDifference: 'Rust and wood damage require different material-specific handling.', prediction,
+    });
+    expect(result.screening?.status).toBe('partial');
+    expect(result.bridges).toHaveLength(1);
+    expect(result.bridges[0].stages).toHaveLength(0);
+    expect(result.prediction).toBeNull();
+    expect(result.screening?.reason).toContain('incomplete');
+  });
   test('reviewed two-link prediction can survive an unrelated failed stage, not a linked failure', () => {
     const core = parseCoreDiscovery(base, 'How can shoe repair help me understand joining metal?');
     const auditWithGap = audit.map((row, i) => i === 2 ? { ...row, verdict: 'unverified', reason: 'The final joining effect is not established in the unfamiliar material' } : row);
