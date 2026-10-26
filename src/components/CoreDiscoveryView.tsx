@@ -80,14 +80,23 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           <summary className="cursor-pointer text-sm font-semibold text-stone-300">How REMEMBER read your question</summary>
           <div className="grid sm:grid-cols-2 gap-3 mt-4">
             <section className="rounded-xl border border-stone-700 p-3">
-              <h2 className="text-xs font-bold text-amber-300 uppercase mb-2">One possible reading</h2>
+              <h2 className="text-xs font-bold text-amber-300 uppercase mb-2">What was described</h2>
               <p className="text-sm leading-relaxed">{core.whatIsReported}</p><p className="text-xs text-stone-400 mt-2">This is an AI interpretation. Your original words above take priority.</p>
             </section>
             <section className="rounded-xl border border-cyan-500/30 p-3">
-              <h2 className="text-xs font-bold text-cyan-300 uppercase mb-2">Possible pattern</h2>
+              <h2 className="text-xs font-bold text-cyan-300 uppercase mb-2">Possible explanation — not a fact</h2>
               <p className="text-sm leading-relaxed">{core.possibleMechanism}</p>
             </section>
           </div>
+          {core.reportedChain && (
+            <div className="mt-4 space-y-2 text-sm">
+              <p className="text-xs text-stone-400">Your stated meaning, actions and outcomes stay separate. REMEMBER has not filled in missing steps.</p>
+              {core.reportedChain.interpretation && <p className="rounded-lg border border-purple-500/25 p-3"><strong className="text-purple-200">Your interpretation:</strong> “{core.reportedChain.interpretation}”</p>}
+              {core.reportedChain.reaction && <p className="rounded-lg border border-blue-500/25 p-3"><strong className="text-blue-200">Response you described:</strong> “{core.reportedChain.reaction}”</p>}
+              {core.reportedChain.consequence && <p className="rounded-lg border border-amber-500/25 p-3"><strong className="text-amber-200">Outcome you described:</strong> “{core.reportedChain.consequence}”</p>}
+              <p className="text-xs text-stone-400">An outcome does not automatically prove the interpretation that came before it.</p>
+            </div>
+          )}
         </details>
       </header>
 
