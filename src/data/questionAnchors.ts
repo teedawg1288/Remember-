@@ -8,7 +8,9 @@ export function extractQuestionAnchors(question: string): { known: string; unkno
   const reportedActivity = /\b(?:i|we)\s+(?:(?:have|had)\s+|(?:have|had)\s+been\s+|know\s+how\s+to\s+|can\s+)?(?:fix(?:ed)?|repair(?:ed)?|restore(?:d)?|refinish(?:ed)?|detail(?:ed)?|plan(?:ned)?|organize(?:d)?|learn(?:ed|t)?|manage(?:d)?|build|built|clean(?:ed)?|do|did|use(?:d)?|make|made|work(?:ed)?|run|ran|sweep|swept|grease(?:d)?|paint(?:ed)?|teach|taught|check(?:ed)?|wash(?:ed)?|test(?:ed)?|maintain(?:ed)?|cook(?:ed)?|drive|drove|budget(?:ed)?)\b/i;
   if (!reportedActivity.test(first)) return null;
   const unknown = clauses.slice(1).join(' ').trim();
-  if (!unknown.includes('?')) return null;
+  // Direct commands such as "Explain profit through that" are questions for
+  // REMEMBER too; requiring a question mark loses the reported donor.
+  if (!unknown.includes('?') && !/^(?:explain|show|teach|compare|translate|describe|break down|tell me|walk me through|help me (?:understand|learn))\b/i.test(unknown)) return null;
   return { known: first, unknown };
 }
 
