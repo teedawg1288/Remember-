@@ -46,13 +46,57 @@ export const CrossExaminationPanel: React.FC<CrossExaminationPanelProps> = ({
       {error && <p role="alert" className="text-sm text-rose-200 rounded-lg border border-rose-500/30 p-3">{error}</p>}
       {result && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-emerald-500/25 bg-[#11221d] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300">Best question to settle it</p>
-            <p className="text-sm text-stone-100 mt-1">{result.nextCheck}</p>
-          </div>
+          {(focus !== 'mechanism' || !result.nextPredictionQuestion) && (
+            <div className="rounded-xl border border-emerald-500/25 bg-[#11221d] p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300">Best safe check</p>
+              <p className="text-sm text-stone-100 mt-1">{result.nextCheck}</p>
+            </div>
+          )}
+          {focus === 'mechanism' && result.nextPredictionQuestion && (
+            <div className="space-y-4">
+              <section className="rounded-xl border border-stone-600 bg-[#121a24] p-4 space-y-3">
+                <h4 className="font-semibold text-white">What we know—and why it could happen</h4>
+                <p className="text-sm text-stone-300"><strong>Reported:</strong> {result.observed}</p>
+                {result.causalFacts?.length ? result.causalFacts.map((fact, i) => (
+                  <div key={i} className="text-sm border-l-2 border-cyan-500/50 pl-3">
+                    <p className="text-[11px] uppercase text-cyan-200">
+                      {fact.basis === 'reported' ? 'Stated in the question' : 'General principle · not source-checked'}
+                    </p>
+                    <p className="text-stone-100">{fact.statement}</p>
+                    <p className="text-stone-400"><strong>Why it matters:</strong> {fact.whyItMatters}</p>
+                  </div>
+                )) : <p className="text-xs text-amber-200">No independent causal facts could be established from the question alone.</p>}
+                {result.causalExplanation && (
+                  <p className="text-sm text-stone-200"><strong>How it could happen:</strong> {result.causalExplanation}</p>
+                )}
+              </section>
+              <section className="rounded-xl border border-emerald-500/30 bg-[#10211e] p-4 space-y-2">
+                <h4 className="font-semibold text-emerald-200">What the other system helps predict</h4>
+                {result.prediction ? (
+                  <>
+                    <p className="text-xs text-stone-300"><strong>Borrowed lesson:</strong> {result.prediction.donorLesson}</p>
+                    <p className="text-xs text-amber-200"><strong>Still unknown here:</strong> {result.prediction.missingTargetCondition}</p>
+                    <p className="text-sm"><strong className="text-emerald-300">If:</strong> {result.prediction.ifCondition}</p>
+                    <p className="text-sm"><strong className="text-emerald-300">Then we might see:</strong> {result.prediction.expectedOutcome}</p>
+                    <p className="text-sm text-stone-300"><strong>Compared with:</strong> {result.prediction.comparedWith}</p>
+                    <p className="text-xs text-rose-200"><strong>What would count against it:</strong> {result.prediction.whatWouldChallengeIt}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-amber-200">No defensible prediction yet. {result.noPredictionReason}</p>
+                )}
+              </section>
+              <section className="rounded-xl border border-amber-500/35 bg-[#211b16] p-4 space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-amber-300">The next question for the prediction</p>
+                <h4 className="text-base font-semibold text-white">{result.nextPredictionQuestion.question}</h4>
+                <p className="text-sm text-stone-200"><strong>Why this question in particular:</strong> {result.nextPredictionQuestion.whyThisQuestion}</p>
+                <p className="text-sm text-stone-300"><strong>How the answer changes things:</strong> {result.nextPredictionQuestion.howAnswerChangesPrediction}</p>
+                <p className="text-xs text-emerald-200"><strong>Safe next check:</strong> {result.nextCheck}</p>
+              </section>
+            </div>
+          )}
           {focus === 'mechanism' && (
             <div className="space-y-3">
-              <p className="text-xs text-stone-400">Observation: {result.observed}</p>
+              {!result.nextPredictionQuestion && <p className="text-xs text-stone-400">Observation: {result.observed}</p>}
               {result.hypotheses.map((h, i) => (
                 <article key={i} className="rounded-xl border border-stone-700 bg-[#10141e] p-4 space-y-2">
                   <h4 className="font-semibold text-white">{h.explanation}</h4>
