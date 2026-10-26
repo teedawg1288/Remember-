@@ -95,6 +95,19 @@ describe('REMEMBER core discovery contract', () => {
     expect(app).toContain('activeAnalysis.coreDiscovery');
   });
 
+  test('translation travels from a possible familiar donor to the unfamiliar question, not backwards', () => {
+    const example = buildCoreDiscoveryPrompt('How does a frozen drink machine work?', [], []);
+    const review = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf-8');
+    expect(example).toContain('unfamiliar target');
+    expect(example).toContain('If familiarity was not established');
+    expect(example).toContain('known ice-making process does not by itself explain a frozen-drink machine');
+    expect(review).toContain('potentially familiar DONOR');
+    expect(review).toContain('unfamiliar TARGET');
+    expect(view).toContain('Outside experience · if familiar');
+    expect(view).toContain('What you want to understand');
+  });
+
   test('non-referential questions do not leak earlier subjects into comparisons', () => {
     const previous = 'Why did a couple argue over a text message?';
     const prompt = buildCoreDiscoveryPrompt('Why does a bridge fatigue under cycles?', [], [previous]);
