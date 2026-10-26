@@ -242,7 +242,7 @@ describe('REMEMBER core discovery contract', () => {
     expect(result.prediction?.whatWouldDisproveIt).toContain('comparable conditions');
     const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf-8');
     expect(view).toContain('What would count against it');
-    expect(view).toContain("core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism");
+    expect(view).toContain("core.screening?.experienceTranslation ||");
     expect(view).toContain('{!core.screening && (');
     expect(view).toContain('unreviewed transfer');
     expect(view).not.toContain('No convincing different-system match yet');
@@ -278,4 +278,27 @@ describe('REMEMBER core discovery contract', () => {
     expect(reviewer).toContain('allow compare_only');
   });
 
+});
+
+describe('experience-grounded output integrity', () => {
+  test('reviewer translation survives only in plain language and no invented person facts', () => {
+    const core = parseCoreDiscovery(sample, question);
+    const review = {
+      decision: 'compare_only', selectedIndex: 0, prediction: null,
+      reason: 'Two causal stages match but no transfer survives the differences.',
+      causalMatch: 'In both systems extra input increases load and some parts may be lost.',
+      crucialDifference: 'A person can change how they interpret a message.',
+      experienceTranslation: 'Like checking that a message gets through before sending more, checking what was heard can explain the next step.',
+    };
+    const cleanReview = applyDiscoveryReview(core, review);
+    expect(cleanReview.screening?.experienceTranslation).toContain('checking what was heard');
+    const acronymReview = applyDiscoveryReview(core, {
+      ...review, experienceTranslation: 'The TCP interface detects CPU overload when talking to someone.',
+    });
+    expect(acronymReview.screening?.experienceTranslation).toBeUndefined();
+    const invented = applyDiscoveryReview(core, {
+      ...review, causalMatch: 'The user deliberately ignores the listener while adding messages.',
+    });
+    expect(invented.screening?.status).toBe('rejected');
+  });
 });

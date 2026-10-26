@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Bookmark, CheckCircle2, Compass, GitCompare, HelpCircle } from 'lucide-react';
 import type { SameStoryResult, CrossExaminationResult } from '../types/sameStory';
 import { CrossExaminationPanel } from './CrossExaminationPanel';
+import { confirmedExperienceExcerpt } from '../data/grounding';
 
 interface Props {
   analysis: SameStoryResult;
@@ -22,6 +23,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
   if (!core) return null;
 
   const bridge = core.bridges[bridgeIndex];
+  const confirmedDonor = bridge ? confirmedExperienceExcerpt(core.question, bridge.comparisonSystem) : null;
   const stage = bridge?.stages[Math.min(stageIndex, bridge.stages.length - 1)];
   const runCrossExam = async () => {
     if (examBusy) return;
@@ -78,8 +80,8 @@ export const CoreDiscoveryView: React.FC<Props> = ({
           <summary className="cursor-pointer text-sm font-semibold text-stone-300">How REMEMBER read your question</summary>
           <div className="grid sm:grid-cols-2 gap-3 mt-4">
             <section className="rounded-xl border border-stone-700 p-3">
-              <h2 className="text-xs font-bold text-amber-300 uppercase mb-2">What you asked</h2>
-              <p className="text-sm leading-relaxed">{core.whatIsReported}</p>
+              <h2 className="text-xs font-bold text-amber-300 uppercase mb-2">One possible reading</h2>
+              <p className="text-sm leading-relaxed">{core.whatIsReported}</p><p className="text-xs text-stone-400 mt-2">This is an AI interpretation. Your original words above take priority.</p>
             </section>
             <section className="rounded-xl border border-cyan-500/30 p-3">
               <h2 className="text-xs font-bold text-cyan-300 uppercase mb-2">Possible pattern</h2>
@@ -108,7 +110,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
             )}
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
               <div className="rounded-xl bg-[#121c2a] border border-stone-700 p-3 sm:p-5 text-center min-w-0">
-                <p className="text-[10px] uppercase text-stone-400">Outside experience · if familiar</p>
+                <p className="text-[10px] uppercase text-stone-400">{confirmedDonor ? 'Experience you described' : 'Outside experience · if familiar'}</p>
                 <h3 className="text-sm sm:text-xl font-semibold break-words">{bridge.comparisonSystem}</h3>
               </div>
               <ArrowRight aria-label="Use this experience to explore your question" className="w-5 h-5 text-cyan-400" />
@@ -119,10 +121,12 @@ export const CoreDiscoveryView: React.FC<Props> = ({
             </div>
             <div className="rounded-xl border border-cyan-500/20 bg-[#0b111b] p-4">
               <p className="text-xs text-cyan-300 uppercase font-semibold mb-1">What connects these systems</p>
-              <p className="font-serif text-lg">{core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism}</p>
+              <p className="font-serif text-lg">{core.screening?.experienceTranslation || (core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism)}</p>
             </div>
             <div>
-              <p className="text-xs text-stone-300 mb-3">If you recognize that outside experience, explore which steps help explain your question—and which don't.</p>
+              <p className="text-xs text-stone-300 mb-3">{confirmedDonor
+                ? 'You already know this process. Explore what transfers to the new one—and what changes.'
+                : "If you recognize that outside experience, explore which steps help explain your question—and which don't."}</p>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {bridge.stages.map((item, index) => (
                   <button key={index} onClick={() => setStageIndex(index)}
@@ -186,10 +190,10 @@ export const CoreDiscoveryView: React.FC<Props> = ({
 
       {core.prediction && (
         <section className="rounded-2xl border border-emerald-500/35 bg-[#101f1d] p-5 sm:p-7 space-y-3">
-          <h2 className="font-serif text-xl text-emerald-200">A prediction worth checking</h2>
+          <h2 className="font-serif text-xl text-emerald-200">A question worth investigating</h2>
           <p className="text-sm text-stone-300">A proposed transfer from the other system. This is not an established result.</p>
-          <p><strong className="text-emerald-300">If:</strong> {core.prediction.ifCondition}</p>
-          <p><strong className="text-emerald-300">Then we might see:</strong> {core.prediction.expectedOutcome}</p>
+          <p className="font-serif text-lg">If {core.prediction.ifCondition}, might it follow that {core.prediction.expectedOutcome.replace(/[.!?]+$/, '')}?</p>
+          <p className="text-sm text-stone-300"><strong>Why this question:</strong> {core.prediction.borrowedFromOtherSystem}</p>
           <details className="rounded-lg border border-stone-700 p-3 text-sm">
             <summary className="cursor-pointer font-semibold">Why this prediction—and what would count against it</summary>
             <p className="mt-3"><strong>Borrowed insight:</strong> {core.prediction.borrowedFromOtherSystem}</p>

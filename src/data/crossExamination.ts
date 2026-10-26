@@ -1,4 +1,5 @@
 import type { CrossExaminationResult } from '../types/sameStory';
+import { isLeadingPredictionQuestion, quoteAppearsInQuestion, unsupportedPersonalAttribution } from './grounding';
 
 export interface ExaminedBridge {
   originalSystem: string;
@@ -38,6 +39,8 @@ export function buildCrossExaminationPrompt(input: CrossExaminationInput): strin
     'FACT RULE: Supply 0-3 causalFacts. "reported" means a fact EXPLICITLY stated by the user, never an invented event. "general" means a widely established general mechanism you can accurately describe; it is recalled model knowledge, NOT externally source-verified here. Do not label an inferred motive, diagnosis, frequency, or cause as a fact. If the user gave only a general question, say so in observed and do not invent an episode. If there are no defensible facts, return an empty list.',
     "MEANING AND DELIVERY RULE: The person's exact language is data, not evidence of intelligence, morality, trustworthiness or competence. Do not judge humour, swearing, slang, dialect, race, religion, housing, income, substance use, occupation or credentials. What someone intended and what a listener or model understood are separate; do not assign either meaning or a feeling without evidence. A correction by the person overrides a guessed interpretation. The same event can carry different meanings for different people.",
     "KNOWN EXPERIENCE RULE: If the user explicitly knows the donor, build on that process without quizzing them on steps they already know. If donor familiarity is unknown, present it as a tentative invitation. Keep personal pain, crises or trauma out of comparisons unless the person chooses to introduce them and they are genuinely relevant. A useful lesson may be learned from an outside story without assuming the user has lived it; do not claim an analogy replaces personal experience.",
+    "EVIDENCE QUOTE RULE: For every causalFact with basis reported, include sourceQuote copied VERBATIM from the current question to support that exact statement. The server checks these quotes. If there is no direct quote, do not assert a reported causal fact. A repaired staircase does not prove the timber was rotten; a damaged surface does not establish why it was damaged. The target may have a different cause. Do not invent the donor diagnosis or attribute a failed or careless repair to the user.",
+    "TECHNICAL CAUTION: Never require a particular treatment, declare structural integrity, or propose a shortcut inspection as decisive without grounded evidence. Mechanical cleaning, chemical treatment and replacing damaged material can be different options depending on conditions. Ask what would distinguish them; do not substitute a household trick for a qualified inspection. Translate terms into everyday experience before technical labels.",
 
     'CAUSE RULE: causalExplanation shows an actual sequence (input -> constraint -> change -> outcome) using only supported principles, with a plain-language qualification for what has NOT been established in this particular case. A single matching word, broad "pressure" slogan, or identical outcome does not establish a causal parallel.',
     'COMPETING EXPLANATIONS: Provide 2-3 distinct possibilities, naming the observable finding that supports and challenges each, including at least one alternative to the proposed mechanism. No claims about a real person\'s hidden intentions.',
@@ -52,8 +55,8 @@ export function buildCrossExaminationPrompt(input: CrossExaminationInput): strin
     JSON.stringify({
       observed: 'Only what was actually reported, or that no event is reported',
       causalFacts: [
-        { statement: 'Precisely reported observation or established general principle', basis: 'reported', whyItMatters: 'What causal step this grounds' },
-        { statement: 'Accurate general principle, not source-checked in this request', basis: 'general', whyItMatters: 'What causal step this grounds' },
+        { statement: "Precisely reported observation from the user\u0027s words", basis: 'reported', sourceQuote: 'Verbatim excerpt that occurs in the question', whyItMatters: 'What causal step this grounds' },
+        { statement: 'Accurate general principle, not source-checked in this request', basis: 'general', sourceQuote: '', whyItMatters: 'What causal step this grounds' },
       ],
       causalExplanation: 'Plain cause-and-effect chain, including what remains unconfirmed in this case',
       hypotheses: [
@@ -100,20 +103,25 @@ function verifiedItems(raw: unknown, keys: string[], max: number): Array<Record<
 }
 
 /** Validate new prediction and question fields before showing them to a user. */
-export function parseCrossExaminationResult(raw: unknown): CrossExaminationResult {
+export function parseCrossExaminationResult(raw: unknown, exactQuestion?: string): CrossExaminationResult {
   const data = obj(raw);
   if (!data || !meaningful(data.observed) || !meaningful(data.causalExplanation) ||
       !meaningful(data.nextCheck) || !meaningful(data.evidenceBoundary)) {
     throw new Error('INVALID_AI_RESPONSE');
   }
-  const facts = verifiedItems(data.causalFacts, ['statement', 'whyItMatters'], 3).map((item, index) => ({
-    statement: item.statement,
-    whyItMatters: item.whyItMatters,
-    basis: clean((data.causalFacts as Array<Record<string, unknown>>)[index]?.basis),
-  }));
-  if (facts.some(fact => !['reported', 'general'].includes(fact.basis))) {
-    throw new Error('INVALID_AI_RESPONSE');
-  }
+  const facts = Array.isArray(data.causalFacts) ? data.causalFacts.slice(0, 3).flatMap(entry => {
+    const item = obj(entry);
+    if (!item || !meaningful(item.statement) || !meaningful(item.whyItMatters)) return [];
+    const basis = clean(item.basis);
+    if (basis !== 'reported' && basis !== 'general') throw new Error('INVALID_AI_RESPONSE');
+    if (basis === 'reported' && exactQuestion) {
+      const sourceQuote = clean(item.sourceQuote, 500);
+      if (!quoteAppearsInQuestion(exactQuestion, sourceQuote)) return [];
+      // Display the person's exact words, never an AI statement masquerading as their fact.
+      return [{ statement: sourceQuote, whyItMatters: clean(item.whyItMatters), basis }];
+    }
+    return [{ statement: clean(item.statement), whyItMatters: clean(item.whyItMatters), basis }];
+  }) : [];
   const hypotheses = verifiedItems(data.hypotheses, ['explanation', 'whatWouldSupport', 'whatWouldChallenge'], 3);
   if (hypotheses.length < 2) throw new Error('INVALID_AI_RESPONSE');
   const crossDomainCandidates = verifiedItems(data.crossDomainCandidates,
@@ -125,6 +133,7 @@ export function parseCrossExaminationResult(raw: unknown): CrossExaminationResul
   if (!question || !questionFields.every(key => meaningful(question[key]))) {
     throw new Error('INVALID_AI_RESPONSE');
   }
+  if (isLeadingPredictionQuestion(clean(question.question))) throw new Error('INVALID_AI_RESPONSE');
   const predictionFields = [
     'donorLesson', 'missingTargetCondition', 'ifCondition', 'expectedOutcome', 'comparedWith', 'whatWouldChallengeIt',
   ] as const;
@@ -135,8 +144,19 @@ export function parseCrossExaminationResult(raw: unknown): CrossExaminationResul
   if (proposed === null && !meaningful(data.noPredictionReason)) {
     throw new Error('INVALID_AI_RESPONSE');
   }
+  if (exactQuestion) {
+    const displayed = [
+      data.causalExplanation, data.nextCheck, question.question,
+      question.factBehindQuestion, question.whyThisQuestion,
+      ...hypotheses.map(item => item.explanation),
+      ...(proposed ? Object.values(proposed) : []),
+    ].map(value => clean(value, 900)).join(' ');
+    if (unsupportedPersonalAttribution(exactQuestion, displayed)) {
+      throw new Error('INVALID_AI_RESPONSE');
+    }
+  }
   return {
-    observed: clean(data.observed, 500),
+    observed: exactQuestion ? exactQuestion.slice(0, 500) : clean(data.observed, 500),
     causalFacts: facts.map(fact => ({
       statement: fact.statement,
       basis: fact.basis as 'reported' | 'general',
