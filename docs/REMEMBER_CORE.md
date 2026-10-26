@@ -262,3 +262,21 @@ The user may know how to complete a process in one area without knowing the voca
 6. Screens each transferred step and asks one open, evidence-grounded question about an unverified target condition.
 
 A familiar working order is a learning advantage, **not** automatic mastery, licensure, safety or proof that the target works identically. When only a sub-process transfers, present that bounded transfer and its remaining gaps. Do not turn any one donor into the canonical analogy for every future question. Keep the abstraction method private; keep the observed facts, steps, and caveats visible.
+
+
+## Version 2.10 — Observation, interpretation, response, outcome
+
+A situation question may contain several different kinds of claims. Keep them distinct:
+the observed or reported event, the **meaning the person assigned**, what they say
+they did in response, and the consequence they say followed. The model cannot fill
+in missing intentions, actions or outcomes. A consequence is real when reported
+but does not itself establish that the earlier interpretation was correct.
+A neutral reassessment question asks what new observation would change the reading.
+This is not a moral claim about what people freely choose to experience.
+
+The optional reportedChain is extracted as **verbatim excerpts** from the
+current user question and rejected if the words cannot be found there.
+The UI shows it only when at least one of its stages is actually stated.
+Older saved discoveries without the field continue to render.
+This sits alongside—not instead of—the cross-domain experience translation,
+target-only skill gaps, causal screening and question-led prediction.
