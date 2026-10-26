@@ -125,4 +125,16 @@ describe('cross-examination prediction and question contract', () => {
     expect(panel).toContain('General principle · not source-checked');
     expect(server.match(/app\.post\('\/api\/same-story\/cross-examine'/g)).toHaveLength(1);
   });
+  test('cross-examination respects experience and does not pressure a predetermined belief', () => {
+    const prompt = buildCrossExaminationPrompt({
+      question: 'Could I be misunderstanding what that person meant?',
+      selectedBridge: bridge,
+    });
+    expect(prompt).toContain('MEANING AND DELIVERY RULE');
+    expect(prompt).toContain('KNOWN EXPERIENCE RULE');
+    expect(prompt).toContain('NONLEADING CHECK');
+    expect(prompt).toContain('A valid prediction question must let either answer change the hypothesis');
+    expect(prompt).toContain('A correction by the person overrides a guessed interpretation');
+  });
+
 });
