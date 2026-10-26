@@ -12,6 +12,7 @@ import { buildDiscoveryReviewPrompt } from './src/data/discoveryReviewPrompt.ts'
 import { parseCoreDiscovery, applyDiscoveryReview } from './src/data/discoveryContract.ts';
 import { buildCrossExaminationPrompt, parseCrossExaminationResult } from './src/data/crossExamination.ts';
 import { discoveryToSavedResult } from './src/data/discoveryAdapter.ts';
+import { assessDiscoveryRisk, urgentDiscovery } from './src/data/discoverySafety.ts';
 import type { SameStoryResult, CrossFieldPrediction, WhatIfScenario, EraProjection } from './src/types/sameStory.ts';
 
 // Attempt to read API key from environment or /app/.dev.env.json
@@ -145,6 +146,13 @@ app.post('/api/discovery/analyze', async (req: Request, res: Response) => {
     res.status(400).json({ success: false, error: 'Ask a question using up to 4,000 characters.' });
     return;
   }
+  const risk = assessDiscoveryRisk(question);
+  // Urgent medical/veterinary signs must never wait for a model to infer a
+  // reassuring comparison, and this response must work even without credits.
+  if (risk?.level === 'emergency') {
+    res.json({ success: true, result: discoveryToSavedResult(urgentDiscovery(question, risk)), languageLearnings: [] });
+    return;
+  }
   if (!geminiApiKey) {
     res.status(503).json(missingGeminiKey);
     return;
@@ -193,6 +201,7 @@ app.post('/api/discovery/analyze', async (req: Request, res: Response) => {
       }
       core = applyDiscoveryReview(core, reviewRaw);
     }
+    if (risk?.level === 'boundary') core = { ...core, safetyNotice: risk.notice, prediction: null };
     const result = discoveryToSavedResult(core);
     const corpus = (' ' + question.toLocaleLowerCase()
       .replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ');

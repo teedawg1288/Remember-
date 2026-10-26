@@ -1,5 +1,6 @@
 import type { CoreDiscovery, DiscoveryBridge, DiscoveryStage, MeaningCheck, DiscoveryPrediction } from '../types/discovery';
-import { hasUnexplainedAcronym, quoteAppearsInQuestion, unsupportedPersonalAttribution } from './grounding';
+import { hasUnexplainedAcronym, quoteAppearsInQuestion, unsupportedPersonalAttribution, unsupportedCompletedActionAttribution } from './grounding';
+import { clearSourceTargetReversal } from './questionAnchors';
 
 // Long model answers must never be sliced through a word without indicating truncation.
 const words = (value: unknown, max = 500): string => {
@@ -146,6 +147,12 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     return rejected('The comparison did not survive the causal review.');
   }
   const selectedBridge = core.bridges[selectedIndex];
+  if (clearSourceTargetReversal(core.question, selectedBridge)) {
+    return rejected('The proposed comparison reversed the user\'s known experience and the new subject they asked about.');
+  }
+  if (selectedBridge.stages.some(stage => unsupportedCompletedActionAttribution(core.question, stage.inComparison))) {
+    return rejected('The comparison described a donor action as something the person did without evidence they reported doing it.');
+  }
   // A model saying two stages are "the same" is not enough: check the
   // intended effect of each action in BOTH systems. Fail closed if the reviewer
   // did not inspect every stage or cannot account for opposing purposes.
@@ -185,13 +192,15 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     ? 'Nonmatching steps were excluded: ' + conflicts.join('; ') + '. ' + crucialDifference
     : crucialDifference;
   // The reviewer must not promote an invented action or intention as a user fact.
-  if (unsupportedPersonalAttribution(core.question, [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' '))) {
+  if (unsupportedPersonalAttribution(core.question, [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' ')) ||
+      unsupportedCompletedActionAttribution(core.question, [causalMatch, crucialDifference, selectedBridge.whereItBreaks].join(' '))) {
     return rejected('The comparison assigned the person an action or intention they did not report.');
   }
   const rawExperienceTranslation = words(item.experienceTranslation, 350);
   const experienceTranslation = rawExperienceTranslation.length >= 25 &&
     !hasUnexplainedAcronym(rawExperienceTranslation) &&
-    !unsupportedPersonalAttribution(core.question, rawExperienceTranslation)
+    !unsupportedPersonalAttribution(core.question, rawExperienceTranslation) &&
+    !unsupportedCompletedActionAttribution(core.question, rawExperienceTranslation)
       ? rawExperienceTranslation : undefined;
   const compareOnly = (why: string): CoreDiscovery => ({
     ...core,
@@ -204,7 +213,6 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     },
   });
   // A useful parallel is not automatically a transferable prediction.
-  if (conflicts.length) return compareOnly('A matching sub-process remains, but some steps have opposing or unverified purposes. ' + checkedDifference);
   if (item.decision === 'compare_only') return compareOnly(reason);
   const proposed = record(item.prediction);
   const prediction: DiscoveryPrediction | null = proposed ? {
@@ -219,8 +227,30 @@ export function applyDiscoveryReview(core: CoreDiscovery, response: unknown): Co
     safeNextCheck: words(proposed.safeNextCheck, 350),
   } : null;
   if (!prediction || Object.values(prediction).some(value => value.length < 12) ||
-      unsupportedPersonalAttribution(core.question, Object.values(prediction).join(' '))) {
+      unsupportedPersonalAttribution(core.question, Object.values(prediction).join(' ')) ||
+      unsupportedCompletedActionAttribution(core.question, Object.values(prediction).join(' '))) {
     return compareOnly('The causal parallel remains possible, but no clear, testable prediction survived.');
+  }
+  if (conflicts.length) {
+    const predictionStages = Array.isArray(item.predictionStageIndices) ? item.predictionStageIndices : [];
+    const anchors = new Set(predictionStages.filter((index: unknown) => Number.isInteger(index)) as number[]);
+    // If any rejected stage is necessary, the prediction is still withheld.
+    // An explicitly isolated two-stage transfer can survive unrelated gaps.
+    if (anchors.size < 2 || anchors.size !== predictionStages.length ||
+        [...anchors].some(index => !alignedIndices.has(index)) ||
+        item.predictionScopedToAlignedStages !== true) {
+      return compareOnly('Some stages do not match. No separately reviewed prediction was grounded only in the remaining causal steps. ' + checkedDifference);
+    }
+    return {
+      ...core,
+      bridges: [checkedBridge],
+      prediction,
+      screening: {
+        status: 'accepted', reason: reason + ' Only the audited matching stages support this question.',
+        causalMatch: checkedCausalMatch, crucialDifference: checkedDifference,
+        experienceTranslation: undefined,
+      },
+    };
   }
   return {
     ...core,

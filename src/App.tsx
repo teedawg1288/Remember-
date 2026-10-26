@@ -10,6 +10,10 @@ import { SameStoryResult } from './types/sameStory';
 import { AlertCircle, Eye, MessageSquare, Sparkles, Box } from 'lucide-react';
 import { sound } from './audio/soundEngine';
 
+/** Every /?test=isolated&case=... URL is a clean fictional user's session. */
+const isIsolatedTest = typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('test') === 'isolated';
+
 // Automatic language interpretations are provisional; old guesses expire.
 const INFERRED_MEANING_MAX_AGE_MS = 60 * 24 * 60 * 60 * 1000;
 const isFreshMemory = (entry: PersonalPhrase): boolean => {
@@ -32,6 +36,7 @@ export const App: React.FC = () => {
   const [savedStories, setSavedStories] = useState<SameStoryResult[]>([]);
   // Local language memory: inferred from user wording, never a factual profile.
   const [personalPhrases, setPersonalPhrases] = useState<PersonalPhrase[]>(() => {
+    if (isIsolatedTest) return [];
     try {
       const raw = JSON.parse(localStorage.getItem('remember_learned_language_v2') || localStorage.getItem('remember_personal_language_v1') || '[]');
       return Array.isArray(raw) ? raw.filter((p) =>
@@ -41,22 +46,26 @@ export const App: React.FC = () => {
     } catch { return []; }
   });
   const [usePersonalLanguage, setUsePersonalLanguage] = useState(() => {
+    if (isIsolatedTest) return false;
     try { return localStorage.getItem('remember_personal_language_enabled_v1') !== 'false'; }
     catch { return true; }
   });
 
   useEffect(() => {
+    if (isIsolatedTest) return;
     try { localStorage.setItem('remember_learned_language_v2', JSON.stringify(personalPhrases)); }
     catch { /* Browsing storage may be disabled. */ }
   }, [personalPhrases]);
 
   useEffect(() => {
+    if (isIsolatedTest) return;
     try { localStorage.setItem('remember_personal_language_enabled_v1', String(usePersonalLanguage)); }
     catch { /* Browsing storage may be disabled. */ }
   }, [usePersonalLanguage]);
 
   // Keep only a short, expiring tail of past questions for contextual translation.
   const [recentQuestions, setRecentQuestions] = useState<{ text: string; at: number }[]>(() => {
+    if (isIsolatedTest) return [];
     try {
       const raw = JSON.parse(localStorage.getItem('remember_recent_questions_v2') || '[]');
       const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -68,6 +77,7 @@ export const App: React.FC = () => {
   });
 
   useEffect(() => {
+    if (isIsolatedTest) return;
     try { localStorage.setItem('remember_recent_questions_v2', JSON.stringify(recentQuestions)); }
     catch { /* Browsing storage may be disabled. */ }
   }, [recentQuestions]);
@@ -75,6 +85,7 @@ export const App: React.FC = () => {
   const forgetLearnedLanguage = () => {
     setPersonalPhrases([]);
     setRecentQuestions([]);
+    if (isIsolatedTest) return;
     try {
       localStorage.removeItem('remember_personal_language_v1');
       localStorage.removeItem('remember_learned_language_v2');
@@ -89,6 +100,7 @@ export const App: React.FC = () => {
 
   // Load initial history and saved stories from localStorage
   useEffect(() => {
+    if (isIsolatedTest) return;
     try {
       const saved = localStorage.getItem('remember_saved_discoveries');
       if (saved) {
@@ -103,7 +115,7 @@ export const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const relevantPhrases = usePersonalLanguage
+      const relevantPhrases = usePersonalLanguage && !isIsolatedTest
         ? personalPhrases.filter((entry) => {
             if (!isFreshMemory(entry)) return false;
             const normalize = (value: string) =>
@@ -117,7 +129,7 @@ export const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userInput, persona, personalDictionary: relevantPhrases,
-          conversationContext: usePersonalLanguage
+          conversationContext: usePersonalLanguage && !isIsolatedTest
             ? recentQuestions
               .filter((q) => q.at > Date.now() - 30 * 24 * 60 * 60 * 1000)
               .slice(0, 6).reverse().map((q) => q.text)
@@ -130,7 +142,7 @@ export const App: React.FC = () => {
         throw new Error(data.error || 'The analysis could not be completed. Please try again.');
       }
 
-      if (usePersonalLanguage) {
+      if (usePersonalLanguage && !isIsolatedTest) {
         const signals = Array.isArray(data.languageLearnings) ? data.languageLearnings : [];
         // Only current language is new evidence; don't reinforce a guess from old prompts alone.
         const corpus = (' ' + userInput.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ') + ' ');
@@ -201,10 +213,9 @@ export const App: React.FC = () => {
       } else {
         updated = [target, ...prev];
       }
-      try {
-        localStorage.setItem('remember_saved_discoveries', JSON.stringify(updated));
-      } catch {
-        // Storage quota
+      if (!isIsolatedTest) {
+        try { localStorage.setItem('remember_saved_discoveries', JSON.stringify(updated)); }
+        catch { /* Storage quota */ }
       }
       return updated;
     });
@@ -216,6 +227,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0c0e12] text-stone-100 selection:bg-amber-500/20 selection:text-amber-200">
+      {isIsolatedTest && <div role="status" className="bg-cyan-950/80 border-b border-cyan-500/30 px-4 py-2 text-xs text-cyan-100 text-center">Isolated test session · No remembered language or earlier questions</div>}
       {/* Top Navigation */}
       <Header
         appName={appName}
