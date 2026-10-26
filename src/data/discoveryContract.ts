@@ -1,5 +1,5 @@
 import type { CoreDiscovery, DiscoveryBridge, DiscoveryStage, MeaningCheck, DiscoveryPrediction } from '../types/discovery';
-import { hasUnexplainedAcronym, unsupportedPersonalAttribution } from './grounding';
+import { hasUnexplainedAcronym, quoteAppearsInQuestion, unsupportedPersonalAttribution } from './grounding';
 
 // Long model answers must never be sliced through a word without indicating truncation.
 const words = (value: unknown, max = 500): string => {
@@ -91,6 +91,7 @@ export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreD
     version: 2,
     question: exactQuestion, // Never trust the model to replace the submitted question.
     whatIsReported,
+    reportedChain: parseReportedChain(item.reportedChain, exactQuestion),
     possibleMechanism,
     alternativeExplanations,
     bridges,
@@ -98,6 +99,22 @@ export function parseCoreDiscovery(value: unknown, exactQuestion: string): CoreD
     nextCheck,
     meaningCheck: parseMeaning(item.meaningCheck),
   };
+}
+
+/** Keep a lived-experience chain ONLY when the user's exact words support it. */
+function parseReportedChain(value: unknown, exactQuestion: string): CoreDiscovery['reportedChain'] {
+  const item = record(value);
+  if (!item) return null;
+  const fromQuote = (key: string): string | undefined => {
+    const quote = words(item[key], 350);
+    return quoteAppearsInQuestion(exactQuestion, quote) ? quote : undefined;
+  };
+  const chain = {
+    interpretation: fromQuote('interpretation'),
+    reaction: fromQuote('reaction'),
+    consequence: fromQuote('consequence'),
+  };
+  return Object.values(chain).some(Boolean) ? chain : null;
 }
 
 /**
