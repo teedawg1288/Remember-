@@ -393,3 +393,48 @@ describe('experience-to-completion transfer', () => {
     expect(cross).toContain('TRANSFERABLE KNOWLEDGE EXAM');
   });
 });
+
+
+describe('observation, interpretation, reaction, consequence', () => {
+  test('preserves only direct quotes and never manufactures missing stages', () => {
+    const q = 'I saw the message was unread. I thought she was ignoring me. I sent it twice. Then we argued.';
+    const actual = parseCoreDiscovery({
+      ...sample,
+      reportedChain: {
+        interpretation: 'I thought she was ignoring me.',
+        reaction: 'I sent it twice.',
+        consequence: 'Then we argued.',
+      },
+    }, q);
+    expect(actual.reportedChain).toEqual({
+      interpretation: 'I thought she was ignoring me.',
+      reaction: 'I sent it twice.',
+      consequence: 'Then we argued.',
+    });
+    const invented = parseCoreDiscovery({
+      ...sample,
+      reportedChain: {
+        interpretation: 'She intentionally punished me by ignoring the message.',
+        reaction: 'I sent it twice.',
+        consequence: 'They broke up forever.',
+      },
+    }, q);
+    expect(invented.reportedChain).toEqual({ reaction: 'I sent it twice.' });
+  });
+
+  test('a general system question has no personal interpretation chain', () => {
+    const actual = parseCoreDiscovery({
+      ...sample,
+      reportedChain: { interpretation: '', reaction: '', consequence: '' },
+    }, 'How does a computer repair process work?');
+    expect(actual.reportedChain).toBeNull();
+    const prompt = buildCoreDiscoveryPrompt('Why do people disagree?', [], []);
+    expect(prompt).toContain('OBSERVATION TO REASSESSMENT');
+    expect(prompt).toContain('verbatim excerpts');
+    expect(prompt).toContain('a real consequence does not verify an interpretation');
+    const review = buildDiscoveryReviewPrompt(actual);
+    expect(review).toContain('INTERPRETATION BOUNDARY');
+    const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf8');
+    expect(view).toContain('Your interpretation:');
+  });
+});
