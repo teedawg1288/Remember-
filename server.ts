@@ -147,9 +147,9 @@ app.post('/api/discovery/analyze', async (req: Request, res: Response) => {
     return;
   }
   const risk = assessDiscoveryRisk(question);
-  // Urgent medical/veterinary signs must never wait for a model to infer a
-  // reassuring comparison, and this response must work even without credits.
-  if (risk?.level === 'emergency') {
+  // Safety-first emergencies and unsafe security/DIY requests never wait for
+  // an AI analogy, and this response must work even without model credits.
+  if (risk?.level === 'emergency' || risk?.level === 'stop') {
     res.json({ success: true, result: discoveryToSavedResult(urgentDiscovery(question, risk)), languageLearnings: [] });
     return;
   }
