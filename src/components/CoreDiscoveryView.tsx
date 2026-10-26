@@ -108,13 +108,13 @@ export const CoreDiscoveryView: React.FC<Props> = ({
             )}
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
               <div className="rounded-xl bg-[#121c2a] border border-stone-700 p-3 sm:p-5 text-center min-w-0">
-                <p className="text-[10px] uppercase text-stone-400">{bridge.originalDomain}</p>
-                <h3 className="text-sm sm:text-xl font-semibold break-words">{bridge.originalSystem}</h3>
-              </div>
-              <ArrowRight aria-hidden="true" className="w-5 h-5 text-cyan-400" />
-              <div className="rounded-xl bg-[#10252a] border border-cyan-500/35 p-3 sm:p-5 text-center min-w-0">
-                <p className="text-[10px] uppercase text-stone-400">{bridge.comparisonDomain}</p>
+                <p className="text-[10px] uppercase text-stone-400">Outside experience · if familiar</p>
                 <h3 className="text-sm sm:text-xl font-semibold break-words">{bridge.comparisonSystem}</h3>
+              </div>
+              <ArrowRight aria-label="Use this experience to explore your question" className="w-5 h-5 text-cyan-400" />
+              <div className="rounded-xl bg-[#10252a] border border-cyan-500/35 p-3 sm:p-5 text-center min-w-0">
+                <p className="text-[10px] uppercase text-stone-400">What you want to understand</p>
+                <h3 className="text-sm sm:text-xl font-semibold break-words">{bridge.originalSystem}</h3>
               </div>
             </div>
             <div className="rounded-xl border border-cyan-500/20 bg-[#0b111b] p-4">
@@ -122,7 +122,7 @@ export const CoreDiscoveryView: React.FC<Props> = ({
               <p className="font-serif text-lg">{core.screening?.status === 'partial' ? core.screening.causalMatch : bridge.possibleSharedMechanism}</p>
             </div>
             <div>
-              <p className="text-xs text-stone-300 mb-3">Tap each step to see what matches—and what doesn't.</p>
+              <p className="text-xs text-stone-300 mb-3">If you recognize that outside experience, explore which steps help explain your question—and which don't.</p>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {bridge.stages.map((item, index) => (
                   <button key={index} onClick={() => setStageIndex(index)}
@@ -136,8 +136,8 @@ export const CoreDiscoveryView: React.FC<Props> = ({
             {stage && (
               <div className="rounded-xl border border-stone-700 bg-[#131925] p-4 space-y-3" aria-live="polite">
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                  <p><span className="text-stone-400 text-xs block mb-1">{bridge.originalSystem}</span>{stage.inOriginal}</p>
                   <p><span className="text-stone-400 text-xs block mb-1">{bridge.comparisonSystem}</span>{stage.inComparison}</p>
+                  <p><span className="text-stone-400 text-xs block mb-1">{bridge.originalSystem}</span>{stage.inOriginal}</p>
                 </div>
                 <p className="text-sm text-cyan-200"><strong>Same function:</strong> {stage.sharedFunction}</p>
                 <p className="text-sm text-amber-200"><strong>Crucial difference:</strong> {stage.importantDifference}</p>
