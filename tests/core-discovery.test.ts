@@ -101,7 +101,7 @@ describe('REMEMBER core discovery contract', () => {
     const view = readFileSync('src/components/CoreDiscoveryView.tsx', 'utf-8');
     expect(example).toContain('unfamiliar target');
     expect(example).toContain('If familiarity was not established');
-    expect(example).toContain('known ice-making process does not by itself explain a frozen-drink machine');
+    expect(example).toContain('A candidate matching one stage cannot stand in for the full process');
     expect(review).toContain('potentially familiar DONOR');
     expect(review).toContain('unfamiliar TARGET');
     expect(view).toContain('Outside experience · if familiar');
@@ -321,5 +321,35 @@ describe('simple system first', () => {
     expect(prompt).toContain('fewest extra assumptions');
     expect(prompt).toContain('do not trade away genuine causal correspondence');
     expect(prompt).toContain('no analogy is better than a misleading simple one');
+  });
+});
+
+describe('example questions do not coach the connection', () => {
+  test('every example is a real unanswered question sent through live analysis', () => {
+    const view = readFileSync('src/components/BarberInput.tsx', 'utf8');
+    const app = readFileSync('src/App.tsx', 'utf8');
+    const labels = [...view.matchAll(/label: '([^']+)'/g)].map(match => match[1]);
+    expect(labels.length).toBeGreaterThanOrEqual(7);
+    expect(new Set(labels).size).toBe(labels.length);
+    for (const label of labels) {
+      expect(label).toMatch(/^(How|Why|What|When|Can|Does|Do|Is)\b/);
+      expect(label).toMatch(/\?$/);
+      expect(label.toLowerCase()).not.toMatch(/\b(because|therefore|must be|always ends up|assumed they|felt ignored)\b/);
+    }
+    expect(view).toContain('onAnalyze(item.label)');
+    expect(view).not.toContain('CURATED_STORIES');
+    expect(view).not.toContain('onSelectCurated');
+    expect(app).not.toContain('onSelectCurated');
+    expect(view).toContain('Every example runs live AI.');
+  });
+
+  test('internal instructions cannot bias answers toward legacy showcase analogies', () => {
+    const instructions = buildCoreDiscoveryPrompt('Why is my computer slow?', [], []);
+    const review = buildDiscoveryReviewPrompt(parseCoreDiscovery(sample, question));
+    expect(instructions).toContain('never pick a stored showcase example');
+    expect(instructions).not.toContain('clearing a household blockage');
+    expect(instructions).not.toContain('known ice-making process');
+    expect(review).not.toContain('A vacuum blockage may explain a computer');
+    expect(review).toContain('without claiming that similar language makes');
   });
 });

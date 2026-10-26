@@ -177,3 +177,9 @@ test('cross-examination prefers simpler everyday explanations only where causal 
   expect(prompt).toContain('SIMPLICITY FIRST');
   expect(prompt).toContain('Simplicity is a tie-breaker only after causal validity');
 });
+
+test('cross-examination provenance rule uses general grounding, not a rehearsed staircase story', () => {
+  const prompt = buildCrossExaminationPrompt({ question: 'How do I stop rust on my car door?' });
+  expect(prompt).toContain('A repair does not establish what originally caused the damage');
+  expect(prompt).not.toContain('A repaired staircase does not prove');
+});
