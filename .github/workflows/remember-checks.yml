@@ -1,7 +1,6 @@
 name: REMEMBER checks
 on:
   pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,3 +23,4 @@ jobs:
       - run: bun test tests/grounding-integrity.test.ts
 
       - run: bun test tests/security-limits.test.ts
+      - run: bun test tests/private-engine-proxy.test.ts
