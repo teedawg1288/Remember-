@@ -1,0 +1,135 @@
+/**
+ * A human-reviewed starter index for browsing language bridges, not proof of
+ * common etymology or transferable scientific mechanisms. Adding new entries
+ * requires editorial review; live AI questions never silently edit this list.
+ */
+export interface WordSense {
+  field: string;
+  meaning: string;
+}
+
+export interface BridgeWord {
+  word: string;
+  senses: WordSense[];
+  connection: string;
+  difference: string;
+  question: string;
+}
+
+// word | field: meaning; field: meaning | possible connection | limit | inquiry
+// An intentionally broad index: some matches are strong process parallels,
+// others are merely language bridges. The distinction appears on every card.
+const ENTRY_LINES = `
+Resistance|Electricity:opposition to current;Psychology:pushback against influence;Medicine:microbes survive a drug;Politics:organized opposition|An attempted effect meets a limiting response.|Bacterial survival is not a human motive or an electrical law.|What does the resistance protect, and for whom?
+Pressure|Physics:force over area;Relationships:felt demand to comply;Business:limited time and resources;Medicine:force of blood on vessel walls|Something imposes a load on another system.|Force has precise units while social pressure does not.|Would more force help, or damage what receives it?
+Current|Rivers:water moving through a channel;Electricity:movement of charge;Time:the present period|Water and charge both describe a flow.|Current meaning present time is a different usage.|Which sense is about flow and which is not?
+Charge|Electricity:property of matter;Money:a billed amount;Law:formal accusation;Military:an advance|The word names several forms of assigned or directed action.|These meanings are not one causal law.|Which meaning is actually intended here?
+Balance|Physics:forces in equilibrium;Accounting:amount remaining in an account;Life:allocation of attention|Different systems compare competing quantities.|Emotional balance is not measured like money or force.|What exactly must remain within limits?
+Collapse|Structures:loss of support;Finance:rapid loss of market value;Health:an acute physical failure|A system loses capacity to maintain its previous state.|Causes and emergencies differ sharply by domain.|What support failed first?
+Dependency|Software:a component requires another;Biology:an organism relies on a resource;Relationships:one person relies on another|One functioning part relies on an external condition.|Reliance itself does not establish harm or lack of autonomy.|What happens if the supporting part disappears?
+Control|Engineering:regulating an output;Psychology:directing one's actions;Politics:exercising authority|An actor or process influences what can happen next.|A regulator is not a moral judgment about a person.|Who has influence over which outcome?
+Signal|Telecommunications:information-bearing variation;Biology:a cue transmitted between cells;Social life:a gesture interpreted by another|An observable change may carry information.|A perceived social signal may be misunderstood.|What was sent, and what was actually received?
+Feedback|Electronics:output affects input;Learning:responses guide improvement;Work:information on performance|An outcome changes a later decision or input.|Human feedback depends on meaning and interpretation.|Does the response reduce or amplify the original effect?
+Memory|Computing:stored retrievable data;Biology:capacity to retain learned information;Culture:shared remembrance|Past information influences what happens now.|Machine storage is not human recollection or cultural memory.|What is remembered, and what can change?
+Identity|Mathematics:a statement true for all allowed values;Personal life:a sense of self;Computing:a verified account|A thing is distinguished from other things.|A formal identity does not explain a person's selfhood.|Who defines the identity in this setting?
+Stress|Mechanics:force per unit area within material;Physiology:response to demands;Speech:emphasis on a syllable|A system or word experiences added emphasis or demand.|Speech stress does not operate like material stress.|What is under load, and how is it measured?
+Load|Engineering:weight or electrical demand;Computing:work assigned to a processor;Family life:responsibilities handled by a person|A system must carry a demand with finite capacity.|Physical, computational and social capacities differ.|Is the burden concentrated on too few parts?
+Flow|Fluid mechanics:movement of liquid;Economics:movement of money;Work:progression of tasks|Something moves through a pathway over time.|Money and tasks have decisions and rules unlike fluids.|Where does the movement slow down?
+Capacity|Engineering:maximum supported demand;Medicine:an ability assessed for a specific function;Business:available production capability|There is a limit to what a system can do.|Capacity is context-specific and not a verdict on worth.|Which demand exceeds the available capacity?
+Boundary|Geometry:edge of a defined region;Computing:a security separation;Relationships:a stated personal limit|A boundary separates allowed from disallowed interactions.|Personal boundaries rely on consent rather than geometry.|What is the boundary protecting?
+Threshold|Electronics:a level that triggers a state change;Medicine:a value used for a decision;Everyday life:point at which something becomes too much|A response changes when a condition crosses a level.|Human limits cannot always be reduced to one number.|What changes when the threshold is crossed?
+Trigger|Engineering:a signal starts a process;Biology:a stimulus activates a response;Everyday life:a cue evokes a reaction|An event precedes a change in state.|Timing alone does not prove causation.|What else was needed for the response?
+Reaction|Chemistry:a transformation of substances;Psychology:a behavioural response;Politics:a response to policy|One event is followed by a change.|Chemical equations do not predict individual motives.|Which part is observed, and which part is interpretation?
+Energy|Physics:a conserved measurable quantity;Nutrition:food's available energy;Everyday speech:felt vitality|Each usage concerns ability to do something.|A mood is not a measured physical energy reserve.|Which meaning can actually be measured?
+Momentum|Physics:mass times velocity;Politics:continued support for a movement;Business:progress that becomes easier to sustain|Existing movement makes continuation more likely.|Social momentum has no conservation law.|What keeps the process moving?
+Force|Physics:interaction changing motion;Law:coercive power;Everyday speech:intensity of an action|An influence changes what happens.|Coercion is not explained by Newton's laws.|Is the influence voluntary, mechanical or imposed?
+Friction|Mechanics:resistance at touching surfaces;Business:obstacles in a process;Relationships:recurring points of conflict|Interactions can impede movement or progress.|Arguments are not converted into heat by a physical formula.|What contact point creates the obstacle?
+Circuit|Electronics:closed electrical path;Exercise:a series of stations;Law:a judicial district|A route or organized set of points connects activity.|The legal term is administrative rather than electric.|What actually travels around the route?
+Network|Computing:linked devices;Social life:linked people;Biology:connected neurons|Connections enable signals or resources to move.|People and neurons do not follow identical rules.|Which connections matter most to the outcome?
+Connection|Engineering:a physical join;Relationships:a sense of mutual understanding;Data:an active link|Two parts are able to interact.|Being linked does not guarantee shared meaning.|Does the connection transmit what is intended?
+Block|Construction:a solid building unit;Computing:a discrete data unit;Everyday life:an obstacle|The word can mean a unit or an obstruction.|A brick and a prevented action are different senses.|Is it a building piece or something stopping progress?
+Bridge|Engineering:a span over a gap;Networking:a link between network segments;Language:an analogy joining unfamiliar ideas|Separate sides become reachable by a connector.|An analogy does not carry the physical guarantees of a bridge.|What safely transfers across the gap?
+Transfer|Physics:movement of heat or energy;Banking:movement of funds;Learning:use of knowledge in a new context|Something is carried from one location or setting to another.|Useful knowledge may transfer only partially.|What transfers, and what gets lost?
+Value|Economics:worth in exchange;Mathematics:a quantity assigned to a variable;Ethics:a principle considered important|An assessment assigns importance or quantity.|Moral importance cannot be reduced to price.|Who sets the value and by what rule?
+Capital|Finance:assets used to produce more value;Geography:a seat of government;Typography:uppercase letters|The same label covers distinct roles.|These senses should not be treated as one mechanism.|Which capital is meant in this sentence?
+Interest|Finance:cost of borrowed money;Psychology:attention and curiosity;Law:a stake in an outcome|A person or institution has something at stake.|Curiosity does not accrue like compound interest.|What keeps the person invested?
+Debt|Finance:an amount owed;Social life:a felt obligation;Ecology:delayed environmental costs|An obligation remains to be addressed.|A social debt is not always legally enforceable.|Who owes what, and according to whom?
+Credit|Finance:access to borrowing;Attribution:recognition for work;Education:units toward a qualification|Recognition or entitlement is recorded.|A school credit is not borrowed money.|What did the person earn or receive?
+Equity|Finance:ownership value after liabilities;Law:fairness considerations;Work:fair access or treatment|The word concerns a stake or fairness depending on context.|Ownership and justice are different concepts.|Which definition decides the outcome?
+Bond|Chemistry:link between atoms;Finance:a debt security;Relationships:a meaningful attachment|The word describes different kinds of ties.|Chemical bonds are not promises or feelings.|What keeps these parts connected?
+Return|Finance:gain or loss on investment;Computing:value a function provides;Travel:movement back to a place|Something comes back as a result.|A computed return is not a financial gain.|What came back, and compared with what input?
+Risk|Statistics:chance of an adverse event;Finance:uncertainty about outcomes;Everyday life:exposure to potential harm|An action has uncertain consequences.|Not all uncertainty is measurable or comparable.|What could happen, and how would we know?
+Security|Cybersecurity:protection against unauthorized access;Finance:tradable financial instrument;Personal life:feeling safe|The word names both protection and an asset.|Feeling secure and being objectively protected differ.|Are we measuring protection or confidence?
+Trust|Relationships:confidence in someone's reliability;Computing:acceptance of verified credentials;Law:property held for beneficiaries|A decision relies on another actor or structure.|Legal trust is an arrangement rather than a feeling.|What evidence supports the reliance?
+Authority|Government:legitimate decision-making power;Expertise:credible knowledge;Publishing:recognized source of information|Someone or something is granted influence.|Power to decide is not proof of correctness.|Where does the authority come from?
+Power|Physics:rate of energy transfer;Politics:ability to influence decisions;Mathematics:repeated multiplication|One word describes distinct kinds of capacity or operation.|Political influence is not electrical wattage.|What can the actor actually change?
+Order|Mathematics:sequence or arrangement;Commerce:a request to buy;Politics:an enforceable direction|Something is arranged or directed.|A purchase and a command have different authority.|Is this about sequence, request or obligation?
+Rule|Mathematics:a defined operation;Law:a binding standard;Games:an agreed constraint|A rule limits permitted operations.|Enforcement and consent differ between settings.|Who makes the rule, and who can revise it?
+Policy|Government:a course of action;Insurance:terms of a contract;Computing:a set of system permissions|Rules guide repeated decisions.|A government policy is not automatically a contract.|Who must follow it, and why?
+Freedom|Politics:protected liberty;Physics:degrees of freedom;Personal life:room to choose|A system has available options.|Human rights cannot be counted like mechanical degrees.|Which choices are actually available?
+Rights|Law:legally protected entitlements;Politics:claimed liberties;Geometry:a direction opposed to left|Identical spelling does not guarantee related meaning.|Directional right is not a human entitlement.|Which meaning is being used?
+Representation|Politics:acting on behalf of constituents;Mathematics:expression in symbols;Art:depiction of a subject|Something stands in for something else.|A drawing is not accountable to voters.|What is being represented, and what is omitted?
+Opposition|Politics:organized disagreement;Astronomy:an alignment of celestial bodies;Everyday life:being against an action|Different systems describe things positioned against one another.|Astronomical alignment has no intention.|Is the opposition physical, positional or chosen?
+Cell|Biology:basic living unit;Batteries:electrochemical unit;Prisons:enclosed room;Spreadsheets:a data location|The label identifies bounded units.|A prison cell and a living cell do not share functions.|What crosses the cell's boundary?
+Infection|Medicine:invasion and growth of pathogens;Computing:malicious code spreading;Language:figurative spread of ideas|Something unwanted can enter and propagate through a host.|Computer malware is not a biological organism.|What enables transmission and what stops it?
+Immunity|Biology:defence against specified threats;Law:protection from certain legal actions;Computing:resilience against an attack|Certain harms or consequences are limited.|Legal immunity is conferred by rules, not immune cells.|Who or what grants the protection?
+Growth|Biology:increase in organism size or cells;Economics:increase in output;Learning:development of skill|A quantity or capability increases over time.|More output is not automatically healthier.|What is growing, and at what cost?
+Repair|Engineering:restoring a broken part;Medicine:tissue healing;Relationships:actions to rebuild trust|Damage is addressed so functioning may improve.|A personal apology is not a mechanical replacement.|What does restored function look like?
+Mutation|Genetics:a change in genetic sequence;Computing:a change to stored state;Language:historical change in a form|The underlying representation changes.|Software mutation is intentional or programmed, unlike most genetic mutations.|What exactly changed and did it persist?
+Selection|Evolution:differential survival or reproduction;Hiring:choosing a candidate;Statistics:choosing a sample|A subset is retained from alternatives.|Natural selection has no hiring manager.|Who or what performs the selection?
+Adaptation|Evolution:heritable traits shaped over generations;Physiology:short-term adjustment;Culture:modifying a work for another setting|Something changes to fit conditions or a new audience.|Evolutionary change cannot be assumed to occur overnight.|What changed and on what timescale?
+Response|Biology:reaction to a stimulus;Customer service:reply to an inquiry;Computing:output after a request|An input is followed by an output.|A system response need not prove understanding.|What input actually caused the response?
+Exposure|Photography:light reaching a sensor;Medicine:contact with a substance or pathogen;Media:audience seeing a message|Something comes into contact with an influence.|More publicity is not equivalent to higher medical dose.|What reached the system, and how much?
+Foundation|Construction:base supporting a structure;Education:starting knowledge;Institutions:charitable organization|The word can mean support or an organization.|A foundation institution is not literal structural support.|What rests on this foundation?
+Structure|Architecture:arrangement of physical components;Language:organization of a sentence;Organizations:division of roles|Parts are arranged to produce a function.|A sentence does not bear a roof's weight.|Which relationships make the arrangement work?
+Support|Engineering:part bearing a load;Relationships:practical or emotional help;Software:maintenance and troubleshooting|A component or person receives assistance.|Help is not always a load-bearing force.|What demand would fail without the support?
+Failure|Engineering:loss of required function;Education:not meeting a passing standard;Business:not achieving an objective|A result falls short of a criterion.|Criteria may be arbitrary or change over time.|Who chose the success criterion?
+Fault|Geology:a fracture in Earth's crust;Engineering:a defect;Responsibility:attribution of blame|The same word can name a physical discontinuity or an attribution.|A geological fault has no moral responsibility.|Are we locating a defect or assigning blame?
+Leak|Plumbing:uncontrolled escape of fluid;Cybersecurity:unauthorized disclosure;Politics:release of confidential information|Something crosses a boundary without intended control.|A whistleblower's disclosure is not automatically a technical error.|What boundary was crossed?
+Filter|Water treatment:removal of particles;Computing:selection of matching data;Perception:attention prioritizing some information|Some inputs pass while others are excluded.|Human attention is not a mechanical sieve.|What useful information might be filtered out?
+Channel|Geography:a water passage;Communication:a pathway for messages;Commerce:a route to customers|Something moves through a defined route.|A marketing channel is not a riverbed.|Who controls entry and exit?
+Ground|Electricity:a reference potential and safety path;Geography:surface of Earth;Reasoning:a basis for a claim|Several senses refer to a reference or base.|Electrical grounding is not evidence for an argument.|What is the reference point?
+Stability|Engineering:resistance to unwanted change;Economics:relative consistency of conditions;Relationships:predictable functioning|A system maintains important properties despite disturbances.|A stable relationship is not mathematically static.|What can change without the system failing?
+Pattern|Textiles:a repeated design;Statistics:a recurring relationship in data;Behaviour:a repeated sequence of actions|Similar arrangements occur more than once.|Repetition alone does not establish a common cause.|Which details repeat and which do not?
+Model|Science:a simplified representation;Fashion:a person presenting designs;Computing:a learned mapping from data|The same word can mean an example or representation.|A fashion model is a person, not a mathematical equation.|What is the model representing?
+Theory|Science:a framework explaining observations;Everyday speech:a tentative idea;Music:a system describing musical relationships|Different contexts organize explanations.|A scientific theory is not simply an untested guess.|What evidence and tests support this explanation?
+Proof|Mathematics:a deductive demonstration;Law:evidence supporting a claim;Publishing:a prepublication copy|A claim is checked or a text is reviewed.|Mathematical proof and legal proof use different standards.|What standard must be met?
+Evidence|Science:observations bearing on a claim;Law:admissible information used in proceedings;Everyday life:reasons for belief|Information changes how strongly a claim is supported.|Different fields impose different evidence rules.|What observation could change the conclusion?
+Bias|Statistics:systematic error or deviation;Social life:prejudice or preference;Electronics:a steady operating signal|A baseline or tendency influences outcomes.|Electronic bias is not a moral flaw.|What is shifted from what reference?
+Noise|Acoustics:unwanted sound;Data science:variation obscuring a signal;Communication:irrelevant messages|Extra input can make a desired signal harder to detect.|Not every unexpected statement is useless noise.|What is the signal we are trying to recover?
+Context|Language:surrounding words and situation;Computing:state needed to run a task;History:conditions surrounding an event|Meaning depends partly on surrounding conditions.|Different systems record context differently.|What changes if the context changes?
+Frame|Photography:the boundary of an image;Psychology:the way an issue is presented;Construction:load-bearing members|A frame defines or supports what appears inside it.|Mental framing and building frames are only an analogy.|What has been left outside the frame?
+Interpretation|Law:meaning assigned to a provision;Music:a performer's rendition;Everyday life:meaning assigned to events|A source is given meaning through a reader or performer.|An interpretation is not identical to the source.|Which part was observed and which part added?
+Language|Speech:a system of communication;Programming:formal instructions for computers;Music:a vocabulary of expressive conventions|A shared code lets participants exchange meaning.|Human language tolerates ambiguity that code often cannot.|Does the listener use the same definitions?
+Translation|Language:expression in another language;Biology:protein synthesis from messenger RNA;Geometry:moving a shape without rotation|Different processes transform one representation into another.|Cellular translation and sentence translation are not one algorithm.|What must remain unchanged through translation?
+Code|Computing:instructions in a programming language;Law:a collection of rules;Cryptography:a representation for communicating information|A shared scheme maps signs to actions or meanings.|Legal codes are not executable software.|Who knows how to read the code?
+Key|Locks:an object that opens a mechanism;Cryptography:information used by an algorithm;Music:a tonal center|A key can control access or organize a system.|A musical key does not unlock encrypted data.|What does this key allow someone to do?
+Lock|Mechanics:a device preventing access;Computing:a control against simultaneous edits;Relationships:figurative refusal to engage|Something prevents movement or access.|Emotional withdrawal is not a computer lock.|Is the restriction protecting something or blocking progress?
+Access|Computing:permission to use resources;Architecture:ability to enter a place;Healthcare:ability to obtain services|Something can be reached or used under conditions.|Physical and legal access barriers differ.|Who is prevented from reaching what?
+Permission|Computing:authorized action;Law:consent or authorization;Relationships:agreement to cross a boundary|An action is allowed by an authority or person.|Digital checkboxes are not always meaningful human consent.|Who can grant or withdraw permission?
+Record|Music:a sound recording;Law:a documented account;Sport:a best measured achievement|Something is preserved or measured for later reference.|A sporting record is not a written transcript.|What was recorded and can it be checked?
+Trace|Forensics:a small remaining sign;Computing:a sequence of executed steps;Geometry:a drawn outline|A path or residue reveals something about prior activity.|A trace may be incomplete or ambiguous.|What steps can actually be reconstructed?
+Source|Geography:origin of a stream;Research:origin of information;Computing:original program text|The source is where a flow or claim starts.|Finding a source does not establish its reliability.|Can the origin be independently checked?
+Scale|Cartography:ratio of map distance to reality;Business:size of operation;Music:ordered notes|A scale organizes magnitude or ordered steps.|Musical scales are not measurement ratios.|What gets lost when the scale changes?
+Rate|Physics:change per unit time;Finance:interest percentage;Evaluation:a judgment of quality|A comparison expresses speed, proportion or assessment.|A five-star rating is not a physical rate.|What is being compared against what denominator?
+Cycle|Biology:recurring sequence of processes;Economics:expansion and contraction over time;Machinery:a repeating operating sequence|A sequence returns to a recognizable stage.|Repetition need not have identical timing or causes.|What event restarts the cycle?
+Phase|Physics:a stage of an oscillation or form of matter;Project management:a defined work stage;Relationships:a period in development|A complex process is considered in stages.|Not all stages are predictable or irreversible.|What signals a real change of phase?
+State|Physics:condition described by variables;Politics:a government organization;Psychology:a temporary condition|The word can mean a condition or a governing body.|Government and an emotional state are distinct senses.|Is this about current condition or authority?
+Change|Mathematics:a difference between values;Money:cash returned after payment;Personal life:a shift in behaviour|Something differs from its previous value or form.|Coins returned at a till are not personal transformation.|What was different before and after?
+Transition|Physics:change between states;Employment:move to another role;Design:movement between screens|A system moves from one condition to another.|People may make reversible and uncertain transitions.|What must be preserved during the move?
+Recovery|Medicine:return of function following illness;Computing:restoring data or service;Economics:return from a downturn|Function is regained after disruption.|Recovery paths and timeframes differ dramatically.|What evidence would show that function has returned?
+System|Engineering:interacting components working together;Biology:interdependent organs;Government:institutions and their rules|Parts influence one another within a boundary.|Not all system parts have equal power or agency.|Which connection carries the failure or benefit?
+Environment|Ecology:surroundings affecting organisms;Computing:settings in which software runs;Workplace:conditions affecting people|Surrounding conditions shape what a system can do.|A production server is not a natural ecosystem.|Which external condition is changing the result?
+`;
+
+export const bridgeDictionary: BridgeWord[] = ENTRY_LINES.trim().split('\n').map((line) => {
+  const [word, senseText, connection, difference, question] = line.split('|');
+  const senses = senseText.split(';').map((item) => {
+    const colon = item.indexOf(':');
+    return { field: item.slice(0, colon), meaning: item.slice(colon + 1) };
+  });
+  return { word, senses, connection, difference, question };
+}).sort((a, b) => a.word.localeCompare(b.word));
+
+export const findBridgeWord = (word: string): BridgeWord | undefined =>
+  bridgeDictionary.find((entry) => entry.word.toLocaleLowerCase() === word.trim().toLocaleLowerCase());
