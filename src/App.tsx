@@ -6,6 +6,7 @@ import { StoryComparisonView } from './components/StoryComparisonView';
 import { CoreDiscoveryView } from './components/CoreDiscoveryView';
 import { DeepResearchLabDrawer } from './components/DeepResearchLabDrawer';
 import { MyDiscoveriesScreen } from './components/screens/MyDiscoveriesScreen';
+import { BridgeDictionaryPage } from './components/BridgeDictionaryPage';
 import { SameStoryResult } from './types/sameStory';
 import { AlertCircle, Eye, MessageSquare, Sparkles, Box } from 'lucide-react';
 import { sound } from './audio/soundEngine';
@@ -330,6 +331,17 @@ export const App: React.FC = () => {
         )}
 
         {/* PILLAR 3: MY DISCOVERIES */}
+        {activeMainTab === 'words' && (
+          <BridgeDictionaryPage
+            onExplore={(word) => handleAnalyze(
+              `Explore the different meanings of "${word}" across fields. Show a genuine shared process if there is one, explain important differences, and propose one useful question without treating a shared word as proof of a shared mechanism.`
+            )}
+            isLoading={isLoading}
+            isolated={isIsolatedTest}
+          />
+        )}
+
+        {/* MY DISCOVERIES */}
         {activeMainTab === 'discoveries' && (
           <>
           <MyDiscoveriesScreen
