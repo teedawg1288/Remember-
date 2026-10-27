@@ -14,7 +14,7 @@ import {
 import { sound } from '../audio/soundEngine';
 
 export type BrandNameOption = 'ARCHETYPE' | 'PARALLEL' | 'ECHOS' | 'SYNAPSE' | 'REMEMBER';
-export type MainTabOption = 'talk' | 'show' | 'discoveries';
+export type MainTabOption = 'talk' | 'show' | 'words' | 'discoveries';
 
 interface HeaderProps {
   appName: BrandNameOption;
@@ -70,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="border-b border-lounge-border/70 bg-[#0f1117]/95 backdrop-blur-md sticky top-0 z-40 px-3 sm:px-8 py-2.5 transition-all">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-4">
         {/* Brand identity with interactive name switcher */}
         <div className="relative">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -143,14 +143,14 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Center: The Three Core Pillars (Requirement 3) */}
-        <div className="flex items-center bg-[#131620] p-1 rounded-2xl border border-lounge-border/80 shadow-inner">
+        {/* One navigable screen at a time, with a full-width mobile row. */}
+        <nav aria-label="Main navigation" className="order-3 sm:order-none w-full sm:w-auto flex items-center bg-[#131620] p-1 rounded-2xl border border-lounge-border/80 shadow-inner">
           <button
             onClick={() => {
               onMainTabChange('talk');
               sound.playNodeChime(420);
             }}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-none justify-center flex items-center gap-1 px-2 sm:px-4 py-2 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
               activeMainTab === 'talk'
                 ? 'bg-amber-600 text-stone-950 shadow-md shadow-amber-950/40'
                 : 'text-stone-400 hover:text-stone-200'
@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
               onMainTabChange('show');
               sound.playNodeChime(480);
             }}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-none justify-center flex items-center gap-1 px-2 sm:px-4 py-2 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
               activeMainTab === 'show'
                 ? 'bg-amber-600 text-stone-950 shadow-md shadow-amber-950/40'
                 : 'text-stone-400 hover:text-stone-200'
@@ -177,10 +177,26 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => {
+              onMainTabChange('words');
+              sound.playNodeChime(510);
+            }}
+            aria-current={activeMainTab === 'words' ? 'page' : undefined}
+            className={`flex-1 sm:flex-none justify-center flex items-center gap-1 px-2 sm:px-4 py-2 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
+              activeMainTab === 'words'
+                ? 'bg-amber-600 text-stone-950 shadow-md shadow-amber-950/40'
+                : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>WORDS</span>
+          </button>
+
+          <button
+            onClick={() => {
               onMainTabChange('discoveries');
               sound.playNodeChime(540);
             }}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-none justify-center flex items-center gap-1 px-2 sm:px-4 py-2 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
               activeMainTab === 'discoveries'
                 ? 'bg-amber-600 text-stone-950 shadow-md shadow-amber-950/40'
                 : 'text-stone-400 hover:text-stone-200'
@@ -190,7 +206,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">MY DISCOVERIES</span>
             <span className="sm:hidden">VAULT</span>
           </button>
-        </div>
+        </nav>
 
         {/* Right controls */}
         <div className="flex items-center gap-1.5 sm:gap-2.5">
