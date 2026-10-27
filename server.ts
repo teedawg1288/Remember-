@@ -1,6 +1,6 @@
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
+import { createAiRateLimiter } from './src/server/aiRateLimiter.ts';
 import path from 'path';
 import fs from 'fs';
 import { GoogleGenAI } from '@google/genai';
@@ -69,8 +69,29 @@ function getPort(): number {
 }
 
 const app = express();
-app.use(cors());
+// REMEMBER is served from the same origin as its API. No wildcard CORS policy is needed.
+// Trust one hosting reverse proxy for meaningful per-client IP limits.
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
 app.use(express.json({ limit: '4mb' }));
+
+// Stopgap anti-abuse limits until a shared edge limiter + billing spend cap are configured.
+// Per-instance global limits also apply when clients rotate IP addresses.
+const positiveInt = (raw: string | undefined, fallback: number) => {
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+app.use([
+  '/api/discovery/analyze',
+  '/api/same-story/analyze',
+  '/api/same-story/cross-examine',
+  '/api/same-story/predict',
+  '/api/same-story/era-translate',
+  '/api/same-story/simulate-what-if',
+], createAiRateLimiter({
+  perIpPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_IP, 6),
+  totalPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_INSTANCE, 30),
+}));
 
 // Security Protection: Deny direct access to secrets, archives, and backend files
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -111,31 +132,11 @@ app.get('/api/same-story/curated', (_req: Request, res: Response) => {
   });
 });
 
-// In-memory memory storage per user session (fallback for local client state)
-const userMemoryStore: Record<string, any> = {};
-
-app.get('/api/user-memory/:userId', (req: Request, res: Response) => {
-  const { userId } = req.params;
-  const data = userMemoryStore[userId] || {
-    id: userId,
-    conversationsCount: 0,
-    savedDiscoveriesCount: 0,
-    personalNotes: [],
-    acknowledgedPatterns: [],
-    lastActive: new Date().toISOString(),
-  };
-  res.json({ success: true, memory: data });
-});
-
-app.post('/api/user-memory/:userId', (req: Request, res: Response) => {
-  const { userId } = req.params;
-  const { memory } = req.body;
-  userMemoryStore[userId] = {
-    ...memory,
-    id: userId,
-    lastActive: new Date().toISOString(),
-  };
-  res.json({ success: true, memory: userMemoryStore[userId] });
+// Legacy anonymous memory routes are disabled: accepting an arbitrary userId
+// without authentication made other people's saved data readable and writable.
+// Personal memory already used by the current UI remains local to that user's browser.
+app.all('/api/user-memory/:userId', (_req: Request, res: Response) => {
+  res.status(410).json({ success: false, error: 'Anonymous cloud memory sync is disabled until authenticated storage is available.' });
 });
 
 // REMEMBER V2: one small, coherent discovery contract. V1 remains available
