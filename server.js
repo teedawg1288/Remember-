@@ -1110,6 +1110,74 @@ function positiveInt(raw, fallback) {
   const parsed = Number(raw);
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
+// Public-to-private engine migration seam. Compiled Studio runtime counterpart.
+var PRIVATE_ENGINE_ROUTES = [
+  "/api/discovery/analyze",
+  "/api/same-story/analyze",
+  "/api/same-story/cross-examine",
+  "/api/same-story/predict",
+  "/api/same-story/era-translate",
+  "/api/same-story/simulate-what-if"
+];
+function createPrivateEngineProxy(config) {
+  const allowed = new Set(PRIVATE_ENGINE_ROUTES);
+  const mode = (config.mode || "").trim() || "local";
+  let origin = null;
+  try {
+    const target = new URL((config.baseUrl || "").trim());
+    if (target.protocol === "https:" && target.hostname && !target.username &&
+        !target.password && target.pathname === "/" && !target.search && !target.hash) {
+      origin = target.origin;
+    }
+  } catch {
+  }
+  const token = (config.token || "").trim();
+  return async (req, res, next) => {
+    if (!allowed.has(req.path)) {
+      next();
+      return;
+    }
+    if (mode === "local") {
+      next();
+      return;
+    }
+    if (mode !== "proxy" || !origin || !token) {
+      res.status(503).json({ success: false, code: "REMEMBER_PRIVATE_ENGINE_NOT_CONFIGURED", error: "REMEMBER is temporarily unavailable." });
+      return;
+    }
+    try {
+      const upstream = await fetch(origin + req.path, {
+        method: "POST",
+        redirect: "error",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(req.body ?? {}),
+        signal: AbortSignal.timeout(25e3)
+      });
+      const contentType = upstream.headers.get("content-type") || "";
+      const declaredSize = Number(upstream.headers.get("content-length") || "0");
+      if (!contentType.toLowerCase().includes("application/json") ||
+          Number.isFinite(declaredSize) && declaredSize > 1e6) {
+        res.status(502).json({ success: false, code: "REMEMBER_PRIVATE_ENGINE_RESPONSE", error: "REMEMBER could not complete that request." });
+        return;
+      }
+      const raw = await upstream.text();
+      if (Buffer.byteLength(raw, "utf8") > 1e6) {
+        res.status(502).json({ success: false, code: "REMEMBER_PRIVATE_ENGINE_RESPONSE", error: "REMEMBER could not complete that request." });
+        return;
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.status(upstream.status).json(JSON.parse(raw));
+    } catch {
+      res.status(502).json({ success: false, code: "REMEMBER_PRIVATE_ENGINE_UNAVAILABLE", error: "REMEMBER could not reach its analysis service. Please try again." });
+    }
+  };
+}
+
 var app = express();
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
@@ -1124,6 +1192,11 @@ app.use([
 ], createAiRateLimiter({
   perIpPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_IP, 6),
   totalPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_INSTANCE, 30)
+}));
+app.post(PRIVATE_ENGINE_ROUTES, createPrivateEngineProxy({
+  mode: process.env.REMEMBER_PRIVATE_ENGINE_MODE,
+  baseUrl: process.env.REMEMBER_PRIVATE_ENGINE_URL,
+  token: process.env.REMEMBER_PRIVATE_ENGINE_TOKEN
 }));
 app.use((req, res, next) => {
   const p = req.path.toLowerCase();

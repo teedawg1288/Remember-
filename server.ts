@@ -1,6 +1,7 @@
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createAiRateLimiter } from './src/server/aiRateLimiter.ts';
+import { PRIVATE_ENGINE_ROUTES, createPrivateEngineProxy } from './src/server/privateEngineProxy.ts';
 import path from 'path';
 import fs from 'fs';
 import { GoogleGenAI } from '@google/genai';
@@ -91,6 +92,15 @@ app.use([
 ], createAiRateLimiter({
   perIpPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_IP, 6),
   totalPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_INSTANCE, 30),
+}));
+
+// Non-breaking migration boundary. Default mode=local preserves all existing routes.
+// Once the private backend is ready, mode=proxy sends only approved POSTs there;
+// bad/missing configuration fails closed (no public reasoning fallback).
+app.post([...PRIVATE_ENGINE_ROUTES], createPrivateEngineProxy({
+  mode: process.env.REMEMBER_PRIVATE_ENGINE_MODE,
+  baseUrl: process.env.REMEMBER_PRIVATE_ENGINE_URL,
+  token: process.env.REMEMBER_PRIVATE_ENGINE_TOKEN,
 }));
 
 // Security Protection: Deny direct access to secrets, archives, and backend files

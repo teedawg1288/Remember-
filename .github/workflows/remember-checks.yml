@@ -24,3 +24,4 @@ jobs:
       - run: bun test tests/grounding-integrity.test.ts
 
       - run: bun test tests/security-limits.test.ts
+      - run: bun test tests/private-engine-proxy.test.ts
