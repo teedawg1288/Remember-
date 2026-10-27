@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import type { Request, Response } from 'express';
 import { createAiRateLimiter } from '../src/server/aiRateLimiter.ts';
@@ -52,4 +53,13 @@ test('limits reset after the fixed window expires', () => {
   assert.equal(call(limiter, '10.0.0.1').status, 429);
   time += 60_001;
   assert.equal(call(limiter, '10.0.0.1').allowed, true);
+});
+
+test('compiled server security parity is maintained for Studio deployments', () => {
+  const compiled = readFileSync(new URL('../server.js', import.meta.url), 'utf8');
+  assert.match(compiled, /REMEMBER_RATE_LIMIT/);
+  assert.match(compiled, /createAiRateLimiter/);
+  assert.match(compiled, /app\.all\("\/api\/user-memory\/:userId"/);
+  assert.doesNotMatch(compiled, /app\.use\(cors\(\)\)/);
+  assert.doesNotMatch(compiled, /userMemoryStore/);
 });

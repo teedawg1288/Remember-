@@ -1,6 +1,5 @@
 // server.ts
 import express from "express";
-import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
@@ -1067,9 +1066,65 @@ function getPort() {
   }
   return 3e3;
 }
+// Single-instance fixed-window limiter; compiled server copy used by Google AI Studio.
+function createAiRateLimiter({ perIpPerMinute, totalPerMinute }) {
+  const minuteMs = 6e4;
+  const maxTrackedIps = 5e3;
+  const ips = new Map();
+  let global = { startsAt: Date.now(), count: 0 };
+  return (req, res, next) => {
+    const now = Date.now();
+    if (now - global.startsAt >= minuteMs || now < global.startsAt) {
+      global = { startsAt: now, count: 0 };
+    }
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    let personal = ips.get(ip);
+    if (!personal || now - personal.startsAt >= minuteMs || now < personal.startsAt) {
+      personal = { startsAt: now, count: 0 };
+    }
+    if (personal.count >= perIpPerMinute || global.count >= totalPerMinute) {
+      const personalDelay = personal.count >= perIpPerMinute ? personal.startsAt + minuteMs - now : 0;
+      const globalDelay = global.count >= totalPerMinute ? global.startsAt + minuteMs - now : 0;
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil(Math.max(personalDelay, globalDelay) / 1e3))));
+      res.setHeader("Cache-Control", "no-store");
+      res.status(429).json({ success: false, code: "REMEMBER_RATE_LIMIT", error: "REMEMBER is handling too many requests right now. Please try again shortly." });
+      return;
+    }
+    personal.count += 1;
+    global.count += 1;
+    ips.set(ip, personal);
+    if (ips.size > maxTrackedIps) {
+      for (const [key, window] of ips) {
+        if (now - window.startsAt >= minuteMs) ips.delete(key);
+      }
+      while (ips.size > maxTrackedIps) {
+        const oldest = ips.keys().next().value;
+        if (oldest === void 0) break;
+        ips.delete(oldest);
+      }
+    }
+    next();
+  };
+}
+function positiveInt(raw, fallback) {
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
 var app = express();
-app.use(cors());
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
 app.use(express.json({ limit: "4mb" }));
+app.use([
+  "/api/discovery/analyze",
+  "/api/same-story/analyze",
+  "/api/same-story/cross-examine",
+  "/api/same-story/predict",
+  "/api/same-story/era-translate",
+  "/api/same-story/simulate-what-if"
+], createAiRateLimiter({
+  perIpPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_IP, 6),
+  totalPerMinute: positiveInt(process.env.REMEMBER_AI_RPM_PER_INSTANCE, 30)
+}));
 app.use((req, res, next) => {
   const p = req.path.toLowerCase();
   if (p.endsWith(".env") || p.endsWith(".zip") || p.endsWith(".tar.gz") || p.startsWith("/.git") || p === "/server.ts" || p === "/server.js" || p === "/bun.lock") {
@@ -1092,28 +1147,9 @@ app.get("/api/same-story/curated", (_req, res) => {
     stories: CURATED_STORIES
   });
 });
-var userMemoryStore = {};
-app.get("/api/user-memory/:userId", (req, res) => {
-  const { userId } = req.params;
-  const data = userMemoryStore[userId] || {
-    id: userId,
-    conversationsCount: 0,
-    savedDiscoveriesCount: 0,
-    personalNotes: [],
-    acknowledgedPatterns: [],
-    lastActive: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  res.json({ success: true, memory: data });
-});
-app.post("/api/user-memory/:userId", (req, res) => {
-  const { userId } = req.params;
-  const { memory } = req.body;
-  userMemoryStore[userId] = {
-    ...memory,
-    id: userId,
-    lastActive: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  res.json({ success: true, memory: userMemoryStore[userId] });
+// Anonymous cloud memory sync retired; authenticated storage is required.
+app.all("/api/user-memory/:userId", (_req, res) => {
+  res.status(410).json({ success: false, error: "Anonymous cloud memory sync is disabled until authenticated storage is available." });
 });
 app.post("/api/same-story/analyze", async (req, res) => {
   const { userInput, persona = "barber" } = req.body;
