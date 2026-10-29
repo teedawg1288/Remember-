@@ -37,6 +37,17 @@ const ORIGIN_NOTES: Record<string, WordOriginNote> = {
       { label: 'British Museum · Geb and Nut', url: 'https://www.britishmuseum.org/learn/schools/ages-7-11/ancient-egypt/ancient-egyptian-gods-and-goddesses' },
     ],
   },
+  hermeneutics: {
+    kind: 'linguistic-origin',
+    kindLabel: 'Interpretation + historical context',
+    wordHistory: 'Hermeneutics comes through Greek hermēneutikos, concerned with interpretation, from hermēneuein, to interpret or explain. The further origin of that Greek verb is uncertain; a connection with the god Hermes is traditional, not established linguistic proof.',
+    whyUsed: 'The practice first became especially associated with interpreting difficult texts, including scripture, and expanded into law, history, art and human communication. A meaning is checked by reading individual words against the larger text, its time, audience and purpose, then revisiting the whole.',
+    caution: 'Interpreting a work is not the same as confirming what its author privately intended. A modern parallel is a proposed reading, not evidence that an ancient author described a modern technology or that two systems share a causal mechanism.',
+    sources: [
+      { label: 'St Andrews · Biblical Hermeneutics', url: 'https://www.saet.ac.uk/Christianity/BiblicalHermeneutics' },
+      { label: 'Stanford Encyclopedia · Hermeneutics', url: 'https://plato.stanford.edu/entries/hermeneutics/' },
+    ],
+  },
   matrix: {
     kind: 'linguistic-origin',
     kindLabel: 'Linguistic origin',

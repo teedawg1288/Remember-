@@ -322,3 +322,17 @@ limitations and source links are optional, not required reading. For other
 words, live Explore can investigate origins but must say when provenance or
 original intention is unknown. Never silently promote generated interpretation
 to verified dictionary fact. Keep private matching logic off the client.
+
+## WORDS: historical interpretation before analogy
+
+Hermeneutics is a curated WORDS example. Preserve attested historical usage,
+original cultural and textual context, and the distinction between what a text
+says, what its author demonstrably intended, and a modern reader's possible
+interpretation. A historical analogy is an interpretation until documented
+by appropriate sources. Terms such as Matrix, system, Old World and 5G may
+share a useful comparison at a limited functional level without being synonyms,
+having common word roots, or proving that an ancient writer described modern
+technology. In discovery and second-pass review, interpret in context first;
+only then consider two or more ordered causal links. Mark unknown original
+intent unknown and retain a comparison without a prediction when appropriate.
+Keep the extra reasoning backstage and the short explanation up front.
