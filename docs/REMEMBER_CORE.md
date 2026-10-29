@@ -304,3 +304,21 @@ that instructions are confusing does not establish that anyone attempted or
 failed the task. Any consequence not reported belongs in a conditional
 hypothesis, never a description of reality. Questions and translations must
 use plain language and avoid unnecessary specialized words.
+
+## WORDS: origins and conceptual associations
+
+WORDS has curated, publicly checkable examples of two different questions:
+(1) the attested linguistic history of a word, including historical meanings,
+and (2) why a person or culture applied a word or metaphor to a concept.
+The same linguistic root is not required for two concepts to be comparable;
+a shared label is never proof of the same process. Word-family evidence,
+cultural associations and speculative causal bridges must be labeled separately.
+
+The starter examples are Mother, Earth, and Matrix. Mother/Earth compares a
+cultural association (Gaia as motherly Earth) with a contrasting example
+(Egyptian Geb as male Earth). Matrix shows a documented linguistic relation
+to Latin mater. Show the brief familiar explanation first; detailed history,
+limitations and source links are optional, not required reading. For other
+words, live Explore can investigate origins but must say when provenance or
+original intention is unknown. Never silently promote generated interpretation
+to verified dictionary fact. Keep private matching logic off the client.
