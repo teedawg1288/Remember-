@@ -6,7 +6,7 @@ import { getWordOrigin } from '../src/data/wordOrigins';
 describe('WORDS starter dictionary', () => {
   test('contains 103 unique, searchable words with at least two meanings', () => {
     expect(bridgeDictionary).toHaveLength(103);
-    expect(new Set(bridgeDictionary.map((entry) => entry.word.toLowerCase())).size).toBe(100);
+    expect(new Set(bridgeDictionary.map((entry) => entry.word.toLowerCase())).size).toBe(103);
     for (const entry of bridgeDictionary) {
       expect(entry.senses.length).toBeGreaterThanOrEqual(2);
       expect(entry.connection.length).toBeGreaterThan(15);
