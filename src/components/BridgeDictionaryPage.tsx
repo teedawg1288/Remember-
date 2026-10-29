@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BookOpen, Bookmark, BookmarkCheck, Search, Sparkles, X } from 'lucide-react';
 import { bridgeDictionary, BridgeWord } from '../data/bridgeDictionary';
+import { getWordOrigin } from '../data/wordOrigins';
 
 interface BridgeDictionaryPageProps {
   onExplore: (word: string) => void;
@@ -30,14 +31,21 @@ export const BridgeDictionaryPage: React.FC<BridgeDictionaryPageProps> = ({ onEx
 
   const results = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
-    return bridgeDictionary.filter((entry) =>
-      (!onlySaved || saved.includes(entry.word)) &&
-      (!term || [entry.word, ...entry.senses.map((s) => s.field), ...entry.senses.map((s) => s.meaning)]
-        .some((value) => value.toLocaleLowerCase().includes(term)))
-    );
+    return bridgeDictionary.filter((entry) => {
+      const origin = getWordOrigin(entry.word);
+      const searchable = [
+        entry.word,
+        ...entry.senses.map((s) => s.field),
+        ...entry.senses.map((s) => s.meaning),
+        ...(origin ? [origin.wordHistory, origin.whyUsed] : []),
+      ];
+      return (!onlySaved || saved.includes(entry.word)) &&
+        (!term || searchable.some((value) => value.toLocaleLowerCase().includes(term)));
+    });
   }, [search, onlySaved, saved]);
 
   const active: BridgeWord | undefined = results.find((entry) => entry.word === selectedWord) || results[0];
+  const activeOrigin = active ? getWordOrigin(active.word) : undefined;
   const canExploreUnknown = search.trim().length >= 2 && search.trim().length <= 60 && !results.length;
   const toggleSaved = (word: string) => setSaved((prior) =>
     prior.includes(word) ? prior.filter((w) => w !== word) : [...prior, word]
@@ -53,7 +61,7 @@ export const BridgeDictionaryPage: React.FC<BridgeDictionaryPageProps> = ({ onEx
           Same word. <span className="text-amber-400">Different worlds.</span>
         </h1>
         <p className="mt-4 text-stone-300 text-base sm:text-lg leading-relaxed">
-          One word can mean different things in different places. Explore what connects them—and what doesn't.
+          Explore how words connect, where some meanings came from, and what doesn't carry across.
         </p>
       </div>
 
@@ -67,7 +75,7 @@ export const BridgeDictionaryPage: React.FC<BridgeDictionaryPageProps> = ({ onEx
             autoComplete="off"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Try resistance, current, medicine…"
+            placeholder="Try resistance, mother, earth…"
             className="w-full bg-[#0c0e12] text-white placeholder:text-stone-500 border border-stone-600 rounded-xl pl-11 pr-10 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500/70"
           />
           {search && <button type="button" title="Clear search" aria-label="Clear search" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-white"><X className="w-4 h-4" /></button>}
@@ -147,6 +155,37 @@ export const BridgeDictionaryPage: React.FC<BridgeDictionaryPageProps> = ({ onEx
                   <p className="text-stone-300 text-sm leading-relaxed">{active.difference}</p>
                 </div>
               </div>
+
+
+              {activeOrigin && (
+                <details className="rounded-2xl bg-[#101720] border border-amber-500/25 p-4 sm:p-5 group">
+                  <summary className="cursor-pointer text-white font-semibold flex items-center justify-between gap-3">
+                    <span>Where the meaning came from</span>
+                    <span className="text-xs text-amber-300 font-normal text-right">{activeOrigin.kindLabel}</span>
+                  </summary>
+                  <div className="pt-4 space-y-4 text-sm leading-relaxed">
+                    <div>
+                      <h3 className="text-amber-300 font-semibold mb-1">Word history</h3>
+                      <p className="text-stone-300">{activeOrigin.wordHistory}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-amber-300 font-semibold mb-1">Why was this meaning used?</h3>
+                      <p className="text-stone-300">{activeOrigin.whyUsed}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-stone-300 font-semibold mb-1">What this does not prove</h3>
+                      <p className="text-stone-400">{activeOrigin.caution}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      {activeOrigin.sources.map((source) => (
+                        <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="text-amber-300 underline underline-offset-2 hover:text-amber-200">
+                          {source.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </details>
+              )}
 
               <div className="rounded-2xl bg-emerald-950/30 border border-emerald-500/25 p-5">
                 <p className="text-xs font-mono uppercase tracking-widest text-emerald-300 mb-2">One question worth asking</p>

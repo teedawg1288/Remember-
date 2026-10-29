@@ -334,7 +334,7 @@ export const App: React.FC = () => {
         {activeMainTab === 'words' && (
           <BridgeDictionaryPage
             onExplore={(word) => handleAnalyze(
-              `Explore the different meanings of "${word}" across fields. Show a genuine shared process if there is one, explain important differences, and propose one useful question without treating a shared word as proof of a shared mechanism.`
+              `Explore the meanings of "${word}" across fields. Investigate both its historically documented word origins and why a culture or field associated this word with a particular concept. Distinguish linguistic ancestry from metaphor or conceptual borrowing; do not infer shared roots or original intent from resemblance. Compare a genuine shared process if there is one, show important differences, identify uncertain claims, and offer one useful question through a familiar modern example.`
             )}
             isLoading={isLoading}
             isolated={isIsolatedTest}
