@@ -35,6 +35,7 @@ export const BridgeDictionaryPage: React.FC<BridgeDictionaryPageProps> = ({ onEx
       const origin = getWordOrigin(entry.word);
       const searchable = [
         entry.word,
+        ...(entry.word === 'Hermeneutics' ? ['hermenutics'] : []),
         ...entry.senses.map((s) => s.field),
         ...entry.senses.map((s) => s.meaning),
         ...(origin ? [origin.wordHistory, origin.whyUsed] : []),
